@@ -14,4 +14,19 @@
     </form>
     <p>¿No tienes cuenta? <a href="{{ url_for('auth.register') }}">Regístrate aquí</a></p>
 </body>
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div style="
+                background:#ffdddd;
+                color:#a94442;
+                padding:10px;
+                margin-bottom:10px;
+                border-radius:5px;
+                font-weight:bold;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
 </html>

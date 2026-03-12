@@ -11,10 +11,32 @@
 
     <nav>
         <ul>
-            <li><a href="{{ url_for('registrar_produccion') }}">Registrar Producción</a></li>
-            <li><a href="{{ url_for('listar_prendas') }}">Prendas</a></li>
-            <li><a href="{{ url_for('logout') }}">Cerrar Sesión</a></li>
-        </ul>
+
+<li>
+<a href="{{ url_for('produccion.registrar_produccion') }}">
+Registrar Producción
+</a>
+</li>
+
+<li>
+<a href="{{ url_for('admin.listar_prendas') }}">
+Prendas
+</a>
+</li>
+
+<li>
+<a href="{{ url_for('reportes.index') }}">
+Reportes
+</a>
+</li>
+
+<li>
+<a href="{{ url_for('auth.logout') }}">
+Cerrar sesión
+</a>
+</li>
+
+</ul>
     </nav>
 
     <section>

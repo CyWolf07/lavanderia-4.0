@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sistema de Lavandería</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background:#f2f2f2;
+    text-align:center;
+}
+
+.contenedor{
+    margin-top:120px;
+}
+
+h1{
+    font-size:45px;
+}
+
+.banner{
+    font-size:70px;
+    margin-top:20px;
+}
+
+.boton{
+    margin-top:40px;
+    padding:15px 40px;
+    font-size:20px;
+    background:#007BFF;
+    color:white;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.boton:hover{
+    background:#0056b3;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+<h1>Bienvenido al Sistema de Lavandería</h1>
+
+<div class="banner">
+🏠🧺🚚🧼
+</div>
+
+<p>Sistema de control de producción de lavandería</p>
+
+<a href="{{ url_for('auth.login') }}">
+<button class="boton">Iniciar</button>
+</a>
+
+</div>
+
+</body>
+</html>
