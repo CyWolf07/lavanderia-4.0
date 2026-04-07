@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PrendaController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\PqrsController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,4 +26,9 @@ Route::prefix('prendas')->group(function () {
 Route::prefix('produccion')->group(function () {
     Route::get('/', [ProduccionController::class, 'index'])->name('produccion.index');
     Route::post('/', [ProduccionController::class, 'store'])->name('produccion.store');
+});
+
+Route::prefix('pqrs')->group(function () {
+    Route::get('/', [PqrsController::class, 'index'])->name('pqrs.index');
+    Route::post('/', [PqrsController::class, 'store'])->name('pqrs.store');
 });

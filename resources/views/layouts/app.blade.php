@@ -42,6 +42,7 @@
                 <div class="hidden sm:flex sm:items-center sm:space-x-8">
                     <a href="{{ route('prendas.index') }}" class="text-gray-600 hover:text-primary transition font-medium">Prendas</a>
                     <a href="{{ route('produccion.index') }}" class="text-gray-600 hover:text-primary transition font-medium">Producción</a>
+                    <a href="{{ route('pqrs.index') }}" class="text-gray-600 hover:text-primary transition font-medium">PQRS</a>
                     <!-- Mock User Menu -->
                     <div class="ml-4 relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center space-x-2 text-gray-600 hover:text-primary transition">
