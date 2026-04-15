@@ -1,11 +1,111 @@
-@import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap');
 
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+@layer base {
+    :root {
+        color-scheme: light;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply font-sans text-slate-800 antialiased;
+        background-color: #f5fbfb;
+        background-image:
+            radial-gradient(circle at top left, rgba(46, 137, 244, 0.16), transparent 32%),
+            radial-gradient(circle at top right, rgba(31, 171, 116, 0.18), transparent 28%),
+            linear-gradient(180deg, #fbfeff 0%, #f4fbfb 45%, #eef7f8 100%);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-display tracking-tight text-slate-900;
+    }
+
+    p {
+        @apply leading-relaxed;
+    }
+
+    a,
+    button {
+        @apply transition duration-200 ease-out;
+    }
+
+    label {
+        @apply text-slate-700;
+    }
+
+    input,
+    select,
+    textarea {
+        @apply rounded-2xl border-slate-200 bg-white/95 text-slate-800 shadow-sm shadow-sky-100/70;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+        @apply text-slate-400;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+        @apply border-sky-400 ring-4 ring-sky-100/70 outline-none;
+    }
+
+    ::selection {
+        background: rgba(46, 137, 244, 0.18);
+        color: #0c2742;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+}
+
+@layer components {
+    .brand-card {
+        @apply rounded-[1.75rem] bg-white/90 shadow-xl shadow-sky-100/70 ring-1 ring-sky-100 backdrop-blur;
+    }
+
+    .brand-card-soft {
+        @apply rounded-[1.75rem] border border-white/60 bg-white/70 shadow-lg shadow-sky-100/60 backdrop-blur;
+    }
+
+    .brand-hero {
+        background-image:
+            radial-gradient(circle at top right, rgba(255, 255, 255, 0.18), transparent 30%),
+            linear-gradient(135deg, #0f4572 0%, #1d6fda 52%, #14895e 100%);
+    }
+
+    .brand-hero h1,
+    .brand-hero h2,
+    .brand-hero h3 {
+        @apply text-white;
+    }
+
+    .brand-button-primary {
+        @apply inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-sky-700 via-sky-600 to-emerald-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-200/80 hover:-translate-y-0.5 hover:shadow-xl;
+    }
+
+    .brand-button-secondary {
+        @apply inline-flex items-center justify-center rounded-2xl border border-sky-200 bg-white/95 px-5 py-3 text-sm font-semibold text-sky-800 shadow-sm shadow-sky-100/70 hover:-translate-y-0.5 hover:border-sky-300 hover:bg-sky-50;
+    }
+
+    .brand-eyebrow {
+        @apply text-sm font-semibold uppercase tracking-[0.35em] text-sky-700;
+    }
+
+    .brand-metric {
+        @apply rounded-[1.75rem] p-6 text-white shadow-xl;
+        background-image: linear-gradient(135deg, rgba(12, 39, 66, 0.95), rgba(29, 111, 218, 0.92), rgba(20, 137, 94, 0.9));
+    }
 }

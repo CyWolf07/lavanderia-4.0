@@ -1,48 +1,54 @@
 @extends('layouts.app')
 
+@section('title', 'Lavanderia Registro')
+
 @section('content')
-<div class="relative overflow-hidden bg-white rounded-2xl shadow-xl flex items-center h-[500px]">
-    <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-100 opacity-90"></div>
-    <!-- Interactive Background Pattern -->
-    <div class="absolute inset-0 bg-[url('data:image/svg+xml,...')] opacity-10"></div>
-    
-    <div class="relative z-10 w-full px-8 md:px-16 text-center lg:text-left flex flex-col lg:flex-row items-center justify-between">
-        <div class="lg:w-1/2 space-y-6">
-            <h1 class="text-5xl md:text-6xl font-extrabold text-gray-900 tracking-tight leading-tight">
-                Gestión Inteligente de <span class="text-primary">Lavandería Exclusiva</span>
-            </h1>
-            <p class="text-lg text-gray-600 max-w-xl mx-auto lg:mx-0">
-                Lleva el control de tus prendas, producción y reportes con una interfaz moderna, rápida y segura en la web.
-            </p>
-            <div class="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 pt-4">
-                <a href="{{ route('produccion.index') }}" class="px-8 py-3 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-secondary hover:shadow-lg transition transform hover:-translate-y-1">
-                    Registrar Producción
-                </a>
-                <a href="{{ route('prendas.index') }}" class="px-8 py-3 bg-white text-primary border border-gray-200 font-semibold rounded-lg shadow-sm hover:bg-gray-50 transition transform hover:-translate-y-1">
-                    Gestionar Prendas
-                </a>
-            </div>
-        </div>
-        <!-- Right side graphic placeholder -->
-        <div class="lg:w-1/2 mt-10 lg:mt-0 relative hidden md:block">
-            <div class="w-72 h-72 lg:w-96 lg:h-96 bg-gradient-to-tr from-indigo-300 to-primary rounded-full blur-3xl opacity-30 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
-            <div class="relative bg-white/60 backdrop-blur-md border border-white/50 shadow-2xl rounded-2xl p-8 max-w-sm mx-auto transform rotate-3 hover:rotate-0 transition duration-500">
-                <div class="flex items-center justify-between border-b pb-4 border-gray-200">
-                    <h3 class="font-bold text-gray-800">Estadísticas Rápidas</h3>
-                    <span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">+12% hoy</span>
+<div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <div class="brand-hero overflow-hidden rounded-[2rem] text-white shadow-2xl shadow-sky-200/70">
+        <div class="grid gap-10 px-8 py-12 lg:grid-cols-[1.1fr_0.9fr] lg:px-14 lg:py-16">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.45em] text-sky-100">Sistema de lavanderia</p>
+                <h1 class="mt-5 max-w-3xl text-4xl font-black leading-tight text-white sm:text-5xl">
+                    Registra la produccion por empleado y cierra cada quincena con informe listo para imprimir.
+                </h1>
+                <p class="mt-6 max-w-2xl text-base text-sky-50/95">
+                    El sistema separa accesos por rol: administrador, programador y usuario. Guarda usuarios, prendas, totales diarios y pagos por quincena en historial.
+                </p>
+                <div class="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <a href="{{ route('login') }}" class="brand-button-secondary rounded-full border-white/30 bg-white/95 px-6 py-3 text-slate-900 shadow-lg shadow-slate-900/10 hover:border-white hover:bg-white">
+                        Iniciar sesion
+                    </a>
+                    <a href="{{ route('register') }}" class="rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/15">
+                        Crear usuario
+                    </a>
                 </div>
-                <div class="mt-4 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500">Prendas Procesadas</span>
-                        <span class="font-bold text-gray-900">145</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2">
-                        <div class="bg-primary h-2 rounded-full w-[70%]"></div>
-                    </div>
-                    <div class="flex justify-between items-center pt-2">
-                        <span class="text-sm text-gray-500">Ingresos Totales</span>
-                        <span class="font-bold text-gray-900">$ 840.500</span>
-                    </div>
+                <div class="mt-10 flex flex-wrap gap-3 text-sm">
+                    <span class="rounded-full border border-white/20 bg-white/10 px-4 py-2 font-semibold backdrop-blur">Interfaz clara</span>
+                    <span class="rounded-full border border-white/20 bg-white/10 px-4 py-2 font-semibold backdrop-blur">Datos por quincena</span>
+                    <span class="rounded-full border border-white/20 bg-white/10 px-4 py-2 font-semibold backdrop-blur">Reportes listos</span>
+                </div>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="rounded-3xl border border-white/15 bg-white/12 p-6 backdrop-blur-md">
+                    <p class="text-sm font-semibold text-sky-100">Usuarios</p>
+                    <h2 class="mt-3 text-2xl font-bold text-white">Registro completo</h2>
+                    <p class="mt-2 text-sm text-sky-50/95">Nombre, cedula, contacto y rol en una sola administracion.</p>
+                </div>
+                <div class="rounded-3xl border border-white/15 bg-white/12 p-6 backdrop-blur-md">
+                    <p class="text-sm font-semibold text-emerald-100">Produccion</p>
+                    <h2 class="mt-3 text-2xl font-bold text-white">Totales por dia</h2>
+                    <p class="mt-2 text-sm text-sky-50/95">Cada fila resume el ingreso diario y el total acumulado de la quincena.</p>
+                </div>
+                <div class="rounded-3xl border border-white/15 bg-white/12 p-6 backdrop-blur-md">
+                    <p class="text-sm font-semibold text-sky-100">Cierres</p>
+                    <h2 class="mt-3 text-2xl font-bold">Año/Mes/Quincena</h2>
+                    <p class="mt-2 text-sm text-sky-50/95">El historial queda guardado por periodos para consulta posterior.</p>
+                </div>
+                <div class="rounded-3xl border border-white/15 bg-white/12 p-6 backdrop-blur-md">
+                    <p class="text-sm font-semibold text-emerald-100">Informes</p>
+                    <h2 class="mt-3 text-2xl font-bold text-white">Impresion inmediata</h2>
+                    <p class="mt-2 text-sm text-sky-50/95">Cerrar quincena genera el reporte por empleados listo para imprimir.</p>
                 </div>
             </div>
         </div>

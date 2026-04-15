@@ -9,32 +9,42 @@ class PrendaController extends Controller
 {
     public function index()
     {
-        $prendas = Prenda::all();
-        return view('prendas.index', compact('prendas'));
+        $prendas = Prenda::query()
+            ->orderByDesc('activo')
+            ->orderBy('nombre')
+            ->get();
+
+        return view('prendas.index-v2', compact('prendas'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $data = $request->validate([
             'nombre' => 'required|string|max:100',
             'tipo' => 'nullable|string|max:50',
             'precio' => 'required|numeric|min:0',
+            'activo' => 'nullable|boolean',
         ]);
 
-        Prenda::create($request->all());
+        $data['activo'] = $request->boolean('activo', true);
+
+        Prenda::create($data);
 
         return redirect()->route('prendas.index')->with('success', 'Prenda agregada correctamente.');
     }
 
     public function update(Request $request, Prenda $prenda)
     {
-        $request->validate([
+        $data = $request->validate([
             'nombre' => 'required|string|max:100',
             'tipo' => 'nullable|string|max:50',
             'precio' => 'required|numeric|min:0',
+            'activo' => 'nullable|boolean',
         ]);
 
-        $prenda->update($request->all());
+        $data['activo'] = $request->boolean('activo', $prenda->activo);
+
+        $prenda->update($data);
 
         return redirect()->route('prendas.index')->with('success', 'Prenda actualizada correctamente.');
     }
@@ -43,5 +53,16 @@ class PrendaController extends Controller
     {
         $prenda->delete();
         return redirect()->route('prendas.index')->with('success', 'Prenda eliminada correctamente.');
+    }
+
+    public function toggleStatus(Prenda $prenda)
+    {
+        $prenda->activo = ! $prenda->activo;
+        $prenda->save();
+
+        return back()->with(
+            'success',
+            $prenda->activo ? 'Prenda habilitada correctamente.' : 'Prenda inhabilitada correctamente.'
+        );
     }
 }

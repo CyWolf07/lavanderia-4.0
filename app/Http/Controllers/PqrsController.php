@@ -27,4 +27,12 @@ class PqrsController extends Controller
 
         return redirect()->route('pqrs.index')->with('success', 'PQRS registrado exitosamente.');
     }
+
+    public function destroy($id)
+    {
+    $pqrs = Pqrs::findOrFail($id);
+    $pqrs->delete();
+
+    return back()->with('success', 'Registro eliminado correctamente');
+    }
 }

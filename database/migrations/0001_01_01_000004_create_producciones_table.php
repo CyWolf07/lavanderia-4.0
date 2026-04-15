@@ -14,6 +14,7 @@ return new class extends Migration
             $table->foreignId('prenda_id')->constrained('prendas')->cascadeOnDelete();
             $table->integer('cantidad');
             $table->decimal('total', 10, 2)->nullable();
+            $table->date('fecha')->nullable();
             $table->timestamps();
         });
     }
