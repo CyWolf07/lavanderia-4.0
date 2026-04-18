@@ -108,4 +108,20 @@
         @apply rounded-[1.75rem] p-6 text-white shadow-xl;
         background-image: linear-gradient(135deg, rgba(12, 39, 66, 0.95), rgba(29, 111, 218, 0.92), rgba(20, 137, 94, 0.9));
     }
+
+    .touch-ui input,
+    .touch-ui select,
+    .touch-ui textarea,
+    .touch-ui button {
+        @apply min-h-[3.35rem] text-base;
+    }
+
+    .touch-ui label {
+        @apply text-[0.95rem];
+    }
+
+    .device-touch nav a,
+    .device-touch nav button {
+        @apply min-h-[3rem];
+    }
 }

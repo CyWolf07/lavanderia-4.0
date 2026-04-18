@@ -17,6 +17,7 @@ class RecolectorController extends Controller
     {
         $clientes = Cliente::activos()->orderBy('nombre')->get();
         $prendas = RecolectorPrenda::activas()->orderBy('nombre')->get();
+        $siguienteNumeroFactura = ((int) FacturaRecolector::max('id')) + 1;
 
         $facturas = FacturaRecolector::with(['cliente', 'detalles'])
             ->where('recolector_id', Auth::id())
@@ -32,6 +33,7 @@ class RecolectorController extends Controller
             'fechaIngreso' => now(),
             'clientePreseleccionado' => session('cliente_creado_id'),
             'puedeEditarPrecios' => Auth::user()->puedeEditarPrecios(),
+            'siguienteNumeroFactura' => $siguienteNumeroFactura,
         ]);
     }
 
@@ -43,6 +45,8 @@ class RecolectorController extends Controller
             'observaciones' => ['nullable', 'array'],
             'observaciones.*' => ['string'],
             'items' => ['nullable', 'array'],
+            'items.*.prenda_id' => ['nullable', 'integer'],
+            'items.*.cantidad' => ['nullable', 'integer', 'min:0'],
             'items.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
         ]);
 
@@ -74,6 +78,12 @@ class RecolectorController extends Controller
             })
             ->filter(fn (array $item) => $item['prenda_id'] > 0 && $item['cantidad'] > 0)
             ->values();
+
+        if ($itemsSeleccionados->pluck('prenda_id')->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'items' => 'No puedes registrar la misma prenda dos veces en una factura.',
+            ]);
+        }
 
         $prendas = RecolectorPrenda::activas()
             ->whereIn('id', $itemsSeleccionados->pluck('prenda_id'))
