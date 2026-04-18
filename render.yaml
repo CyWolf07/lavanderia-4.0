@@ -1,4 +1,4 @@
-services:
+﻿services:
   - type: web
     name: lavanderia-4-0
     runtime: docker
@@ -10,7 +10,6 @@ services:
     dockerContext: .
     healthCheckPath: /up
     autoDeployTrigger: commit
-    preDeployCommand: php artisan migrate --force
     envVars:
       - key: APP_ENV
         value: production
@@ -38,3 +37,4 @@ services:
         value: public
       - key: DB_SSLMODE
         value: require
+

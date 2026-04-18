@@ -1,26 +1,26 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
-@section('title', 'Iniciar sesion')
+@section('title', 'Iniciar sesión')
 
 @section('content')
 <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
     <div class="grid overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-sky-100/80 ring-1 ring-sky-100 lg:grid-cols-[1.1fr_0.9fr]">
         <div class="brand-hero p-8 text-white sm:p-12">
-            <p class="text-sm font-semibold uppercase tracking-[0.4em] text-sky-100">Lavanderia</p>
+            <p class="text-sm font-semibold uppercase tracking-[0.4em] text-sky-100">Lavandería</p>
             <h1 class="mt-4 text-4xl font-black leading-tight text-white">Controla usuarios, prendas y quincenas desde un solo panel.</h1>
             <p class="mt-6 max-w-xl text-sm text-sky-50/95 sm:text-base">
-                Inicia sesion con tu correo o tu cedula para registrar produccion, consultar pagos por quincena y administrar el sistema segun tu rol.
+                Inicia sesión con tu correo o tu cédula para registrar producción, consultar pagos por quincena y administrar el sistema según tu rol.
             </p>
             <div class="mt-8 grid gap-3 text-sm text-sky-50/95">
                 <p class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">Administrador: usuarios, prendas, cierres e informes.</p>
-                <p class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">Programador: acceso total y borrado de historicos.</p>
-                <p class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">Usuario: registro de produccion y consulta de pagos.</p>
+                <p class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">Programador: acceso total y borrado de históricos.</p>
+                <p class="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur">Usuario: registro de producción y consulta de pagos.</p>
             </div>
         </div>
 
         <div class="p-8 sm:p-12">
-            <h2 class="text-3xl font-bold text-slate-900">Iniciar sesion</h2>
-            <p class="mt-2 text-sm text-slate-500">Usa tu correo o cedula para entrar.</p>
+            <h2 class="text-3xl font-bold text-slate-900">Iniciar sesión</h2>
+            <p class="mt-2 text-sm text-slate-500">Usa tu correo o cédula para entrar.</p>
 
             @if ($errors->any())
                 <div class="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -32,12 +32,12 @@
                 @csrf
 
                 <div>
-                    <label for="login" class="mb-2 block text-sm font-semibold text-slate-700">Correo o cedula</label>
+                    <label for="login" class="mb-2 block text-sm font-semibold text-slate-700">Correo o cédula</label>
                     <input id="login" name="login" type="text" value="{{ old('login', old('email')) }}" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm shadow-sky-100/60 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100" required>
                 </div>
 
                 <div>
-                    <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">Contrasena</label>
+                    <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">Contraseña</label>
                     <input id="password" name="password" type="password" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm shadow-sky-100/60 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100" required>
                 </div>
 

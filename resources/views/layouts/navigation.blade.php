@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="sticky top-0 z-40 border-b border-white/70 bg-white/85 shadow-sm shadow-sky-100/70 backdrop-blur-xl">
+﻿<nav x-data="{ open: false }" class="sticky top-0 z-40 border-b border-white/70 bg-white/85 shadow-sm shadow-sky-100/70 backdrop-blur-xl">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-8">
             <a href="{{ auth()->check() ? route('dashboard') : route('inicio') }}" class="flex items-center gap-3">
@@ -6,7 +6,7 @@
                     <x-application-logo class="block h-7 w-auto fill-current" />
                 </span>
                 <div class="hidden sm:block">
-                    <p class="font-display text-sm text-slate-900">Lavanderia Registro</p>
+                    <p class="font-display text-sm text-slate-900">Lavandería Registro</p>
                     <p class="text-[11px] uppercase tracking-[0.25em] text-sky-700">Control de usuarios y quincenas</p>
                 </div>
             </a>
@@ -15,7 +15,7 @@
                 <div class="hidden items-center gap-2 sm:flex">
                     @if (auth()->user()->tieneRol('admin', 'programador', 'usuario'))
                         <a href="{{ route('produccion.index') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('produccion.*') ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200 shadow-sm shadow-sky-100/60' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-800' }}">
-                            Produccion
+                            Producción
                         </a>
                     @endif
                     @if (auth()->user()->tieneRol('recolector'))
@@ -44,13 +44,13 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button class="rounded-full border border-rose-200/80 bg-white px-4 py-2 text-sm font-semibold text-rose-700 shadow-sm shadow-rose-100/60 hover:bg-rose-50">
-                        Cerrar sesion
+                        Cerrar sesión
                     </button>
                 </form>
             </div>
         @else
             <div class="hidden items-center gap-3 sm:flex">
-                <a href="{{ route('login') }}" class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-sky-50 hover:text-sky-800">Iniciar sesion</a>
+                <a href="{{ route('login') }}" class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-sky-50 hover:text-sky-800">Iniciar sesión</a>
                 <a href="{{ route('register') }}" class="brand-button-primary rounded-full px-4 py-2">Registrarse</a>
             </div>
         @endauth
@@ -67,7 +67,7 @@
         <div class="space-y-1 px-4 py-4">
             @auth
                 @if (auth()->user()->tieneRol('admin', 'programador', 'usuario'))
-                    <a href="{{ route('produccion.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('produccion.*') ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800' }}">Produccion</a>
+                    <a href="{{ route('produccion.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('produccion.*') ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800' }}">Producción</a>
                 @endif
                 @if (auth()->user()->tieneRol('recolector'))
                     <a href="{{ route('recolector.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('recolector.*') ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-800' }}">Recolector</a>
@@ -78,10 +78,10 @@
                 <a href="{{ route('profile.edit') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('profile.*') ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800' }}">Perfil</a>
                 <form method="POST" action="{{ route('logout') }}" class="pt-2">
                     @csrf
-                    <button class="block w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-left text-sm font-medium text-rose-700 shadow-sm shadow-rose-100/60">Cerrar sesion</button>
+                    <button class="block w-full rounded-xl border border-rose-200 bg-white px-3 py-2 text-left text-sm font-medium text-rose-700 shadow-sm shadow-rose-100/60">Cerrar sesión</button>
                 </form>
             @else
-                <a href="{{ route('login') }}" class="block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-sky-50 hover:text-sky-800">Iniciar sesion</a>
+                <a href="{{ route('login') }}" class="block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-sky-50 hover:text-sky-800">Iniciar sesión</a>
                 <a href="{{ route('register') }}" class="block rounded-xl bg-gradient-to-r from-sky-700 via-sky-600 to-emerald-500 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-200/80">Registrarse</a>
             @endauth
         </div>

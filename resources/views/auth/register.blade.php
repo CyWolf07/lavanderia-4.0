@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Registro')
 
@@ -7,9 +7,9 @@
     <div class="overflow-hidden rounded-[2rem] bg-white shadow-2xl shadow-sky-100/80 ring-1 ring-sky-100">
         <div class="brand-hero border-b border-white/10 px-8 py-8 text-white">
             <p class="text-sm font-semibold uppercase tracking-[0.35em] text-sky-100">Registro</p>
-            <h1 class="mt-3 text-3xl font-black text-white">Crear una cuenta para el sistema de lavanderia</h1>
+            <h1 class="mt-3 text-3xl font-black text-white">Crear una cuenta para el sistema de lavandería</h1>
             <p class="mt-3 max-w-2xl text-sm text-sky-50/95">
-                El registro publico crea usuarios de produccion. Solo si este es el primer acceso del sistema se habilita elegir un rol administrativo.
+                El registro público crea usuarios de producción. Solo si este es el primer acceso del sistema se habilita elegir un rol administrativo.
             </p>
         </div>
 
@@ -35,7 +35,7 @@
             </div>
 
             <div>
-                <label for="cedula" class="mb-2 block text-sm font-semibold text-slate-700">Cedula</label>
+                <label for="cedula" class="mb-2 block text-sm font-semibold text-slate-700">Cédula</label>
                 <input id="cedula" name="cedula" type="text" value="{{ old('cedula') }}" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm shadow-sky-100/60 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100">
             </div>
 
@@ -60,12 +60,12 @@
             </div>
 
             <div>
-                <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">Contrasena</label>
+                <label for="password" class="mb-2 block text-sm font-semibold text-slate-700">Contraseña</label>
                 <input id="password" name="password" type="password" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm shadow-sky-100/60 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100" required>
             </div>
 
             <div>
-                <label for="password_confirmation" class="mb-2 block text-sm font-semibold text-slate-700">Confirmar contrasena</label>
+                <label for="password_confirmation" class="mb-2 block text-sm font-semibold text-slate-700">Confirmar contraseña</label>
                 <input id="password_confirmation" name="password_confirmation" type="password" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm shadow-sky-100/60 focus:border-sky-400 focus:outline-none focus:ring-4 focus:ring-sky-100" required>
             </div>
 
