@@ -27,16 +27,11 @@ El remoto `origin` ya esta configurado en:
 APP_ENV=production
 APP_DEBUG=false
 APP_KEY=
-APP_URL=
 
 DB_CONNECTION=pgsql
-DB_HOST=
-DB_PORT=5432
-DB_DATABASE=postgres
-DB_USERNAME=
-DB_PASSWORD=
+DB_URL=
 DB_SCHEMA=public
-DB_SSLMODE=require
+DB_SSLMODE=prefer
 ```
 
 ## Opcion recomendada: Render
@@ -49,7 +44,7 @@ Pasos:
 2. En Render, conecta tu cuenta de GitHub.
 3. Crea un nuevo Blueprint o Web Service desde el repositorio.
 4. Si usas Blueprint, Render leera `render.yaml`.
-5. Completa los valores pendientes de `APP_KEY`, `APP_URL`, `DB_HOST`, `DB_USERNAME` y `DB_PASSWORD`.
+5. Si usas el `render.yaml` actualizado, Render crea la base de datos y conecta `DB_URL` automaticamente.
 6. Despliega el servicio.
 
 El archivo `render.yaml` ya deja configurado:
@@ -57,17 +52,19 @@ El archivo `render.yaml` ya deja configurado:
 - `runtime: docker`
 - despliegue automatico desde `main`
 - health check en `/up`
-- migraciones con `php artisan migrate --force`
+- base de datos Render Postgres administrada
+- `APP_KEY` generado automaticamente
+- conexion privada interna entre app y base de datos
 
 ## Pasos para publicarlo
 
 1. Haz commit y push del proyecto a GitHub.
-2. Crea un servicio web en un hosting compatible con Docker.
-3. Conecta el repositorio de GitHub.
-4. Configura las variables de entorno.
-5. Despliega usando el `Dockerfile` del repositorio.
-6. Si hace falta, ejecuta `php artisan migrate --force` despues del primer despliegue.
+2. En Render, crea un nuevo Blueprint desde el repositorio.
+3. Revisa que el plan del servicio web y la base de datos te parezcan correctos.
+4. Confirma la creacion del servicio `lavanderia-web` y la base `lavanderia-db`.
+5. Espera el primer despliegue. El contenedor ejecuta migraciones y seeders automaticamente al iniciar.
+6. Abre la URL publica `onrender.com` que Render asigne al servicio.
 
 ## Nota sobre la base de datos
 
-Como tus tablas ya estan migradas en Supabase, no necesitas volver a crear la estructura. Solo asegurate de cargar correctamente las credenciales en el entorno de produccion.
+La configuracion actual esta preparada para usar Render Postgres como base principal en produccion. Si prefieres mantener una base externa como Supabase, puedes reemplazar `DB_URL` en Render por la URL externa de esa base.

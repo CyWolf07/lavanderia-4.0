@@ -37,7 +37,7 @@ class AdminController extends Controller
             ->orderByDesc('periodo')
             ->get();
 
-        return view('admin.dashboard-v2', compact(
+        return view('admin.dashboard', compact(
             'totalUsuarios',
             'totalProducciones',
             'ingresosTotales',
@@ -155,8 +155,8 @@ class AdminController extends Controller
         return back()->with(
             'success',
             $user->puede_editar_precios
-                ? 'Edicion de precios habilitada para el recolector.'
-                : 'Edicion de precios inhabilitada para el recolector.'
+                ? 'Edición de precios habilitada para el recolector.'
+                : 'Edición de precios inhabilitada para el recolector.'
         );
     }
 
@@ -342,3 +342,5 @@ class AdminController extends Controller
             ->values();
     }
 }
+
+

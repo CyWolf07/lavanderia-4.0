@@ -9,6 +9,8 @@ storage/framework/cache
 storage/framework/sessions
 storage/framework/testing
 storage/framework/views
+storage/framework/views-runtime
+storage/framework/testing/views-runtime
 bootstrap/cache/*.php
 public/hot
 npm-debug.log

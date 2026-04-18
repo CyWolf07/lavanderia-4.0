@@ -1,4 +1,4 @@
-﻿<x-guest-layout>
+<x-guest-layout>
     <div class="mb-4 text-sm text-gray-600">
         ¿Olvidaste tu contraseña? No hay problema. Indica tu correo electrónico y te enviaremos un enlace para restablecerla.
     </div>

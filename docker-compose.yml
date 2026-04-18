@@ -1,0 +1,44 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lavanderia-web
+    env_file:
+      - .env.docker
+    environment:
+      APP_URL: ${DOCKER_APP_URL:-http://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${DOCKER_WEB_PORT:-8080}:80"
+    volumes:
+      - lavanderia_storage:/var/www/html/storage
+      - lavanderia_cache:/var/www/html/bootstrap/cache
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: lavanderia-db
+    environment:
+      POSTGRES_DB: lavanderia
+      POSTGRES_USER: lavanderia
+      POSTGRES_PASSWORD: lavanderia
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${DOCKER_DB_PORT:-5433}:5432"
+    volumes:
+      - lavanderia_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lavanderia -d lavanderia"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  lavanderia_postgres_data:
+  lavanderia_storage:
+  lavanderia_cache:

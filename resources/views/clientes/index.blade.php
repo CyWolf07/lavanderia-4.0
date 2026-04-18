@@ -7,8 +7,8 @@
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Clientes</p>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Gestion de clientes</h1>
-            <p class="mt-2 text-sm text-slate-500">Registra los clientes que luego podra seleccionar el rol recolector al crear una factura.</p>
+            <h1 class="mt-2 text-3xl font-black text-slate-900">Gestión de clientes</h1>
+            <p class="mt-2 text-sm text-slate-500">Registra los clientes que luego podrá seleccionar el rol recolector al crear una factura.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
@@ -29,7 +29,7 @@
                 <input type="text" name="nombre" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="nit_cedula" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="celular" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                <input type="text" name="direccion" placeholder="Direccion" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                <input type="text" name="direccion" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                 <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
                     Guardar cliente
                 </button>
@@ -67,10 +67,12 @@
                         </form>
                     </div>
                 @empty
-                    <p class="px-6 pb-6 text-sm text-slate-500">No hay clientes registrados todavia.</p>
+                    <p class="px-6 pb-6 text-sm text-slate-500">No hay clientes registrados todav?a.</p>
                 @endforelse
             </div>
         </div>
     </div>
 </div>
 @endsection
+
+

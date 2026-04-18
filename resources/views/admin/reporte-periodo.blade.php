@@ -8,7 +8,7 @@
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Reporte de cierre</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">{{ $periodo }}</h1>
-            <p class="mt-2 text-sm text-slate-500">Informe agrupado por empleado para impresion y consulta historica.</p>
+            <p class="mt-2 text-sm text-slate-500">Informe agrupado por empleado para impresi?n y consulta hist?rica.</p>
         </div>
         <div class="flex gap-3">
             <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
@@ -41,7 +41,7 @@
                     <div>
                         <h2 class="text-xl font-bold text-slate-900">{{ $usuario->name ?? 'Usuario eliminado' }}</h2>
                         <p class="text-sm text-slate-500">
-                            Cedula: {{ $usuario->cedula ?? 'No registrada' }} | Contacto: {{ $usuario->contacto ?? 'No registrado' }}
+                            Cédula: {{ $usuario->cedula ?? 'No registrada' }} | Contacto: {{ $usuario->contacto ?? 'No registrado' }}
                         </p>
                     </div>
                     <p class="text-lg font-bold text-emerald-700">$ {{ number_format($registros->sum('total'), 0, ',', '.') }}</p>
@@ -57,7 +57,7 @@
                             <th class="px-6 py-4 font-semibold">Cantidad</th>
                             <th class="px-6 py-4 font-semibold">Total</th>
                             @if (auth()->user()->tieneRol('programador'))
-                                <th class="px-6 py-4 font-semibold">Accion</th>
+                                <th class="px-6 py-4 font-semibold">Acci?n</th>
                             @endif
                         </tr>
                     </thead>
@@ -73,7 +73,7 @@
                                         <form action="{{ route('programador.historial.destroy', $registro) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
-                                            <button onclick="return confirm('¿Eliminar este registro historico?')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+                                            <button onclick="return confirm('Â¿Eliminar este registro historico?')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
                                                 Eliminar
                                             </button>
                                         </form>
@@ -94,3 +94,4 @@
     </script>
 @endif
 @endsection
+

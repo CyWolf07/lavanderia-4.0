@@ -38,7 +38,7 @@
             </div>
 
             <div>
-                <label for="registro_id" class="mb-2 block text-sm font-semibold text-slate-700">Filtro especifico</label>
+                <label for="registro_id" class="mb-2 block text-sm font-semibold text-slate-700">Filtro espec?fico</label>
                 <select id="registro_id" name="registro_id" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                     <option value="">Todos</option>
                     @foreach ($opcionesRegistro as $opcion)
@@ -161,7 +161,7 @@
                         <div>
                             <h2 class="text-xl font-bold text-slate-900">{{ $item['nombre'] }}</h2>
                             <p class="text-sm text-slate-500">
-                                Rol: {{ ucfirst($item['rol']) }} | Cedula: {{ $item['cedula'] }} | Contacto: {{ $item['contacto'] }}
+                                Rol: {{ ucfirst($item['rol']) }} | Cédula: {{ $item['cedula'] }} | Contacto: {{ $item['contacto'] }}
                             </p>
                         </div>
                         <div class="text-left lg:text-right">
@@ -206,7 +206,7 @@
                                             Entrega {{ optional($factura->fecha_entrega)->format('d/m/Y') }}
                                         </p>
                                         <p class="mt-1 text-sm text-slate-500">
-                                            {{ $factura->direccion ?: 'Sin direccion' }} |
+                                            {{ $factura->direccion ?: 'Sin direcci?n' }} |
                                             {{ $factura->nit_cedula ?: 'Sin documento' }} |
                                             {{ $factura->celular ?: 'Sin celular' }}
                                         </p>
@@ -258,3 +258,4 @@
     </script>
 @endif
 @endsection
+

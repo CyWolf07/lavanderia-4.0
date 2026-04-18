@@ -35,6 +35,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq-dev unzip \
     && docker-php-ext-install pdo pdo_pgsql bcmath \
     && a2enmod rewrite \
+    && printf "ServerName localhost\n" > /etc/apache2/conf-available/server-name.conf \
+    && a2enconf server-name \
     && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
     && rm -rf /var/lib/apt/lists/*
 

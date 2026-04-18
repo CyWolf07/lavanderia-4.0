@@ -7,8 +7,8 @@
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Clientes</p>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Gestion de clientes</h1>
-            <p class="mt-2 text-sm text-slate-500">Registra clientes y habilitalos o inhabilitalos sin perder su historial.</p>
+            <h1 class="mt-2 text-3xl font-black text-slate-900">Gesti?n de clientes</h1>
+            <p class="mt-2 text-sm text-slate-500">Registra clientes y habil?talos o inhabil?talos sin perder su historial.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
@@ -29,7 +29,7 @@
                 <input type="text" name="nombre" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="nit_cedula" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="celular" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                <input type="text" name="direccion" placeholder="Direccion" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                <input type="text" name="direccion" placeholder="Direcci?n" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                 <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
                     <input type="hidden" name="activo" value="0">
                     <input type="checkbox" name="activo" value="1" checked class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
@@ -85,17 +85,19 @@
                             <form action="{{ route('clientes.destroy', $cliente) }}" method="POST">
                                 @csrf
                                 @method('DELETE')
-                                <button onclick="return confirm('Â¿Eliminar este cliente?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                                <button onclick="return confirm('Ã‚Â¿Eliminar este cliente?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                     Eliminar
                                 </button>
                             </form>
                         </div>
                     </div>
                 @empty
-                    <p class="px-6 pb-6 text-sm text-slate-500">No hay clientes registrados todavia.</p>
+                    <p class="px-6 pb-6 text-sm text-slate-500">No hay clientes registrados todav?a.</p>
                 @endforelse
             </div>
         </div>
     </div>
 </div>
 @endsection
+
+

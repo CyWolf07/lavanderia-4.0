@@ -64,7 +64,7 @@ class ProduccionController extends Controller
         $prenda = Prenda::activas()->find($request->integer('prenda_id'));
 
         if (! $prenda) {
-            return redirect()->route('produccion.index')->with('error', 'La prenda seleccionada no esta disponible.');
+            return redirect()->route('produccion.index')->with('error', 'La prenda seleccionada no está disponible.');
         }
 
         $cantidad = $request->integer('cantidad');
@@ -77,7 +77,7 @@ class ProduccionController extends Controller
             'fecha' => now()->toDateString(),
         ]);
 
-        return redirect()->route('produccion.index')->with('success', 'Produccion registrada correctamente.');
+        return redirect()->route('produccion.index')->with('success', 'Producción registrada correctamente.');
     }
 
     public function cerrar()
@@ -142,3 +142,4 @@ class ProduccionController extends Controller
         ]);
     }
 }
+

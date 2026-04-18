@@ -1,4 +1,4 @@
-﻿<nav x-data="{ open: false }" class="sticky top-0 z-40 border-b border-white/70 bg-white/85 shadow-sm shadow-sky-100/70 backdrop-blur-xl">
+<nav x-data="{ open: false }" class="sticky top-0 z-40 border-b border-white/70 bg-white/85 shadow-sm shadow-sky-100/70 backdrop-blur-xl">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-8">
             <a href="{{ auth()->check() ? route('dashboard') : route('inicio') }}" class="flex items-center gap-3">

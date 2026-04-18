@@ -14,7 +14,7 @@ class RecolectorPrendaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('recolector-prendas.index-v2', compact('prendas'));
+        return view('recolector-prendas.index', compact('prendas'));
     }
 
     public function store(Request $request)
@@ -69,3 +69,4 @@ class RecolectorPrendaController extends Controller
         );
     }
 }
+

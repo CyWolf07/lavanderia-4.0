@@ -73,11 +73,11 @@
     @if ($clientes->isEmpty() || $prendas->isEmpty())
         <div class="rounded-[1.75rem] border border-amber-200 bg-amber-50 px-6 py-5 text-sm text-amber-900">
             @if ($clientes->isEmpty() && $prendas->isEmpty())
-                Crea al menos un cliente y espera a que administracion cargue prendas activas del recolector para registrar facturas.
+                Crea al menos un cliente y espera a que administración cargue prendas activas del recolector para registrar facturas.
             @elseif ($clientes->isEmpty())
-                Todavia no hay clientes activos. Puedes crear uno desde esta misma pantalla y luego continuar con la factura.
+                Todavía no hay clientes activos. Puedes crear uno desde esta misma pantalla y luego continuar con la factura.
             @else
-                Todavia no hay prendas activas del recolector. Administracion debe habilitar al menos una para poder facturar.
+                Todavía no hay prendas activas del recolector. Administraci?n debe habilitar al menos una para poder facturar.
             @endif
         </div>
     @endif
@@ -85,15 +85,15 @@
     <div class="grid gap-8" :class="isTouchDevice ? 'xl:grid-cols-1' : 'xl:grid-cols-[420px_1fr]'">
         <div class="space-y-6">
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
-                <h2 class="text-lg font-bold text-slate-900">Crear cliente rapido</h2>
-                <p class="mt-1 text-sm text-slate-500">Si el cliente no existe, puedes registrarlo aqui mismo sin salir del modulo.</p>
+                <h2 class="text-lg font-bold text-slate-900">Crear cliente rápido</h2>
+                <p class="mt-1 text-sm text-slate-500">Si el cliente no existe, puedes registrarlo aquí mismo sin salir del módulo.</p>
 
                 <form action="{{ route('recolector.clientes.store') }}" method="POST" class="mt-6 space-y-4">
                     @csrf
                     <input name="nombre" type="text" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     <input name="nit_cedula" type="text" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     <input name="celular" type="text" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                    <input name="direccion" type="text" placeholder="Direccion" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                    <input name="direccion" type="text" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                     <button type="submit" class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
                         Guardar cliente
                     </button>
@@ -122,15 +122,15 @@
                             <input type="text" x-model="fechaIngreso" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600" readonly>
                         </div>
                         <div>
-                            <label for="fecha_entrega" class="mb-2 block text-sm font-semibold text-slate-700">Dia de entrega</label>
+                            <label for="fecha_entrega" class="mb-2 block text-sm font-semibold text-slate-700">Día de entrega</label>
                             <input id="fecha_entrega" type="date" name="fecha_entrega" value="{{ old('fecha_entrega') }}" min="{{ now()->toDateString() }}" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                            <p class="mt-1 text-xs text-slate-500">Si no eliges fecha, se programa a 3 dias contando hoy.</p>
+                            <p class="mt-1 text-xs text-slate-500">Si no eliges fecha, se programa a 3 días contando hoy.</p>
                         </div>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2" :class="isTouchDevice ? 'md:grid-cols-1' : ''">
                         <div>
-                            <label class="mb-2 block text-sm font-semibold text-slate-700">Direccion</label>
+                            <label class="mb-2 block text-sm font-semibold text-slate-700">Dirección</label>
                             <input type="text" :value="clienteActual.direccion || ''" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600" readonly>
                         </div>
                         <div>
@@ -147,7 +147,7 @@
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <h3 class="text-sm font-bold uppercase tracking-[0.22em] text-slate-500">Prendas del pedido</h3>
-                                <p class="mt-1 text-sm text-slate-500">Elige una prenda de la lista y agregala con su cantidad, valor unitario y subtotal.</p>
+                                <p class="mt-1 text-sm text-slate-500">Elige una prenda de la lista y agr?gala con su cantidad, valor unitario y subtotal.</p>
                             </div>
                             <div class="text-left lg:text-right">
                                 <p class="text-xs uppercase tracking-[0.22em] text-slate-400">Total prendas</p>
@@ -240,14 +240,14 @@
                         </div>
 
                         <div x-show="!items.length" x-cloak class="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">
-                            Aun no has agregado prendas a la factura.
+                            A?n no has agregado prendas a la factura.
                         </div>
                     </div>
 
                     <div class="rounded-3xl border border-slate-200 p-4 sm:p-5">
                         <h3 class="text-sm font-bold uppercase tracking-[0.22em] text-slate-500">Observaciones adicionales</h3>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2" :class="isTouchDevice ? 'sm:grid-cols-1' : ''">
-                            @foreach (['Faltan botones', 'Falta cinturon', 'Esta manchado', 'Esta descolorido', 'Esta roto'] as $observacion)
+                            @foreach (['Faltan botones', 'Falta cinturon', 'Est? manchado', 'Est? descolorido', 'Est? roto'] as $observacion)
                                 <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
                                     <input type="checkbox" name="observaciones[]" value="{{ $observacion }}" class="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
                                     <span>{{ $observacion }}</span>
@@ -262,7 +262,7 @@
                                 <p class="text-xs font-semibold uppercase tracking-[0.26em] text-amber-700">Resumen antes de guardar</p>
                                 <div class="mt-3 space-y-2 text-sm text-slate-700">
                                     <p><span class="font-semibold text-slate-900">Cliente:</span> <span x-text="clienteActual.nombre || 'Pendiente por seleccionar'"></span></p>
-                                    <p><span class="font-semibold text-slate-900">Numero de factura:</span> #<span x-text="formatInvoiceNumber(numeroFactura)">{{ str_pad((string) $siguienteNumeroFactura, 6, '0', STR_PAD_LEFT) }}</span></p>
+                                    <p><span class="font-semibold text-slate-900">Número de factura:</span> #<span x-text="formatInvoiceNumber(numeroFactura)">{{ str_pad((string) $siguienteNumeroFactura, 6, '0', STR_PAD_LEFT) }}</span></p>
                                     <p><span class="font-semibold text-slate-900">Valor total:</span> $ <span x-text="formatMoney(totalFactura)">0</span></p>
                                 </div>
                             </div>
@@ -284,7 +284,7 @@
                                         </div>
                                     </template>
                                     <template x-if="!resumenPrendas.length">
-                                        <p class="text-sm text-slate-500">Agrega prendas para ver aqui el resumen del pedido.</p>
+                                        <p class="text-sm text-slate-500">Agrega prendas para ver aqu? el resumen del pedido.</p>
                                     </template>
                                 </div>
                             </div>
@@ -352,7 +352,7 @@
                                         Entrega {{ optional($factura->fecha_entrega)->format('d/m/Y') }}
                                     </p>
                                     <p class="mt-1 text-sm text-slate-500">
-                                        {{ $factura->direccion ?: 'Sin direccion' }} |
+                                        {{ $factura->direccion ?: 'Sin direcci?n' }} |
                                         {{ $factura->nit_cedula ?: 'Sin documento' }} |
                                         {{ $factura->celular ?: 'Sin celular' }}
                                     </p>
@@ -394,7 +394,7 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-500">Todavia no has registrado facturas como recolector.</p>
+                        <p class="text-sm text-slate-500">Todavía no has registrado facturas como recolector.</p>
                     @endforelse
                 </div>
             </div>
@@ -518,30 +518,30 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         },
         get deviceLabel() {
             if (this.isTouchDevice && this.isMobileViewport) {
-                return 'Celular o pantalla tactil';
+                return 'Celular o pantalla táctil';
             }
 
             if (this.isTouchDevice) {
-                return 'Pantalla tactil';
+                return 'Pantalla t?ctil';
             }
 
             if (this.isMobileViewport) {
-                return 'Pantalla pequena';
+                return 'Pantalla peque?a';
             }
 
             return 'Escritorio';
         },
         get deviceMessage() {
             if (this.isTouchDevice && this.isMobileViewport) {
-                return 'La interfaz se organiza en una sola columna y con botones mas amplios para trabajar mejor desde celular.';
+                return 'La interfaz se organiza en una sola columna y con botones más amplios para trabajar mejor desde celular.';
             }
 
             if (this.isTouchDevice) {
-                return 'Se ampliaron controles y espacios para facilitar el uso en pantallas tactiles.';
+                return 'Se ampliaron controles y espacios para facilitar el uso en pantallas táctiles.';
             }
 
             if (this.isMobileViewport) {
-                return 'La vista se compacta para pantallas pequenas manteniendo todos los datos visibles.';
+                return 'La vista se compacta para pantallas pequeñas manteniendo todos los datos visibles.';
             }
 
             return 'Controles optimizados para mouse y teclado, sin perder respuesta en ventanas reducidas.';
@@ -556,3 +556,10 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
 }
 </script>
 @endsection
+
+
+
+
+
+
+

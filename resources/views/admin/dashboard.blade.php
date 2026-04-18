@@ -7,9 +7,9 @@
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Panel administrativo</p>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Gestion general del sistema</h1>
+            <h1 class="mt-2 text-3xl font-black text-slate-900">Gestión general del sistema</h1>
             <p class="mt-2 text-sm text-slate-500">
-                Administra usuarios, revisa la produccion mensual, cierra quincenas y genera el informe de cada empleado con un clic.
+                Administra usuarios, revisa la producción mensual, cierra quincenas y genera el informe de cada empleado con un clic.
             </p>
         </div>
 
@@ -66,14 +66,14 @@
         <div class="space-y-8">
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
                 <h2 class="text-lg font-bold text-slate-900">Crear usuario</h2>
-                <p class="mt-1 text-sm text-slate-500">Desde aqui defines rol, cedula, contacto y contrasena.</p>
+                <p class="mt-1 text-sm text-slate-500">Desde aquí defines rol, cédula, contacto y contraseña.</p>
 
                 <form action="{{ route('admin.usuarios.store') }}" method="POST" class="mt-6 space-y-4">
                     @csrf
 
                     <input name="name" type="text" placeholder="Nombre completo" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     <input name="email" type="email" placeholder="Correo" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                    <input name="cedula" type="text" placeholder="Cedula" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                    <input name="cedula" type="text" placeholder="Cédula" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                     <input name="contacto" type="text" placeholder="Contacto" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
 
                     <select name="rol" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
@@ -83,8 +83,8 @@
                         <option value="programador">Programador</option>
                     </select>
 
-                    <input name="password" type="password" placeholder="Contrasena" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                    <input name="password_confirmation" type="password" placeholder="Confirmar contrasena" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                    <input name="password" type="password" placeholder="Contraseña" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                    <input name="password_confirmation" type="password" placeholder="Confirmar contraseña" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
 
                     <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
                         Guardar usuario
@@ -108,7 +108,7 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-500">Aun no hay produccion registrada este mes.</p>
+                        <p class="text-sm text-slate-500">A?n no hay producción registrada este mes.</p>
                     @endforelse
                 </div>
             </div>
@@ -118,7 +118,7 @@
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
                     <h2 class="text-lg font-bold text-slate-900">Usuarios registrados</h2>
-                    <p class="mt-1 text-sm text-slate-500">Nombre, cedula, contacto y rol con opcion de editar o borrar.</p>
+                    <p class="mt-1 text-sm text-slate-500">Nombre, cédula, contacto y rol con opción de editar o borrar.</p>
                 </div>
                 <div class="space-y-4 p-6">
                     @forelse ($usuarios as $usuario)
@@ -137,12 +137,12 @@
                                         <option value="admin" @selected($usuario->obtenerRol() === 'admin')>Administrador</option>
                                         <option value="programador" @selected($usuario->obtenerRol() === 'programador')>Programador</option>
                                     </select>
-                                    <input name="password" type="password" placeholder="Nueva contrasena opcional" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                                    <input name="password_confirmation" type="password" placeholder="Confirmar nueva contrasena" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
+                                    <input name="password" type="password" placeholder="Nueva contraseña opcional" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                                    <input name="password_confirmation" type="password" placeholder="Confirmar nueva contraseña" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm md:col-span-2">
                                 </div>
                                 <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div class="text-sm text-slate-500">
-                                        {{ $usuario->name }} | {{ $usuario->cedula ?: 'Sin cedula' }} | {{ $usuario->contacto ?: 'Sin contacto' }}
+                                        {{ $usuario->name }} | {{ $usuario->cedula ?: 'Sin cédula' }} | {{ $usuario->contacto ?: 'Sin contacto' }}
                                     </div>
                                     <button class="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
                                         Guardar cambios
@@ -166,7 +166,7 @@
 
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Ultimos registros activos</h2>
+                    <h2 class="text-lg font-bold text-slate-900">?ltimos registros activos</h2>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
@@ -188,7 +188,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay produccion activa.</td>
+                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -199,7 +199,7 @@
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
                     <h2 class="text-lg font-bold text-slate-900">Quincenas cerradas</h2>
-                    <p class="mt-1 text-sm text-slate-500">Consulta periodos guardados como AÑO/MES/QUINCENA.</p>
+                    <p class="mt-1 text-sm text-slate-500">Consulta periodos guardados como AÃ‘O/MES/QUINCENA.</p>
                 </div>
                 <div class="space-y-3 p-6">
                     @forelse ($periodosCerrados as $periodo)
@@ -211,7 +211,7 @@
                             <p class="text-sm font-semibold text-emerald-700">$ {{ number_format($periodo->total_general, 0, ',', '.') }}</p>
                         </a>
                     @empty
-                        <p class="text-sm text-slate-500">Todavia no se ha cerrado ninguna quincena.</p>
+                        <p class="text-sm text-slate-500">Todavía no se ha cerrado ninguna quincena.</p>
                     @endforelse
                 </div>
             </div>
@@ -219,3 +219,6 @@
     </div>
 </div>
 @endsection
+
+
+

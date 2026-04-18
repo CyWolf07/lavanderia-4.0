@@ -14,7 +14,7 @@ class ClienteController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('clientes.index-v2', compact('clientes'));
+        return view('clientes.index', compact('clientes'));
     }
 
     public function store(Request $request)
@@ -86,3 +86,4 @@ class ClienteController extends Controller
         ]);
     }
 }
+

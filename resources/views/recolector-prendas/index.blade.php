@@ -8,7 +8,7 @@
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Recolector</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Prendas y tarifas del recolector</h1>
-            <p class="mt-2 text-sm text-slate-500">Estas prendas son independientes de las usadas en produccion de usuarios.</p>
+            <p class="mt-2 text-sm text-slate-500">Estas prendas son independientes de las usadas en producción de usuarios.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
@@ -65,10 +65,11 @@
                         </form>
                     </div>
                 @empty
-                    <p class="px-6 pb-6 text-sm text-slate-500">No hay prendas del recolector registradas todavia.</p>
+                    <p class="px-6 pb-6 text-sm text-slate-500">No hay prendas del recolector registradas todavía.</p>
                 @endforelse
             </div>
         </div>
     </div>
 </div>
 @endsection
+

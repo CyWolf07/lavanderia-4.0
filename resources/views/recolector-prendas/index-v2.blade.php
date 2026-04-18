@@ -8,7 +8,7 @@
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Recolector</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Prendas y tarifas del recolector</h1>
-            <p class="mt-2 text-sm text-slate-500">Estas prendas son independientes de produccion y aqui tambien puedes habilitarlas o inhabilitarlas.</p>
+            <p class="mt-2 text-sm text-slate-500">Estas prendas son independientes de producci?n y aqu? tambi?n puedes habilitarlas o inhabilitarlas.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
@@ -83,17 +83,18 @@
                             <form action="{{ route('recolector-prendas.destroy', $prenda) }}" method="POST">
                                 @csrf
                                 @method('DELETE')
-                                <button onclick="return confirm('Â¿Eliminar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                                <button onclick="return confirm('Ã‚Â¿Eliminar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                     Eliminar
                                 </button>
                             </form>
                         </div>
                     </div>
                 @empty
-                    <p class="px-6 pb-6 text-sm text-slate-500">No hay prendas del recolector registradas todavia.</p>
+                    <p class="px-6 pb-6 text-sm text-slate-500">No hay prendas del recolector registradas todav?a.</p>
                 @endforelse
             </div>
         </div>
     </div>
 </div>
 @endsection
+

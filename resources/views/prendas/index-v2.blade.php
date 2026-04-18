@@ -6,9 +6,9 @@
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-            <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Catalogo</p>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Gestion de prendas</h1>
-            <p class="mt-2 text-sm text-slate-500">Agrega prendas, actualiza precios y usa habilitar o inhabilitar cuando no deban aparecer en produccion.</p>
+            <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Cat?logo</p>
+            <h1 class="mt-2 text-3xl font-black text-slate-900">Gesti?n de prendas</h1>
+            <p class="mt-2 text-sm text-slate-500">Agrega prendas, actualiza precios y usa habilitar o inhabilitar cuando no deban aparecer en producci?n.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
@@ -27,7 +27,7 @@
             <form action="{{ route('prendas.store') }}" method="POST" class="mt-6 space-y-4">
                 @csrf
                 <input type="text" name="nombre" placeholder="Nombre" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                <input type="text" name="tipo" placeholder="Tipo o categoria" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                <input type="text" name="tipo" placeholder="Tipo o categor?a" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                 <input type="number" step="0.01" name="precio" placeholder="Precio" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
                     <input type="hidden" name="activo" value="0">
@@ -78,7 +78,7 @@
                         <form action="{{ route('prendas.destroy', $prenda) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button onclick="return confirm('Â¿Eliminar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                            <button onclick="return confirm('Ã‚Â¿Eliminar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                 Eliminar
                             </button>
                         </form>
@@ -86,10 +86,12 @@
                 </div>
             @empty
                 <div class="rounded-[1.75rem] bg-white p-6 text-sm text-slate-500 shadow-xl ring-1 ring-slate-200">
-                    No hay prendas registradas todavia.
+                    No hay prendas registradas todav?a.
                 </div>
             @endforelse
         </div>
     </div>
 </div>
 @endsection
+
+

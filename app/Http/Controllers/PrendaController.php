@@ -14,7 +14,7 @@ class PrendaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('prendas.index-v2', compact('prendas'));
+        return view('prendas.index', compact('prendas'));
     }
 
     public function store(Request $request)
@@ -66,3 +66,4 @@ class PrendaController extends Controller
         );
     }
 }
+
