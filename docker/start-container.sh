@@ -15,6 +15,29 @@ set -e
 
 cd /var/www/html
 
+APP_PORT="${PORT:-80}"
+
+echo "========================================"
+echo " Configurando Apache en el puerto ${APP_PORT}"
+echo "========================================"
+
+sed -ri "s/^Listen [0-9]+$/Listen ${APP_PORT}/" /etc/apache2/ports.conf
+sed -ri "s/<VirtualHost \\*:[0-9]+>/<VirtualHost *:${APP_PORT}>/" /etc/apache2/sites-available/000-default.conf
+
+echo "========================================"
+echo " Verificando variables criticas"
+echo "========================================"
+
+if [ -z "${APP_KEY:-}" ]; then
+    echo "FATAL: APP_KEY no esta configurada."
+    echo "Configura APP_KEY en Railway antes de desplegar. Puedes generarla con: php artisan key:generate --show"
+    exit 1
+fi
+
+echo "APP_ENV=${APP_ENV:-production}"
+echo "APP_DEBUG=${APP_DEBUG:-false}"
+echo "PORT=${APP_PORT}"
+
 # ── 1. Crear estructura de carpetas requeridas por Laravel ────────────────────
 # Laravel necesita estas carpetas para funcionar correctamente
 mkdir -p \
@@ -39,8 +62,33 @@ echo " Esperando a PostgreSQL..."
 echo "========================================"
 
 attempt=0
+db_driver="${DB_CONNECTION:-}"
+
+if [ -z "$db_driver" ]; then
+    if [ -n "${DATABASE_URL:-}" ] || [ -n "${DB_URL:-}" ] || [ -n "${PGHOST:-}" ]; then
+        db_driver="pgsql"
+    else
+        db_driver="sqlite"
+    fi
+fi
+
+if [ "$db_driver" = "pgsql" ]; then
+    resolved_db_host="${DB_HOST:-${PGHOST:-db}}"
+    resolved_db_port="${DB_PORT:-${PGPORT:-5432}}"
+    resolved_db_name="${DB_DATABASE:-${PGDATABASE:-postgres}}"
+
+    echo "DB_CONNECTION=pgsql"
+    echo "DB_HOST=${resolved_db_host}"
+    echo "DB_PORT=${resolved_db_port}"
+    echo "DB_DATABASE=${resolved_db_name}"
+    if [ -n "${DATABASE_URL:-}" ] || [ -n "${DB_URL:-}" ]; then
+        echo "DATABASE_URL_PRESENT=yes"
+    else
+        echo "DATABASE_URL_PRESENT=no"
+    fi
+
 until php -r '
-$url = getenv("DB_URL") ?: null;
+$url = getenv("DB_URL") ?: (getenv("DATABASE_URL") ?: null);
 $parts = [];
 $query = [];
 
@@ -55,12 +103,12 @@ if ($url) {
     parse_str($parts["query"] ?? "", $query);
 }
 
-$host     = $parts["host"] ?? (getenv("DB_HOST") ?: "db");
-$port     = (string) ($parts["port"] ?? (getenv("DB_PORT") ?: "5432"));
-$database = ltrim((string) ($parts["path"] ?? (getenv("DB_DATABASE") ?: "postgres")), "/");
-$username = urldecode((string) ($parts["user"] ?? (getenv("DB_USERNAME") ?: "postgres")));
-$password = urldecode((string) ($parts["pass"] ?? (getenv("DB_PASSWORD") ?: "")));
-$sslmode  = $query["sslmode"] ?? getenv("DB_SSLMODE") ?: null;
+$host     = $parts["host"] ?? (getenv("DB_HOST") ?: (getenv("PGHOST") ?: "db"));
+$port     = (string) ($parts["port"] ?? (getenv("DB_PORT") ?: (getenv("PGPORT") ?: "5432")));
+$database = ltrim((string) ($parts["path"] ?? (getenv("DB_DATABASE") ?: (getenv("PGDATABASE") ?: "postgres"))), "/");
+$username = urldecode((string) ($parts["user"] ?? (getenv("DB_USERNAME") ?: (getenv("PGUSER") ?: "postgres"))));
+$password = urldecode((string) ($parts["pass"] ?? (getenv("DB_PASSWORD") ?: (getenv("PGPASSWORD") ?: ""))));
+$sslmode  = $query["sslmode"] ?? getenv("DB_SSLMODE") ?: (getenv("PGSSLMODE") ?: null);
 
 $dsn = "pgsql:host={$host};port={$port};dbname={$database}";
 
@@ -93,6 +141,10 @@ done
 
 echo "PostgreSQL disponible. Continuando..."
 echo "========================================"
+else
+    echo "DB_CONNECTION=${db_driver}. No se requiere espera activa para PostgreSQL."
+    echo "========================================"
+fi
 
 # ── 4. Limpiar caché de archivos compilados ───────────────────────────────────
 # Se usa '|| true' para que NO detenga el script si falla

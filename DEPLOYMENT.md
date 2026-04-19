@@ -46,19 +46,22 @@ En el servicio web (no en la BD), ve a **"Variables"** y agrega:
 | `APP_KEY` | *(Railway lo genera automáticamente si usas `php artisan key:generate`)* |
 | `APP_LOCALE` | `es` |
 | `DB_CONNECTION` | `pgsql` |
-| `DB_HOST` | `${{Postgres.PGHOST}}` |
-| `DB_PORT` | `${{Postgres.PGPORT}}` |
-| `DB_DATABASE` | `${{Postgres.PGDATABASE}}` |
-| `DB_USERNAME` | `${{Postgres.PGUSER}}` |
-| `DB_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
-| `DB_SSLMODE` | `prefer` |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+| `PGHOST` | `${{Postgres.PGHOST}}` |
+| `PGPORT` | `${{Postgres.PGPORT}}` |
+| `PGDATABASE` | `${{Postgres.PGDATABASE}}` |
+| `PGUSER` | `${{Postgres.PGUSER}}` |
+| `PGPASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `PGSSLMODE` | `require` |
 | `SESSION_DRIVER` | `database` |
 | `CACHE_STORE` | `database` |
 | `QUEUE_CONNECTION` | `database` |
 | `VIEW_COMPILED_PATH` | `storage/framework/views-runtime` |
 | `TRUSTED_PROXIES` | `*` |
 
-> **Nota:** Las variables `${{Postgres.PGHOST}}` son referencias automáticas de Railway a la BD conectada. Las puedes seleccionar desde el desplegable de variables.
+> **Nota:** Railway expone estas variables desde el servicio PostgreSQL. La aplicación ahora acepta tanto `PG*` y `DATABASE_URL` como `DB_*`, así que no hace falta duplicarlas si enlazaste la base al servicio web.
+
+> **Puerto de Railway:** Railway inyecta una variable `PORT` dinámica para el contenedor. El script `docker/start-container.sh` ya reconfigura Apache para escuchar ese puerto antes de iniciar.
 
 ### Paso 6 — Desplegar
 

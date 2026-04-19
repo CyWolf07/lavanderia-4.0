@@ -30,12 +30,12 @@
     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-amber-700">Recolector</p>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Ingreso de factura para {{ $user->name }}</h1>
-            <p class="mt-2 max-w-3xl text-sm text-slate-500">Selecciona el cliente, agrega las prendas desde una lista y revisa el resumen completo antes de guardar la factura.</p>
+            <h1 class="mt-2 text-3xl font-black text-slate-900">Ingreso de orden de pedido para {{ $user->name }}</h1>
+            <p class="mt-2 max-w-3xl text-sm text-slate-500">Selecciona el cliente, agrega las prendas desde una lista y revisa el resumen completo antes de guardar la orden de pedido.</p>
         </div>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
             <div class="rounded-full bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900">
-                Factura #<span x-text="formatInvoiceNumber(numeroFactura)">{{ str_pad((string) $siguienteNumeroFactura, 6, '0', STR_PAD_LEFT) }}</span>
+                Orden #<span x-text="formatInvoiceNumber(numeroFactura)">{{ str_pad((string) $siguienteNumeroFactura, 6, '0', STR_PAD_LEFT) }}</span>
             </div>
             <div class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white">
                 Fecha y hora actual: {{ $fechaIngreso->format('d/m/Y H:i') }}
@@ -73,11 +73,11 @@
     @if ($clientes->isEmpty() || $prendas->isEmpty())
         <div class="rounded-[1.75rem] border border-amber-200 bg-amber-50 px-6 py-5 text-sm text-amber-900">
             @if ($clientes->isEmpty() && $prendas->isEmpty())
-                Crea al menos un cliente y espera a que administración cargue prendas activas del recolector para registrar facturas.
+                Crea al menos un cliente y espera a que administración cargue prendas activas del recolector para registrar órdenes de pedido.
             @elseif ($clientes->isEmpty())
-                Todavía no hay clientes activos. Puedes crear uno desde esta misma pantalla y luego continuar con la factura.
+                Todavía no hay clientes activos. Puedes crear uno desde esta misma pantalla y luego continuar con la orden de pedido.
             @else
-                Todavía no hay prendas activas del recolector. Administración debe habilitar al menos una para poder facturar.
+                Todavía no hay prendas activas del recolector. Administración debe habilitar al menos una para poder registrar pedidos.
             @endif
         </div>
     @endif
@@ -101,7 +101,7 @@
             </div>
 
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
-                <h2 class="text-lg font-bold text-slate-900">Datos de la factura</h2>
+                <h2 class="text-lg font-bold text-slate-900">Datos de la orden de pedido</h2>
 
                 <form action="{{ route('recolector.facturas.store') }}" method="POST" class="mt-6 space-y-5">
                     @csrf
@@ -240,7 +240,7 @@
                         </div>
 
                         <div x-show="!items.length" x-cloak class="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">
-                            Aún no has agregado prendas a la factura.
+                            Aún no has agregado prendas a la orden de pedido.
                         </div>
                     </div>
 
@@ -262,7 +262,7 @@
                                 <p class="text-xs font-semibold uppercase tracking-[0.26em] text-amber-700">Resumen antes de guardar</p>
                                 <div class="mt-3 space-y-2 text-sm text-slate-700">
                                     <p><span class="font-semibold text-slate-900">Cliente:</span> <span x-text="clienteActual.nombre || 'Pendiente por seleccionar'"></span></p>
-                                    <p><span class="font-semibold text-slate-900">Número de factura:</span> #<span x-text="formatInvoiceNumber(numeroFactura)">{{ str_pad((string) $siguienteNumeroFactura, 6, '0', STR_PAD_LEFT) }}</span></p>
+                                    <p><span class="font-semibold text-slate-900">Número de orden:</span> #<span x-text="formatInvoiceNumber(numeroFactura)">{{ str_pad((string) $siguienteNumeroFactura, 6, '0', STR_PAD_LEFT) }}</span></p>
                                     <p><span class="font-semibold text-slate-900">Valor total:</span> $ <span x-text="formatMoney(totalFactura)">0</span></p>
                                 </div>
                             </div>
@@ -294,7 +294,7 @@
                     <div class="rounded-3xl bg-slate-900 px-5 py-5 text-white">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p class="text-xs uppercase tracking-[0.25em] text-slate-300">Valor total de la factura</p>
+                                <p class="text-xs uppercase tracking-[0.25em] text-slate-300">Valor total de la orden</p>
                                 <p class="mt-2 text-3xl font-black">$ <span x-text="formatMoney(totalFactura)">0</span></p>
                             </div>
                             <div class="text-left sm:text-right">
@@ -310,7 +310,7 @@
                         :disabled="!puedeGuardarFactura"
                         {{ $clientes->isEmpty() || $prendas->isEmpty() ? 'disabled' : '' }}
                     >
-                        Guardar factura
+                        Guardar orden de pedido
                     </button>
                 </form>
             </div>
@@ -319,7 +319,7 @@
         <div class="space-y-8">
             <div class="grid gap-5 md:grid-cols-3" :class="isTouchDevice ? 'md:grid-cols-1' : ''">
                 <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
-                    <p class="text-sm uppercase tracking-[0.25em] text-slate-400">Facturas registradas</p>
+                    <p class="text-sm uppercase tracking-[0.25em] text-slate-400">Órdenes registradas</p>
                     <p class="mt-3 text-4xl font-black text-slate-900">{{ $facturas->count() }}</p>
                 </div>
                 <div class="rounded-[1.75rem] bg-amber-500 p-6 text-white shadow-xl">
@@ -334,8 +334,8 @@
 
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Facturas recientes</h2>
-                    <p class="mt-1 text-sm text-slate-500">Cada factura conserva el cliente, fecha de entrega, observaciones y detalle de prendas.</p>
+                    <h2 class="text-lg font-bold text-slate-900">Órdenes recientes</h2>
+                    <p class="mt-1 text-sm text-slate-500">Cada orden de pedido conserva el cliente, fecha de entrega, observaciones y detalle de prendas.</p>
                 </div>
 
                 <div class="space-y-4 p-6">
@@ -344,7 +344,7 @@
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                                        Factura #{{ str_pad((string) $factura->id, 6, '0', STR_PAD_LEFT) }}
+                                        Orden #{{ str_pad((string) $factura->id, 6, '0', STR_PAD_LEFT) }}
                                     </p>
                                     <p class="text-lg font-bold text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</p>
                                     <p class="mt-1 text-sm text-slate-500">
@@ -394,7 +394,7 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-500">Todavía no has registrado facturas como recolector.</p>
+                        <p class="text-sm text-slate-500">Todavía no has registrado órdenes de pedido como recolector.</p>
                     @endforelse
                 </div>
             </div>
