@@ -1,5 +1,9 @@
 <?php
 
 it('returns a successful response for the healthcheck endpoint', function () {
-    $this->get('/up')->assertOk();
+    $this->get('/up')
+        ->assertOk()
+        ->assertExactJson([
+            'success' => true,
+        ]);
 });
