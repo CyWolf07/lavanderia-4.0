@@ -100,6 +100,20 @@ it('keeps explicit db variables above railway fallbacks', function () {
         ->and($config['connections']['pgsql']['sslmode'])->toBe('prefer');
 });
 
+it('points railway healthchecks to the laravel up endpoint', function () {
+    $config = json_decode(file_get_contents(__DIR__.'/../../railway.json'), true, flags: JSON_THROW_ON_ERROR);
+
+    expect($config['deploy']['startCommand'] ?? null)->toBe('start-container')
+        ->and($config['deploy']['healthcheckPath'] ?? null)->toBe('/up');
+});
+
+it('keeps local env files out of the docker build context', function () {
+    $dockerignore = file_get_contents(__DIR__.'/../../.dockerignore');
+
+    expect($dockerignore)->toContain('.env')
+        ->and($dockerignore)->toContain('.env.*');
+});
+
 function setDeploymentEnv(string $key, ?string $value): void
 {
     if ($value === null) {

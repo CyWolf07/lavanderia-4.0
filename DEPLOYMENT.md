@@ -43,7 +43,7 @@ En el servicio web (no en la BD), ve a **"Variables"** y agrega:
 | `APP_NAME` | `Lavanderia Exclusiva` |
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
-| `APP_KEY` | *(Railway lo genera automáticamente si usas `php artisan key:generate`)* |
+| `APP_KEY` | Pega una clave generada con `php artisan key:generate --show` |
 | `APP_LOCALE` | `es` |
 | `DB_CONNECTION` | `pgsql` |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
@@ -62,6 +62,8 @@ En el servicio web (no en la BD), ve a **"Variables"** y agrega:
 > **Nota:** Railway expone estas variables desde el servicio PostgreSQL. La aplicación ahora acepta tanto `PG*` y `DATABASE_URL` como `DB_*`, así que no hace falta duplicarlas si enlazaste la base al servicio web.
 
 > **Puerto de Railway:** Railway inyecta una variable `PORT` dinámica para el contenedor. El script `docker/start-container.sh` ya reconfigura Apache para escuchar ese puerto antes de iniciar.
+>
+> **Healthcheck de Railway:** Debe apuntar a `/up`, que es el endpoint de salud configurado en `bootstrap/app.php` y `railway.json`.
 
 ### Paso 6 — Desplegar
 

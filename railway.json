@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "start-container",
-    "healthcheckPath": "/health",
+    "healthcheckPath": "/up",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 5
