@@ -1,70 +1,152 @@
-# Deployment Guide
+# 🚀 Guía de Despliegue — Lavandería Exclusiva
 
-## Importante
+## Opción A: Railway.app (Recomendado — Gratuito)
 
-Este proyecto no puede publicarse en GitHub Pages porque Laravel necesita ejecutar PHP y conectarse a PostgreSQL. GitHub Pages solo publica sitios estaticos.
+Railway ofrece $5 USD de crédito mensual gratis que cubre esta app + PostgreSQL.
 
-Documentacion oficial:
+### Paso 1 — Subir cambios al repositorio GitHub
 
-- GitHub Pages: https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages
-- Laravel deployment: https://laravel.com/docs/12.x/deployment
+```bash
+# Desde la carpeta del proyecto en tu PC
+cd e:\Lavanderia_Registro
 
-## Estado del repositorio
-
-El remoto `origin` ya esta configurado en:
-
-`https://github.com/CyWolf07/lavanderia-4.0.git`
-
-## Archivos de despliegue incluidos
-
-- `Dockerfile`
-- `.dockerignore`
-- `docker/start-container.sh`
-
-## Variables de entorno necesarias
-
-```env
-APP_ENV=production
-APP_DEBUG=false
-APP_KEY=
-
-DB_CONNECTION=pgsql
-DB_URL=
-DB_SCHEMA=public
-DB_SSLMODE=prefer
+git add .
+git commit -m "fix: correccion de encoding, rutas PQRS completas y config Railway"
+git push origin main
 ```
 
-## Opcion recomendada: Render
+### Paso 2 — Crear cuenta en Railway
 
-La forma mas conveniente para este proyecto es Render con despliegue Docker desde GitHub. Render soporta despliegue automatico desde commits y health checks, y el repo ya queda preparado con `render.yaml`.
+1. Ve a **https://railway.app**
+2. Haz clic en **"Start a New Project"**
+3. Selecciona **"Login with GitHub"** (conecta tu cuenta de GitHub)
 
-Pasos:
+### Paso 3 — Crear el proyecto
 
-1. Sube este proyecto a GitHub.
-2. En Render, conecta tu cuenta de GitHub.
-3. Crea un nuevo Blueprint o Web Service desde el repositorio.
-4. Si usas Blueprint, Render leera `render.yaml`.
-5. Si usas el `render.yaml` actualizado, Render crea la base de datos y conecta `DB_URL` automaticamente.
-6. Despliega el servicio.
+1. Haz clic en **"New Project"**
+2. Selecciona **"Deploy from GitHub repo"**
+3. Elige el repositorio: `CyWolf07/lavanderia-4.0`
+4. Railway detecta automáticamente el `railway.json` y el `Dockerfile`
 
-El archivo `render.yaml` ya deja configurado:
+### Paso 4 — Agregar la base de datos PostgreSQL
 
-- `runtime: docker`
-- despliegue automatico desde `main`
-- health check en `/up`
-- base de datos Render Postgres administrada
-- `APP_KEY` generado automaticamente
-- conexion privada interna entre app y base de datos
+1. En el panel del proyecto, haz clic en **"+ New"**
+2. Selecciona **"Database" → "Add PostgreSQL"**
+3. Railway crea automáticamente la BD y genera las variables de conexión
 
-## Pasos para publicarlo
+### Paso 5 — Configurar variables de entorno
 
-1. Haz commit y push del proyecto a GitHub.
-2. En Render, crea un nuevo Blueprint desde el repositorio.
-3. Revisa que el plan del servicio web y la base de datos te parezcan correctos.
-4. Confirma la creacion del servicio `lavanderia-web` y la base `lavanderia-db`.
-5. Espera el primer despliegue. El contenedor ejecuta migraciones y seeders automaticamente al iniciar.
-6. Abre la URL publica `onrender.com` que Render asigne al servicio.
+En el servicio web (no en la BD), ve a **"Variables"** y agrega:
 
-## Nota sobre la base de datos
+| Variable | Valor |
+|---|---|
+| `APP_NAME` | `Lavanderia Exclusiva` |
+| `APP_ENV` | `production` |
+| `APP_DEBUG` | `false` |
+| `APP_KEY` | *(Railway lo genera automáticamente si usas `php artisan key:generate`)* |
+| `APP_LOCALE` | `es` |
+| `DB_CONNECTION` | `pgsql` |
+| `DB_HOST` | `${{Postgres.PGHOST}}` |
+| `DB_PORT` | `${{Postgres.PGPORT}}` |
+| `DB_DATABASE` | `${{Postgres.PGDATABASE}}` |
+| `DB_USERNAME` | `${{Postgres.PGUSER}}` |
+| `DB_PASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `DB_SSLMODE` | `prefer` |
+| `SESSION_DRIVER` | `database` |
+| `CACHE_STORE` | `database` |
+| `QUEUE_CONNECTION` | `database` |
+| `VIEW_COMPILED_PATH` | `storage/framework/views-runtime` |
+| `TRUSTED_PROXIES` | `*` |
 
-La configuracion actual esta preparada para usar Render Postgres como base principal en produccion. Si prefieres mantener una base externa como Supabase, puedes reemplazar `DB_URL` en Render por la URL externa de esa base.
+> **Nota:** Las variables `${{Postgres.PGHOST}}` son referencias automáticas de Railway a la BD conectada. Las puedes seleccionar desde el desplegable de variables.
+
+### Paso 6 — Desplegar
+
+1. Railway despliega automáticamente al detectar cambios en `main`
+2. El script `docker/start-container.sh` ejecuta `php artisan migrate --seed` al arrancar
+3. En 2-3 minutos la app estará en un dominio tipo: `https://lavanderia-exclusiva.up.railway.app`
+
+### Paso 7 — Obtener dominio público
+
+1. En el servicio, ve a **"Settings" → "Networking"**
+2. Haz clic en **"Generate Domain"**
+3. ¡Listo! Tu URL quedará activa permanentemente
+
+---
+
+## Opción B: Docker local (Para desarrollo)
+
+```bash
+# Desde la raíz del proyecto
+docker compose up --build
+
+# La app queda en: http://localhost:8080
+# PostgreSQL en: localhost:5433
+```
+
+El archivo `.env.docker` ya está configurado con las credenciales locales de Docker.
+
+---
+
+## 🗄️ Backup de la base de datos
+
+### En Railway (vía CLI)
+
+```bash
+# Instalar Railway CLI
+npm install -g @railway/cli
+
+# Conectar tu proyecto
+railway login
+railway link
+
+# Ejecutar el comando de backup
+railway run php artisan db:backup
+```
+
+El archivo SQL se guarda en `storage/app/backups/backup_YYYY-MM-DD_HHmmss.sql`
+
+### En local con Docker
+
+```bash
+# La app debe estar corriendo con docker compose up
+docker exec lavanderia-web php artisan db:backup
+```
+
+### Restaurar un backup
+
+```bash
+# Conectar al PostgreSQL de Railway directamente
+railway connect Postgres
+
+# O con psql manual:
+psql -h HOST -U USER -d DATABASE < storage/app/backups/backup_FECHA.sql
+```
+
+---
+
+## ✅ Verificación rápida post-despliegue
+
+```bash
+# Ver rutas registradas
+railway run php artisan route:list
+
+# Ver estado de migraciones
+railway run php artisan migrate:status
+
+# Verificar que el sistema responde (debe retornar 200)
+curl https://TU-URL.up.railway.app/up
+```
+
+---
+
+## 🔧 Estructura de roles del sistema
+
+| Rol | Módulo accesible |
+|---|---|
+| `usuario` | Producción personal (sin precios) |
+| `recolector` | Módulo de facturas + crear clientes |
+| `admin` | Panel completo (usuarios, prendas, clientes, reportes) |
+| `programador` | Todo lo del admin + eliminar historial |
+
+El primer usuario creado debe ser `admin` o `programador` para poder gestionar el sistema.

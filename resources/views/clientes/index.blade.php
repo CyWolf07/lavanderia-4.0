@@ -1,20 +1,29 @@
+{{-- ====================================================
+     Vista: Gestión de Clientes (Solo Admin/Programador)
+     Permite registrar, editar y eliminar clientes que
+     luego el recolector puede seleccionar al facturar.
+     ====================================================  --}}
 @extends('layouts.app')
 
 @section('title', 'Clientes')
 
 @section('content')
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+
+    {{-- Encabezado de la sección --}}
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Clientes</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Gestión de clientes</h1>
             <p class="mt-2 text-sm text-slate-500">Registra los clientes que luego podrá seleccionar el rol recolector al crear una factura.</p>
         </div>
+        {{-- Botón de regreso al panel --}}
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
         </a>
     </div>
 
+    {{-- Mensaje de éxito al realizar una acción --}}
     @if (session('success'))
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
             {{ session('success') }}
@@ -22,10 +31,13 @@
     @endif
 
     <div class="grid gap-8 xl:grid-cols-[380px_1fr]">
+
+        {{-- Formulario: Crear nuevo cliente --}}
         <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
             <h2 class="text-lg font-bold text-slate-900">Nuevo cliente</h2>
             <form action="{{ route('clientes.store') }}" method="POST" class="mt-6 space-y-4">
                 @csrf
+                {{-- Datos básicos del cliente --}}
                 <input type="text" name="nombre" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="nit_cedula" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="celular" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
@@ -36,6 +48,7 @@
             </form>
         </div>
 
+        {{-- Listado de clientes registrados con opción de editar/eliminar --}}
         <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
             <div class="border-b border-slate-200 px-6 py-5">
                 <h2 class="text-lg font-bold text-slate-900">Clientes registrados</h2>
@@ -43,6 +56,8 @@
             <div class="space-y-4 p-6">
                 @forelse ($clientes as $cliente)
                     <div class="rounded-[1.5rem] border border-slate-200 p-4">
+
+                        {{-- Formulario de actualización del cliente --}}
                         <form action="{{ route('clientes.update', $cliente) }}" method="POST" class="grid gap-3 md:grid-cols-2">
                             @csrf
                             @method('PUT')
@@ -58,6 +73,7 @@
                             </div>
                         </form>
 
+                        {{-- Formulario de eliminación del cliente --}}
                         <form action="{{ route('clientes.destroy', $cliente) }}" method="POST" class="mt-3">
                             @csrf
                             @method('DELETE')
@@ -67,12 +83,11 @@
                         </form>
                     </div>
                 @empty
-                    <p class="px-6 pb-6 text-sm text-slate-500">No hay clientes registrados todav?a.</p>
+                    {{-- Estado vacío: sin clientes registrados --}}
+                    <p class="px-6 pb-6 text-sm text-slate-500">No hay clientes registrados todavía.</p>
                 @endforelse
             </div>
         </div>
     </div>
 </div>
 @endsection
-
-

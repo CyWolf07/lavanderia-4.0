@@ -77,7 +77,7 @@
             @elseif ($clientes->isEmpty())
                 Todavía no hay clientes activos. Puedes crear uno desde esta misma pantalla y luego continuar con la factura.
             @else
-                Todavía no hay prendas activas del recolector. Administraci?n debe habilitar al menos una para poder facturar.
+                Todavía no hay prendas activas del recolector. Administración debe habilitar al menos una para poder facturar.
             @endif
         </div>
     @endif
@@ -147,7 +147,7 @@
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <h3 class="text-sm font-bold uppercase tracking-[0.22em] text-slate-500">Prendas del pedido</h3>
-                                <p class="mt-1 text-sm text-slate-500">Elige una prenda de la lista y agr?gala con su cantidad, valor unitario y subtotal.</p>
+                                <p class="mt-1 text-sm text-slate-500">Elige una prenda de la lista y agrégala con su cantidad, valor unitario y subtotal.</p>
                             </div>
                             <div class="text-left lg:text-right">
                                 <p class="text-xs uppercase tracking-[0.22em] text-slate-400">Total prendas</p>
@@ -240,14 +240,14 @@
                         </div>
 
                         <div x-show="!items.length" x-cloak class="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-5 text-sm text-slate-500">
-                            A?n no has agregado prendas a la factura.
+                            Aún no has agregado prendas a la factura.
                         </div>
                     </div>
 
                     <div class="rounded-3xl border border-slate-200 p-4 sm:p-5">
                         <h3 class="text-sm font-bold uppercase tracking-[0.22em] text-slate-500">Observaciones adicionales</h3>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2" :class="isTouchDevice ? 'sm:grid-cols-1' : ''">
-                            @foreach (['Faltan botones', 'Falta cinturon', 'Est? manchado', 'Est? descolorido', 'Est? roto'] as $observacion)
+                            @foreach (['Faltan botones', 'Falta cinturón', 'Está manchado', 'Está descolorido', 'Está roto'] as $observacion)
                                 <label class="flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-700">
                                     <input type="checkbox" name="observaciones[]" value="{{ $observacion }}" class="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500">
                                     <span>{{ $observacion }}</span>
@@ -284,7 +284,7 @@
                                         </div>
                                     </template>
                                     <template x-if="!resumenPrendas.length">
-                                        <p class="text-sm text-slate-500">Agrega prendas para ver aqu? el resumen del pedido.</p>
+                                        <p class="text-sm text-slate-500">Agrega prendas para ver aquí el resumen del pedido.</p>
                                     </template>
                                 </div>
                             </div>
@@ -352,7 +352,7 @@
                                         Entrega {{ optional($factura->fecha_entrega)->format('d/m/Y') }}
                                     </p>
                                     <p class="mt-1 text-sm text-slate-500">
-                                        {{ $factura->direccion ?: 'Sin direcci?n' }} |
+                                        {{ $factura->direccion ?: 'Sin dirección' }} |
                                         {{ $factura->nit_cedula ?: 'Sin documento' }} |
                                         {{ $factura->celular ?: 'Sin celular' }}
                                     </p>
@@ -522,11 +522,11 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
             }
 
             if (this.isTouchDevice) {
-                return 'Pantalla t?ctil';
+                return 'Pantalla táctil';
             }
 
             if (this.isMobileViewport) {
-                return 'Pantalla peque?a';
+                return 'Pantalla pequeña';
             }
 
             return 'Escritorio';
