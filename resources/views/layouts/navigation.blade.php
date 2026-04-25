@@ -25,7 +25,11 @@
                     @endif
                     @if (auth()->user()->tieneRol('admin', 'programador'))
                         <a href="{{ route('admin.dashboard') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('admin.*') || request()->routeIs('prendas.*') || request()->routeIs('clientes.*') || request()->routeIs('recolector-prendas.*') ? 'bg-slate-900 text-white shadow-lg shadow-slate-200/70' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-800' }}">
+                            @php($alertasIncongruencia = auth()->user()->unreadNotifications()->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')->count())
                             Panel Admin
+                            @if ($alertasIncongruencia > 0)
+                                <span class="ml-2 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">{{ $alertasIncongruencia }}</span>
+                            @endif
                         </a>
                     @endif
                     <a href="{{ route('profile.edit') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('profile.*') ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200 shadow-sm shadow-emerald-100/70' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-800' }}">
@@ -73,7 +77,13 @@
                     <a href="{{ route('recolector.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('recolector.*') ? 'bg-amber-100 text-amber-900 ring-1 ring-amber-200' : 'text-slate-700 hover:bg-amber-50 hover:text-amber-800' }}">Recolector</a>
                 @endif
                 @if (auth()->user()->tieneRol('admin', 'programador'))
-                    <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.*') || request()->routeIs('prendas.*') || request()->routeIs('clientes.*') || request()->routeIs('recolector-prendas.*') ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800' }}">Panel Admin</a>
+                    <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.*') || request()->routeIs('prendas.*') || request()->routeIs('clientes.*') || request()->routeIs('recolector-prendas.*') ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800' }}">
+                        @php($alertasIncongruenciaMobile = auth()->user()->unreadNotifications()->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')->count())
+                        Panel Admin
+                        @if ($alertasIncongruenciaMobile > 0)
+                            <span class="ml-2 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">{{ $alertasIncongruenciaMobile }}</span>
+                        @endif
+                    </a>
                 @endif
                 <a href="{{ route('profile.edit') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('profile.*') ? 'bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200' : 'text-slate-700 hover:bg-emerald-50 hover:text-emerald-800' }}">Perfil</a>
                 <form method="POST" action="{{ route('logout') }}" class="pt-2">

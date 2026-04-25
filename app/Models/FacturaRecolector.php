@@ -48,4 +48,9 @@ class FacturaRecolector extends Model
     {
         return $this->hasMany(FacturaRecolectorDetalle::class, 'factura_recolector_id');
     }
+
+    public function incongruencias()
+    {
+        return $this->hasMany(IncongruenciaRecolector::class, 'factura_recolector_id');
+    }
 }

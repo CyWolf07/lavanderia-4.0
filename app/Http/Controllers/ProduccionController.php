@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FacturaRecolector;
+use App\Models\Gasto;
 use App\Models\HistorialProduccion;
 use App\Models\Prenda;
 use App\Models\Produccion;
@@ -124,6 +126,8 @@ class ProduccionController extends Controller
 
     public function reportePeriodo(string $periodo)
     {
+        [$inicioPeriodo, $finPeriodo] = $this->rangoParaPeriodo($periodo);
+
         $registros = HistorialProduccion::with('user')
             ->where('periodo', $periodo)
             ->orderBy('user_id')
@@ -133,13 +137,52 @@ class ProduccionController extends Controller
 
         abort_if($registros->isEmpty(), 404);
 
+        $totalFacturasPeriodo = FacturaRecolector::query()
+            ->whereBetween('fecha_ingreso', [$inicioPeriodo, $finPeriodo])
+            ->sum('total');
+        $gastosPeriodo = Gasto::query()
+            ->where('periodo', $periodo)
+            ->sum('monto');
+
         return view('admin.reporte-periodo', [
             'periodo' => $periodo,
             'registrosPorUsuario' => $registros->groupBy('user_id'),
             'totalGeneral' => $registros->sum('total'),
             'totalPrendas' => $registros->sum('cantidad'),
+            'totalFacturasPeriodo' => $totalFacturasPeriodo,
+            'gastosPeriodo' => $gastosPeriodo,
+            'reportePagoPeriodo' => $totalFacturasPeriodo - $gastosPeriodo,
             'autoPrint' => request()->boolean('imprimir'),
         ]);
+    }
+
+    private function rangoParaPeriodo(string $periodo): array
+    {
+        preg_match('/^(\d{4})\/(\d{2})\/QUINCENA([12])$/', $periodo, $matches);
+
+        if (count($matches) !== 4) {
+            $ahora = now();
+
+            return [$ahora->copy()->startOfMonth()->startOfDay(), $ahora->copy()->endOfMonth()->endOfDay()];
+        }
+
+        $anio = (int) $matches[1];
+        $mes = (int) $matches[2];
+        $quincena = (int) $matches[3];
+
+        $base = Carbon::create($anio, $mes, 1);
+
+        if ($quincena === 1) {
+            return [
+                $base->copy()->startOfMonth()->startOfDay(),
+                $base->copy()->day(15)->endOfDay(),
+            ];
+        }
+
+        return [
+            $base->copy()->day(16)->startOfDay(),
+            $base->copy()->endOfMonth()->endOfDay(),
+        ];
     }
 }
 

@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
             <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Total general</p>
             <p class="mt-3 text-4xl font-black">$ {{ number_format($totalGeneral, 0, ',', '.') }}</p>
@@ -28,6 +28,18 @@
         <div class="rounded-[1.75rem] bg-sky-600 p-6 text-white shadow-xl">
             <p class="text-sm uppercase tracking-[0.25em] text-sky-100">Prendas registradas</p>
             <p class="mt-3 text-4xl font-black">{{ $totalPrendas }}</p>
+        </div>
+        <div class="rounded-[1.75rem] bg-slate-900 p-6 text-white shadow-xl">
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Facturas metidas</p>
+            <p class="mt-3 text-3xl font-black">$ {{ number_format($totalFacturasPeriodo, 0, ',', '.') }}</p>
+        </div>
+        <div class="rounded-[1.75rem] bg-rose-600 p-6 text-white shadow-xl">
+            <p class="text-sm uppercase tracking-[0.25em] text-rose-100">Gastos</p>
+            <p class="mt-3 text-3xl font-black">$ {{ number_format($gastosPeriodo, 0, ',', '.') }}</p>
+        </div>
+        <div class="rounded-[1.75rem] bg-amber-500 p-6 text-white shadow-xl">
+            <p class="text-sm uppercase tracking-[0.25em] text-amber-100">Reporte de pago</p>
+            <p class="mt-3 text-3xl font-black">$ {{ number_format($reportePagoPeriodo, 0, ',', '.') }}</p>
         </div>
     </div>
 

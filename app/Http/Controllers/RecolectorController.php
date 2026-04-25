@@ -4,7 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use App\Models\FacturaRecolector;
+use App\Models\Gasto;
+use App\Models\IncongruenciaRecolector;
 use App\Models\RecolectorPrenda;
+use App\Models\User;
+use App\Notifications\IncongruenciaRecolectorDetectada;
+use App\Services\FacturaRecolectorAuditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,8 +18,16 @@ use Illuminate\Validation\ValidationException;
 
 class RecolectorController extends Controller
 {
+    public function __construct(private readonly FacturaRecolectorAuditService $auditService)
+    {
+    }
+
     public function index()
     {
+        $user = Auth::user();
+        $periodoActual = Gasto::periodoDesdeFecha(now());
+        [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
+
         $clientes = Cliente::activos()->orderBy('nombre')->get();
         $prendas = RecolectorPrenda::activas()->orderBy('nombre')->get();
         $siguienteNumeroFactura = ((int) FacturaRecolector::max('id')) + 1;
@@ -25,15 +38,37 @@ class RecolectorController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $totalFacturasQuincena = FacturaRecolector::query()
+            ->where('recolector_id', $user->id)
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->sum('total');
+
+        $gastosQuincena = Gasto::query()
+            ->where('user_id', $user->id)
+            ->where('periodo', $periodoActual['periodo'])
+            ->sum('monto');
+
+        $gastosRecientes = Gasto::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->take(6)
+            ->get();
+
         return view('recolector.index', [
             'clientes' => $clientes,
             'prendas' => $prendas,
             'facturas' => $facturas,
-            'user' => Auth::user(),
+            'user' => $user,
             'fechaIngreso' => now(),
             'clientePreseleccionado' => session('cliente_creado_id'),
-            'puedeEditarPrecios' => Auth::user()->puedeEditarPrecios(),
+            'puedeEditarPrecios' => $user->puedeEditarPrecios(),
             'siguienteNumeroFactura' => $siguienteNumeroFactura,
+            'periodoActual' => $periodoActual['periodo'],
+            'totalFacturasQuincena' => $totalFacturasQuincena,
+            'gastosQuincena' => $gastosQuincena,
+            'reportePagoQuincena' => $totalFacturasQuincena - $gastosQuincena,
+            'gastosRecientes' => $gastosRecientes,
         ]);
     }
 
@@ -149,6 +184,8 @@ class RecolectorController extends Controller
             ]);
 
             $factura->detalles()->createMany($detalles->all());
+
+            $this->registrarIncongruencias($factura);
         });
 
         return redirect()->route('recolector.index')->with('success', 'Factura del recolector registrada correctamente.');
@@ -162,5 +199,53 @@ class RecolectorController extends Controller
 
         return filter_var($item['selected'] ?? false, FILTER_VALIDATE_BOOLEAN)
             || in_array(($item['selected'] ?? null), ['1', 1, true, 'true', 'on'], true);
+    }
+
+    private function rangoQuincenaActual(): array
+    {
+        $hoy = now();
+
+        if ($hoy->day <= 15) {
+            return [
+                $hoy->copy()->startOfMonth()->startOfDay(),
+                $hoy->copy()->startOfMonth()->day(15)->endOfDay(),
+            ];
+        }
+
+        return [
+            $hoy->copy()->startOfMonth()->day(16)->startOfDay(),
+            $hoy->copy()->endOfMonth()->endOfDay(),
+        ];
+    }
+
+    private function registrarIncongruencias(FacturaRecolector $factura): void
+    {
+        $incongruencias = $this->auditService->detectarIncongruencias($factura);
+
+        if ($incongruencias === []) {
+            return;
+        }
+
+        $admins = User::query()
+            ->whereIn('rol', ['admin', 'programador'])
+            ->where('activo', true)
+            ->get();
+
+        foreach ($incongruencias as $dato) {
+            $registro = IncongruenciaRecolector::create([
+                'factura_recolector_id' => $factura->id,
+                'recolector_id' => $factura->recolector_id,
+                'cliente_id' => $factura->cliente_id,
+                'titulo' => $dato['titulo'],
+                'detalle' => $dato['detalle'],
+                'estado' => 'pendiente',
+                'detectada_en' => now(),
+            ]);
+
+            $registro->loadMissing('recolector');
+            foreach ($admins as $admin) {
+                $admin->notify(new IncongruenciaRecolectorDetectada($registro));
+            }
+        }
     }
 }

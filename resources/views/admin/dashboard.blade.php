@@ -35,6 +35,9 @@
             <a href="{{ route('recolector-prendas.index') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                 Prendas recolector
             </a>
+            <a href="{{ route('admin.incongruencias.index') }}" class="rounded-full border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-100">
+                Informe incongruencias
+            </a>
             {{-- Imprimir resumen de quincena directamente desde el navegador --}}
             <button onclick="window.print()" class="rounded-full border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100">
                 Imprimir resumen
@@ -78,6 +81,99 @@
         <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
             <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Ingreso activo</p>
             <p class="mt-3 text-4xl font-black">$ {{ number_format($ingresosTotales, 0, ',', '.') }}</p>
+        </div>
+    </div>
+
+    <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900">Gastos y reporte de pago quincenal</h2>
+                <p class="mt-1 text-sm text-slate-500">Disponible para admin y programador. Fórmula: total facturas metidas - gastos = reporte de pago.</p>
+                <p class="mt-2 text-xs uppercase tracking-[0.22em] text-slate-400">{{ $periodoActual }}</p>
+            </div>
+            <form action="{{ route('admin.gastos.store') }}" method="POST" class="grid w-full max-w-xl gap-3 sm:grid-cols-[1fr_180px_auto]">
+                @csrf
+                <input name="concepto" type="text" placeholder="Concepto del gasto" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                <input name="monto" type="number" min="0.01" step="0.01" placeholder="Monto" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                <button class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">Registrar gasto</button>
+            </form>
+        </div>
+
+        <div class="mt-5 grid gap-3 md:grid-cols-3">
+            <div class="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+                <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Facturas quincena</p>
+                <p class="mt-2 text-2xl font-black text-slate-900">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
+            </div>
+            <div class="rounded-2xl bg-rose-50 px-4 py-4 ring-1 ring-rose-200">
+                <p class="text-xs uppercase tracking-[0.22em] text-rose-600">Gastos quincena</p>
+                <p class="mt-2 text-2xl font-black text-rose-700">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-200">
+                <p class="text-xs uppercase tracking-[0.22em] text-emerald-600">Reporte de pago</p>
+                <p class="mt-2 text-2xl font-black text-emerald-700">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
+            </div>
+        </div>
+
+        <div class="mt-4 rounded-2xl border border-slate-200">
+            <div class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">Últimos gastos del periodo</div>
+            <div class="divide-y divide-slate-100">
+                @forelse ($gastosRecientes as $gasto)
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                        <div>
+                            <p class="font-semibold text-slate-900">{{ $gasto->concepto }}</p>
+                            <p class="text-slate-500">{{ $gasto->user->name ?? 'Usuario eliminado' }} | {{ optional($gasto->fecha)->format('d/m/Y') }}</p>
+                        </div>
+                        <p class="font-semibold text-rose-700">$ {{ number_format($gasto->monto, 0, ',', '.') }}</p>
+                    </div>
+                @empty
+                    <p class="px-4 py-4 text-sm text-slate-500">No hay gastos registrados en esta quincena.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <div class="grid gap-6 xl:grid-cols-2">
+        <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <h2 class="text-lg font-bold text-slate-900">Notificaciones de incongruencias</h2>
+                <p class="mt-1 text-sm text-slate-500">Se generan automáticamente cuando el sistema detecta datos que no concuerdan.</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @forelse ($notificacionesIncongruencias as $notificacion)
+                    <div class="px-6 py-4">
+                        <p class="text-sm font-semibold text-rose-700">{{ $notificacion->data['titulo'] ?? 'Incongruencia detectada' }}</p>
+                        <p class="mt-1 text-sm text-slate-700">{{ $notificacion->data['detalle'] ?? '' }}</p>
+                        <p class="mt-1 text-xs text-slate-500">Usuario: {{ $notificacion->data['recolector'] ?? 'No disponible' }}</p>
+                        <form action="{{ route('admin.notificaciones.read', $notificacion->id) }}" method="POST" class="mt-2">
+                            @csrf
+                            @method('PATCH')
+                            <button class="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                Marcar como leída
+                            </button>
+                        </form>
+                    </div>
+                @empty
+                    <p class="px-6 py-6 text-sm text-slate-500">No hay notificaciones pendientes.</p>
+                @endforelse
+            </div>
+        </div>
+
+        <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <h2 class="text-lg font-bold text-slate-900">Incongruencias pendientes</h2>
+                <p class="mt-1 text-sm text-slate-500">Nombre del usuario, título del error y detalle para corrección rápida.</p>
+            </div>
+            <div class="divide-y divide-slate-100">
+                @forelse ($incongruenciasPendientes as $item)
+                    <div class="px-6 py-4">
+                        <p class="text-sm font-semibold text-slate-900">{{ $item->recolector->name ?? 'Recolector eliminado' }} | Factura #{{ str_pad((string) $item->factura_recolector_id, 6, '0', STR_PAD_LEFT) }}</p>
+                        <p class="mt-1 text-sm font-semibold text-rose-700">{{ $item->titulo }}</p>
+                        <p class="mt-1 text-sm text-slate-700">{{ $item->detalle }}</p>
+                    </div>
+                @empty
+                    <p class="px-6 py-6 text-sm text-slate-500">No hay incongruencias pendientes.</p>
+                @endforelse
+            </div>
         </div>
     </div>
 

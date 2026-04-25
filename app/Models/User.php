@@ -78,6 +78,16 @@ class User extends Authenticatable
         return $this->hasMany(FacturaRecolector::class, 'recolector_id');
     }
 
+    public function gastos()
+    {
+        return $this->hasMany(Gasto::class);
+    }
+
+    public function incongruenciasRecolector()
+    {
+        return $this->hasMany(IncongruenciaRecolector::class, 'recolector_id');
+    }
+
     public function obtenerRol(): string
     {
         if (! empty($this->rol)) {

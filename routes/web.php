@@ -31,6 +31,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\GastoController;
 use App\Http\Controllers\PqrsController;
 use App\Http\Controllers\PrendaController;
 use App\Http\Controllers\ProduccionController;
@@ -130,6 +131,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::get('/',         [RecolectorController::class,  'index'])->name('recolector.index');         // Ver facturas y formulario
         Route::post('/clientes',[ClienteController::class,     'storeFromRecolector'])->name('recolector.clientes.store'); // Crear cliente rápido
         Route::post('/facturas',[RecolectorController::class,  'store'])->name('recolector.facturas.store'); // Guardar factura nueva
+        Route::post('/gastos',  [GastoController::class,       'storeFromRecolector'])->name('recolector.gastos.store'); // Guardar gasto de quincena
     });
 
     // ── MÓDULO PQRS (Peticiones, Quejas, Reclamos y Sugerencias) ──────────────
@@ -189,6 +191,9 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
         ->where('periodo', '.*')              // Permite el formato AÑO/MES/QUINCENA con slash
         ->name('admin.reportes.periodo');
     Route::get('/reportes-impresion', [AdminController::class, 'printReports'])->name('admin.reportes.impresion');
+    Route::post('/gastos', [GastoController::class, 'storeFromAdmin'])->name('admin.gastos.store');
+    Route::get('/incongruencias', [AdminController::class, 'incongruencias'])->name('admin.incongruencias.index');
+    Route::patch('/notificaciones/{notificationId}/leer', [AdminController::class, 'markNotificationAsRead'])->name('admin.notificaciones.read');
 
 });
 

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\FacturaRecolector;
+use App\Models\Gasto;
 use App\Models\HistorialProduccion;
+use App\Models\IncongruenciaRecolector;
 use App\Models\Produccion;
 use App\Models\Rol;
 use App\Models\User;
@@ -16,9 +18,27 @@ class AdminController extends Controller
 {
     public function dashboard()
     {
+        $periodoActual = Gasto::periodoDesdeFecha(now());
+        [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
+
         $totalUsuarios = User::count();
         $totalProducciones = Produccion::count();
         $ingresosTotales = Produccion::sum('total');
+        $totalFacturasQuincena = FacturaRecolector::query()
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->sum('total');
+        $gastosQuincena = Gasto::query()
+            ->where('periodo', $periodoActual['periodo'])
+            ->sum('monto');
+        $reportePagoQuincena = $totalFacturasQuincena - $gastosQuincena;
+        $gastosRecientes = Gasto::query()
+            ->with('user')
+            ->where('periodo', $periodoActual['periodo'])
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->take(8)
+            ->get();
+        $periodoActual = $periodoActual['periodo'];
 
         $ultimasProducciones = Produccion::with(['user', 'prenda'])
             ->latest()
@@ -37,15 +57,58 @@ class AdminController extends Controller
             ->orderByDesc('periodo')
             ->get();
 
+        $incongruenciasPendientes = IncongruenciaRecolector::query()
+            ->with(['recolector', 'factura'])
+            ->where('estado', 'pendiente')
+            ->orderByDesc('detectada_en')
+            ->orderByDesc('id')
+            ->take(10)
+            ->get();
+
+        $notificacionesIncongruencias = auth()->user()
+            ->unreadNotifications()
+            ->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')
+            ->latest()
+            ->take(10)
+            ->get();
+
         return view('admin.dashboard', compact(
             'totalUsuarios',
             'totalProducciones',
             'ingresosTotales',
+            'totalFacturasQuincena',
+            'gastosQuincena',
+            'reportePagoQuincena',
+            'periodoActual',
+            'gastosRecientes',
+            'incongruenciasPendientes',
+            'notificacionesIncongruencias',
             'ultimasProducciones',
             'usuarios',
             'resumenMensualPrendas',
             'periodosCerrados'
         ));
+    }
+
+    public function incongruencias()
+    {
+        $incongruencias = IncongruenciaRecolector::query()
+            ->with(['recolector', 'cliente', 'factura'])
+            ->orderByDesc('detectada_en')
+            ->orderByDesc('id')
+            ->paginate(40);
+
+        return view('admin.incongruencias', [
+            'incongruencias' => $incongruencias,
+        ]);
+    }
+
+    public function markNotificationAsRead(string $notificationId)
+    {
+        $notification = auth()->user()->notifications()->whereKey($notificationId)->firstOrFail();
+        $notification->markAsRead();
+
+        return back()->with('success', 'Notificación marcada como leída.');
     }
 
     public function storeUser(Request $request)
@@ -340,6 +403,23 @@ class AdminController extends Controller
             })
             ->sortBy('nombre')
             ->values();
+    }
+
+    private function rangoQuincenaActual(): array
+    {
+        $hoy = now();
+
+        if ($hoy->day <= 15) {
+            return [
+                $hoy->copy()->startOfMonth()->startOfDay(),
+                $hoy->copy()->startOfMonth()->day(15)->endOfDay(),
+            ];
+        }
+
+        return [
+            $hoy->copy()->startOfMonth()->day(16)->startOfDay(),
+            $hoy->copy()->endOfMonth()->endOfDay(),
+        ];
     }
 }
 

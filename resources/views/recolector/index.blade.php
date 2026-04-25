@@ -317,7 +317,7 @@
         </div>
 
         <div class="space-y-8">
-            <div class="grid gap-5 md:grid-cols-3" :class="isTouchDevice ? 'md:grid-cols-1' : ''">
+            <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4" :class="isTouchDevice ? 'md:grid-cols-1 xl:grid-cols-1' : ''">
                 <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
                     <p class="text-sm uppercase tracking-[0.25em] text-slate-400">Órdenes registradas</p>
                     <p class="mt-3 text-4xl font-black text-slate-900">{{ $facturas->count() }}</p>
@@ -329,6 +329,76 @@
                 <div class="rounded-[1.75rem] bg-slate-900 p-6 text-white shadow-xl">
                     <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Valor acumulado</p>
                     <p class="mt-3 text-4xl font-black">$ {{ number_format($facturas->sum('total'), 0, ',', '.') }}</p>
+                </div>
+                <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
+                    <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Reporte quincena</p>
+                    <p class="mt-3 text-3xl font-black">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
+                    <p class="mt-2 text-xs text-emerald-100">{{ $periodoActual }}</p>
+                </div>
+            </div>
+
+            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+                <div class="border-b border-slate-200 px-6 py-5">
+                    <h2 class="text-lg font-bold text-slate-900">Gastos de quincena</h2>
+                    <p class="mt-1 text-sm text-slate-500">Fórmula aplicada: total de facturas - gastos = reporte de pago.</p>
+                </div>
+                <div class="grid gap-6 p-6 xl:grid-cols-[380px_1fr]">
+                    <div>
+                        <form action="{{ route('recolector.gastos.store') }}" method="POST" class="space-y-3">
+                            @csrf
+                            <input
+                                name="concepto"
+                                type="text"
+                                placeholder="Concepto del gasto"
+                                class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                                required
+                            >
+                            <input
+                                name="monto"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="Monto"
+                                class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                                required
+                            >
+                            <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+                                Registrar gasto
+                            </button>
+                        </form>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+                                <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Facturas quincena</p>
+                                <p class="mt-2 text-xl font-black text-slate-900">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
+                            </div>
+                            <div class="rounded-2xl bg-rose-50 px-4 py-4 ring-1 ring-rose-200">
+                                <p class="text-xs uppercase tracking-[0.22em] text-rose-600">Gastos quincena</p>
+                                <p class="mt-2 text-xl font-black text-rose-700">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
+                            </div>
+                            <div class="rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-200">
+                                <p class="text-xs uppercase tracking-[0.22em] text-emerald-600">Reporte pago</p>
+                                <p class="mt-2 text-xl font-black text-emerald-700">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
+                            </div>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200">
+                            <div class="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">Últimos gastos registrados</div>
+                            <div class="divide-y divide-slate-100">
+                                @forelse ($gastosRecientes as $gasto)
+                                    <div class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                                        <div>
+                                            <p class="font-semibold text-slate-900">{{ $gasto->concepto }}</p>
+                                            <p class="text-slate-500">{{ optional($gasto->fecha)->format('d/m/Y') }}</p>
+                                        </div>
+                                        <p class="font-semibold text-rose-700">$ {{ number_format($gasto->monto, 0, ',', '.') }}</p>
+                                    </div>
+                                @empty
+                                    <p class="px-4 py-4 text-sm text-slate-500">Aún no hay gastos en esta cuenta.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
