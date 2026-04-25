@@ -32,8 +32,15 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 WORKDIR /var/www/html
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev unzip \
+    && apt-get install -y --no-install-recommends ca-certificates gnupg libpq-dev unzip wget \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-16 \
     && docker-php-ext-install pdo pdo_pgsql bcmath \
+    && a2dismod mpm_event && a2enmod mpm_prefork \
     && a2enmod rewrite \
     && printf "ServerName localhost\n" > /etc/apache2/conf-available/server-name.conf \
     && a2enconf server-name \
