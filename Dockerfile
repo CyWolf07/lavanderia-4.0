@@ -31,6 +31,9 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 WORKDIR /var/www/html
 
+# Cambia este valor para forzar rebuild sin cache en Railway
+ARG CACHE_BUST=20260425_1
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates gnupg libpq-dev unzip wget \
     && install -d /usr/share/postgresql-common/pgdg \
