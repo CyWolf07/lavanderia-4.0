@@ -40,7 +40,11 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client-16 \
     && docker-php-ext-install pdo pdo_pgsql bcmath \
-    && a2dismod mpm_event && a2enmod mpm_prefork \
+    && rm -f /etc/apache2/mods-enabled/mpm_event.conf \
+    && rm -f /etc/apache2/mods-enabled/mpm_event.load \
+    && rm -f /etc/apache2/mods-enabled/mpm_worker.conf \
+    && rm -f /etc/apache2/mods-enabled/mpm_worker.load \
+    && a2enmod mpm_prefork \
     && a2enmod rewrite \
     && printf "ServerName localhost\n" > /etc/apache2/conf-available/server-name.conf \
     && a2enconf server-name \
