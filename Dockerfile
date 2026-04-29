@@ -31,20 +31,13 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 WORKDIR /var/www/html
 
-# ── Fix MPM conflict: eliminar TODOS los MPM y dejar solo prefork ─────────────
-# php:8.2-apache puede tener mpm_event y mpm_prefork activos al mismo tiempo.
-# find garantiza eliminar tanto symlinks como archivos reales.
-RUN find /etc/apache2/mods-enabled/ -name 'mpm_*' -delete \
-    && ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf \
-    && ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load
-
-# ── Install PHP extensions (heavy C compilation — keep in its own cached layer)
+# Install PHP extensions in a separate cached layer.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql bcmath \
+    && apt-get install -y --no-install-recommends libicu-dev libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql bcmath intl \
     && rm -rf /var/lib/apt/lists/*
 
-# ── Install system packages, PostgreSQL client, and configure Apache
+# Keep the MPM cleanup after docker-php-ext-install and every a2enmod call.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates gnupg unzip wget \
     && install -d /usr/share/postgresql-common/pgdg \
@@ -57,6 +50,9 @@ RUN apt-get update \
     && printf "ServerName localhost\n" > /etc/apache2/conf-available/server-name.conf \
     && a2enconf server-name \
     && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && find /etc/apache2/mods-enabled/ -name 'mpm_*' -delete \
+    && ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf \
+    && ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . .

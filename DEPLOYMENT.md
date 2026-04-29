@@ -1,157 +1,158 @@
-# 🚀 Guía de Despliegue — Lavandería Exclusiva
+# Guia de despliegue online - Lavanderia Exclusiva
 
-## Opción A: Railway.app (Recomendado — Gratuito)
+Validada en este repo el 2026-04-29.
 
-Railway ofrece $5 USD de crédito mensual gratis que cubre esta app + PostgreSQL.
+## Decision recomendada
 
-### Paso 1 — Subir cambios al repositorio GitHub
+Este proyecto es Laravel, no una pagina estatica. GitHub Pages no sirve para dejarlo funcionando como plataforma web con login, sesiones y base de datos, porque GitHub Pages no ejecuta PHP ni puede proteger credenciales PostgreSQL.
+
+La ruta recomendada es:
+
+- GitHub: repositorio del codigo.
+- Railway: servidor online que construye el `Dockerfile` y ejecuta Laravel/Apache.
+- Supabase: PostgreSQL permanente para que la base siga viva aunque se redespliegue la app.
+- Docker: empaque de la aplicacion y entorno local. Docker no reemplaza a Supabase; se complementan.
+
+## Estado de Supabase
+
+La conexion de Supabase fue probada desde esta maquina con SSL y respondio correctamente.
+
+Dato importante: en Supabase el texto `[YOUR-PASSWORD]` es un marcador. Los corchetes no deben quedar en la URL final.
+
+Correcto:
+
+```text
+postgresql://postgres.TU-PROYECTO:TU_PASSWORD_URL_ENCODED@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+Incorrecto:
+
+```text
+postgresql://postgres.TU-PROYECTO:[TU_PASSWORD_URL_ENCODED]@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require
+```
+
+Si la clave contiene `@`, en la URL debe escribirse como `%40`.
+
+## 1. Subir a GitHub
 
 ```bash
-# Desde la carpeta del proyecto en tu PC
-cd e:\Lavanderia_Registro
-
 git add .
-git commit -m "fix: correccion de encoding, rutas PQRS completas y config Railway"
+git commit -m "chore: preparar despliegue laravel con supabase"
 git push origin main
 ```
 
-### Paso 2 — Crear cuenta en Railway
+## 2. Crear el servicio en Railway
 
-1. Ve a **https://railway.app**
-2. Haz clic en **"Start a New Project"**
-3. Selecciona **"Login with GitHub"** (conecta tu cuenta de GitHub)
+1. Entra a `https://railway.app`.
+2. Inicia sesion con GitHub.
+3. Crea un proyecto nuevo.
+4. Elige `Deploy from GitHub repo`.
+5. Selecciona este repositorio.
 
-### Paso 3 — Crear el proyecto
+Railway detecta `railway.json` y construye la imagen desde `Dockerfile`.
 
-1. Haz clic en **"New Project"**
-2. Selecciona **"Deploy from GitHub repo"**
-3. Elige el repositorio: `CyWolf07/lavanderia-4.0`
-4. Railway detecta automáticamente el `railway.json` y el `Dockerfile`
+## 3. Variables de Railway
 
-### Paso 4 — Agregar la base de datos PostgreSQL
-
-1. En el panel del proyecto, haz clic en **"+ New"**
-2. Selecciona **"Database" → "Add PostgreSQL"**
-3. Railway crea automáticamente la BD y genera las variables de conexión
-
-### Paso 5 — Configurar variables de entorno
-
-En el servicio web (no en la BD), ve a **"Variables"** y agrega:
+Configura estas variables en el servicio web de Railway:
 
 | Variable | Valor |
 |---|---|
 | `APP_NAME` | `Lavanderia Exclusiva` |
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
-| `APP_KEY` | Pega una clave generada con `php artisan key:generate --show` |
+| `APP_KEY` | salida de `php artisan key:generate --show` |
+| `APP_URL` | dominio publico de Railway |
 | `APP_LOCALE` | `es` |
+| `APP_FALLBACK_LOCALE` | `es` |
+| `APP_FAKER_LOCALE` | `es_CO` |
 | `DB_CONNECTION` | `pgsql` |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
-| `PGHOST` | `${{Postgres.PGHOST}}` |
-| `PGPORT` | `${{Postgres.PGPORT}}` |
-| `PGDATABASE` | `${{Postgres.PGDATABASE}}` |
-| `PGUSER` | `${{Postgres.PGUSER}}` |
-| `PGPASSWORD` | `${{Postgres.PGPASSWORD}}` |
+| `DATABASE_URL` | URL de Supabase sin corchetes y con `?sslmode=require` |
+| `DB_SSLMODE` | `require` |
 | `PGSSLMODE` | `require` |
+| `DB_SCHEMA` | `public` |
 | `SESSION_DRIVER` | `database` |
+| `SESSION_SECURE_COOKIE` | `true` |
 | `CACHE_STORE` | `database` |
 | `QUEUE_CONNECTION` | `database` |
 | `VIEW_COMPILED_PATH` | `storage/framework/views-runtime` |
 | `TRUSTED_PROXIES` | `*` |
 
-> **Nota:** Railway expone estas variables desde el servicio PostgreSQL. La aplicación ahora acepta tanto `PG*` y `DATABASE_URL` como `DB_*`, así que no hace falta duplicarlas si enlazaste la base al servicio web.
+No subas `.env` a GitHub. Las variables reales van en Railway.
 
-> **Puerto de Railway:** Railway inyecta una variable `PORT` dinámica para el contenedor. El script `docker/start-container.sh` ya reconfigura Apache para escuchar ese puerto antes de iniciar.
->
-> **Healthcheck de Railway:** Debe apuntar a `/up`, que es el endpoint de salud configurado en `bootstrap/app.php` y `railway.json`.
-
-### Paso 6 — Desplegar
-
-1. Railway despliega automáticamente al detectar cambios en `main`
-2. El script `docker/start-container.sh` ejecuta `php artisan migrate --seed` al arrancar
-3. En 2-3 minutos la app estará en un dominio tipo: `https://lavanderia-exclusiva.up.railway.app`
-
-### Paso 7 — Obtener dominio público
-
-1. En el servicio, ve a **"Settings" → "Networking"**
-2. Haz clic en **"Generate Domain"**
-3. ¡Listo! Tu URL quedará activa permanentemente
-
----
-
-## Opción B: Docker local (Para desarrollo)
+Para generar `APP_KEY` localmente:
 
 ```bash
-# Desde la raíz del proyecto
+php artisan key:generate --show
+```
+
+## 4. Primer despliegue
+
+En cada arranque el contenedor ejecuta:
+
+```bash
+php artisan migrate --force
+php artisan db:seed --force
+```
+
+Luego limpia cache, crea el enlace de `storage` si hace falta e inicia Apache.
+
+## 5. Verificacion
+
+Healthcheck de la app:
+
+```bash
+curl https://TU-DOMINIO.up.railway.app/up
+```
+
+Respuesta esperada:
+
+```json
+{"success":true}
+```
+
+Diagnostico de base de datos:
+
+```bash
+curl https://TU-DOMINIO.up.railway.app/up/database
+```
+
+Respuesta esperada:
+
+```json
+{"success":true,"database":"ok","connection":"pgsql"}
+```
+
+## 6. Docker local
+
+Para probar en esta PC con PostgreSQL local:
+
+```bash
 docker compose up --build
-
-# La app queda en: http://localhost:8080
-# PostgreSQL en: localhost:5433
 ```
 
-El archivo `.env.docker` ya está configurado con las credenciales locales de Docker.
+Servicios:
 
----
+- App: `http://localhost:8080`
+- PostgreSQL 16 local: `localhost:5433`
 
-## 🗄️ Backup de la base de datos
+Tambien puedes usar:
 
-### En Railway (vía CLI)
+```powershell
+.\start-web.ps1
+```
+
+## 7. Backups
+
+En Railway:
 
 ```bash
-# Instalar Railway CLI
-npm install -g @railway/cli
-
-# Conectar tu proyecto
-railway login
-railway link
-
-# Ejecutar el comando de backup
-railway run php artisan db:backup
+php artisan db:backup
 ```
 
-El archivo SQL se guarda en `storage/app/backups/backup_YYYY-MM-DD_HHmmss.sql`
+El archivo queda en `storage/app/backups/backup_YYYY-MM-DD_HHMMSS.sql`.
 
-### En local con Docker
+Para restaurar:
 
 ```bash
-# La app debe estar corriendo con docker compose up
-docker exec lavanderia-web php artisan db:backup
+psql -h HOST -U USER -d DATABASE < backup.sql
 ```
-
-### Restaurar un backup
-
-```bash
-# Conectar al PostgreSQL de Railway directamente
-railway connect Postgres
-
-# O con psql manual:
-psql -h HOST -U USER -d DATABASE < storage/app/backups/backup_FECHA.sql
-```
-
----
-
-## ✅ Verificación rápida post-despliegue
-
-```bash
-# Ver rutas registradas
-railway run php artisan route:list
-
-# Ver estado de migraciones
-railway run php artisan migrate:status
-
-# Verificar que el sistema responde (debe retornar 200)
-curl https://TU-URL.up.railway.app/up
-```
-
----
-
-## 🔧 Estructura de roles del sistema
-
-| Rol | Módulo accesible |
-|---|---|
-| `usuario` | Producción personal (sin precios) |
-| `recolector` | Módulo de facturas + crear clientes |
-| `admin` | Panel completo (usuarios, prendas, clientes, reportes) |
-| `programador` | Todo lo del admin + eliminar historial |
-
-El primer usuario creado debe ser `admin` o `programador` para poder gestionar el sistema.

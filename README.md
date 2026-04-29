@@ -10,6 +10,7 @@ Sistema de gestion de lavanderia construido con Laravel y PostgreSQL.
 - Blade + Vite + Tailwind
 - Docker para entorno local
 - Railway para despliegue recomendado
+- Supabase PostgreSQL para base online permanente
 
 ## Modulos principales
 
@@ -79,10 +80,13 @@ El suite actual valida, entre otras cosas:
 - compatibilidad de `DATABASE_URL` y variables `PG*`
 - que Docker local siga fijado a PostgreSQL 16
 
-## Despliegue
+## Despliegue online
 
-La ruta recomendada es Railway. Consulta:
+La ruta recomendada es subir el codigo a GitHub y conectar ese repo a Railway. Railway ejecuta Laravel con Docker/Apache, mientras Supabase mantiene PostgreSQL activo fuera del contenedor.
+
+GitHub Pages no es suficiente para esta app porque no ejecuta PHP ni protege credenciales de base de datos.
+
+Consulta:
 
 - `DEPLOYMENT.md`
-- `https://railway.com/pricing`
-- `https://docs.railway.com/guides/postgresql`
+- `.env.supabase.example`

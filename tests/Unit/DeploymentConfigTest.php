@@ -38,7 +38,7 @@ afterEach(function () {
 });
 
 it('uses railway postgres variables when db variables are missing', function () {
-    setDeploymentEnv('DB_CONNECTION', null);
+    setDeploymentEnv('DB_CONNECTION', '');
     setDeploymentEnv('DB_URL', null);
     setDeploymentEnv('DATABASE_URL', 'postgresql://railway:secret@postgres.railway.internal:6543/lavanderia?sslmode=require');
     setDeploymentEnv('DB_HOST', null);
@@ -67,6 +67,19 @@ it('uses railway postgres variables when db variables are missing', function () 
         ->and($config['connections']['pgsql']['password'])->toBe('secret')
         ->and($config['connections']['pgsql']['search_path'])->toBe('public')
         ->and($config['connections']['pgsql']['sslmode'])->toBe('require');
+});
+
+it('does not let an empty db url hide database url', function () {
+    setDeploymentEnv('DB_CONNECTION', '');
+    setDeploymentEnv('DB_URL', '');
+    setDeploymentEnv('DATABASE_URL', 'postgresql://supabase:secret@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require');
+    setDeploymentEnv('DB_HOST', null);
+    setDeploymentEnv('PGHOST', null);
+
+    $config = require __DIR__.'/../../config/database.php';
+
+    expect($config['default'])->toBe('pgsql')
+        ->and($config['connections']['pgsql']['url'])->toBe('postgresql://supabase:secret@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require');
 });
 
 it('keeps explicit db variables above railway fallbacks', function () {
@@ -105,6 +118,15 @@ it('points railway healthchecks to the laravel up endpoint', function () {
 
     expect($config['deploy']['startCommand'] ?? null)->toBe('start-container')
         ->and($config['deploy']['healthcheckPath'] ?? null)->toBe('/up');
+});
+
+it('pins local docker postgres to version 16', function () {
+    $dockerCompose = file_get_contents(__DIR__.'/../../docker-compose.yml');
+    $dockerfile = file_get_contents(__DIR__.'/../../Dockerfile');
+
+    expect($dockerCompose)->toContain('postgres:16-alpine')
+        ->and($dockerfile)->toContain('postgresql-client-16')
+        ->and($dockerfile)->toContain('docker-php-ext-install pdo pdo_pgsql bcmath intl');
 });
 
 it('keeps local env files out of the docker build context', function () {

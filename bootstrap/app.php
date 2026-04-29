@@ -5,6 +5,7 @@ use App\Http\Middleware\RolMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -16,11 +17,30 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::get('/up', static fn () => response()->json([
                 'success' => true,
             ]));
+
+            Route::get('/up/database', static function () {
+                try {
+                    DB::select('select 1');
+
+                    return response()->json([
+                        'success' => true,
+                        'database' => 'ok',
+                        'connection' => config('database.default'),
+                    ]);
+                } catch (Throwable $exception) {
+                    report($exception);
+
+                    return response()->json([
+                        'success' => false,
+                        'database' => 'unavailable',
+                    ], 503);
+                }
+            });
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: env('TRUSTED_PROXIES', '*'));
-        $middleware->preventRequestsDuringMaintenance(['/up']);
+        $middleware->preventRequestsDuringMaintenance(['/up', '/up/database']);
 
         $middleware->alias([
             'activo' => EnsureUserIsActive::class,

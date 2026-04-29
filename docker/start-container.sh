@@ -56,7 +56,7 @@ chown -R www-data:www-data storage bootstrap/cache
 
 # ── 3. Esperar conexión a PostgreSQL ─────────────────────────────────────────
 # Intenta conectarse hasta 30 veces con 2 segundos de espera entre intentos
-# Soporta DB_URL (Railway/Render) o variables individuales (DB_HOST, DB_PORT...)
+# Soporta DB_URL o DATABASE_URL, ademas de variables individuales (DB_HOST, DB_PORT...)
 echo "========================================"
 echo " Esperando a PostgreSQL..."
 echo "========================================"
@@ -73,9 +73,17 @@ if [ -z "$db_driver" ]; then
 fi
 
 if [ "$db_driver" = "pgsql" ]; then
-    resolved_db_host="${DB_HOST:-${PGHOST:-db}}"
-    resolved_db_port="${DB_PORT:-${PGPORT:-5432}}"
-    resolved_db_name="${DB_DATABASE:-${PGDATABASE:-postgres}}"
+    resolved_db_url="${DB_URL:-${DATABASE_URL:-}}"
+
+    if [ -n "$resolved_db_url" ]; then
+        resolved_db_host="$(RESOLVED_DB_URL="$resolved_db_url" php -r '$parts = parse_url(getenv("RESOLVED_DB_URL")); echo $parts["host"] ?? "db";')"
+        resolved_db_port="$(RESOLVED_DB_URL="$resolved_db_url" php -r '$parts = parse_url(getenv("RESOLVED_DB_URL")); echo $parts["port"] ?? "5432";')"
+        resolved_db_name="$(RESOLVED_DB_URL="$resolved_db_url" php -r '$parts = parse_url(getenv("RESOLVED_DB_URL")); echo ltrim($parts["path"] ?? "/postgres", "/");')"
+    else
+        resolved_db_host="${DB_HOST:-${PGHOST:-db}}"
+        resolved_db_port="${DB_PORT:-${PGPORT:-5432}}"
+        resolved_db_name="${DB_DATABASE:-${PGDATABASE:-postgres}}"
+    fi
 
     echo "DB_CONNECTION=pgsql"
     echo "DB_HOST=${resolved_db_host}"
@@ -109,6 +117,11 @@ $database = ltrim((string) ($parts["path"] ?? (getenv("DB_DATABASE") ?: (getenv(
 $username = urldecode((string) ($parts["user"] ?? (getenv("DB_USERNAME") ?: (getenv("PGUSER") ?: "postgres"))));
 $password = urldecode((string) ($parts["pass"] ?? (getenv("DB_PASSWORD") ?: (getenv("PGPASSWORD") ?: ""))));
 $sslmode  = $query["sslmode"] ?? getenv("DB_SSLMODE") ?: (getenv("PGSSLMODE") ?: null);
+
+if (str_starts_with($password, "[") && str_ends_with($password, "]")) {
+    fwrite(STDERR, "La contrasena parece incluir corchetes de placeholder. En Supabase reemplaza [YOUR-PASSWORD] sin dejar [ ]." . PHP_EOL);
+    exit(1);
+}
 
 $dsn = "pgsql:host={$host};port={$port};dbname={$database}";
 

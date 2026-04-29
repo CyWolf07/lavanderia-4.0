@@ -1,4 +1,4 @@
-# Lavanderia como pagina web
+# Acceso web del proyecto
 
 ## Opcion rapida en esta PC
 
@@ -8,19 +8,19 @@ Desde `E:\Lavanderia_Registro`, ejecuta:
 .\start-web.ps1
 ```
 
-Ese comando:
+Ese script:
 
-- levanta Laravel y PostgreSQL con Docker
-- ejecuta migraciones y seeders
+- levanta Laravel y PostgreSQL 16 con Docker
+- espera el healthcheck `/up`
 - deja la app lista en navegador
-- muestra la URL para `localhost`
+- muestra la URL local
 - muestra la URL de red para abrirla desde otro dispositivo
 
 ## Abrir desde otro dispositivo en la misma red
 
-1. Conecta el celular, tablet o PC a la misma red Wi-Fi o LAN.
-2. Ejecuta `.\start-web.ps1` en el equipo donde esta el proyecto.
-3. Abre en el otro dispositivo la `URL en red` que muestra el script.
+1. Conecta el otro equipo a la misma red.
+2. Ejecuta `.\start-web.ps1` en esta PC.
+3. Abre la `URL en red` que muestra el script.
 
 Ejemplo:
 
@@ -52,12 +52,22 @@ docker compose logs -f db
 docker compose down
 ```
 
-## Publicarlo en internet
+## Publicacion en internet
 
-Si quieres entrar desde cualquier red, no solo desde tu Wi-Fi, publica el proyecto en un hosting con Docker o PHP. Este repo ya incluye:
+La opcion recomendada para este repo es Railway + Supabase.
+
+GitHub por si solo no hospeda esta app como plataforma web, porque Laravel necesita PHP, Apache y variables privadas. El flujo correcto es subir el repo a GitHub y conectar Railway al repo para que Railway ejecute el contenedor.
+
+Archivos usados:
 
 - `Dockerfile`
-- `render.yaml`
+- `railway.json`
 - `DEPLOYMENT.md`
+- `.env.supabase.example`
 
-La opcion mas directa es subirlo a GitHub y desplegarlo en Render con PostgreSQL externo o Supabase.
+Supabase queda como base PostgreSQL permanente. Docker se usa para empaquetar y correr la app; no reemplaza a Supabase.
+
+Si vas a publicar, sigue `DEPLOYMENT.md`, configura las variables de Railway y luego revisa:
+
+- `https://TU-DOMINIO.up.railway.app/up`
+- `https://TU-DOMINIO.up.railway.app/up/database`

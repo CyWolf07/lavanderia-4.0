@@ -7,3 +7,13 @@ it('returns a successful response for the healthcheck endpoint', function () {
             'success' => true,
         ]);
 });
+
+it('returns a successful response for the database diagnostic endpoint', function () {
+    $this->get('/up/database')
+        ->assertOk()
+        ->assertJson([
+            'success' => true,
+            'database' => 'ok',
+            'connection' => 'sqlite',
+        ]);
+});
