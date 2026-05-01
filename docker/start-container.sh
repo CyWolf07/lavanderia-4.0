@@ -191,6 +191,15 @@ if [ ! -L public/storage ]; then
 fi
 
 echo "========================================"
+echo " Asegurando un unico Apache MPM..."
+echo "========================================"
+
+find /etc/apache2/mods-enabled/ -name 'mpm_*' -delete
+ln -sf /etc/apache2/mods-available/mpm_prefork.conf /etc/apache2/mods-enabled/mpm_prefork.conf
+ln -sf /etc/apache2/mods-available/mpm_prefork.load /etc/apache2/mods-enabled/mpm_prefork.load
+apache2ctl -t
+
+echo "========================================"
 echo " Aplicacion lista. Iniciando Apache..."
 echo "========================================"
 
