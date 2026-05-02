@@ -51,7 +51,7 @@
                             <option value="">Selecciona una prenda</option>
                             @foreach($prendas as $prenda)
                                 <option value="{{ $prenda->id }}" data-precio="{{ $prenda->precio }}">
-                                    {{ $prenda->nombre }}@unless($esUsuario) - $ {{ number_format($prenda->precio, 0, ',', '.') }}@endunless
+                                    {{ $prenda->nombre }}@if (! $esUsuario) - $ {{ number_format($prenda->precio, 0, ',', '.') }}@endif
                                 </option>
                             @endforeach
                         </select>
@@ -62,7 +62,7 @@
                         <input id="cantidad" type="number" name="cantidad" x-model="cantidad" @input="updatePrice()" min="1" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200" required>
                     </div>
 
-                    @unless($esUsuario)
+                    @if (! $esUsuario)
                         <div class="rounded-2xl bg-slate-900 px-4 py-4 text-white">
                             <p class="text-xs uppercase tracking-[0.25em] text-slate-300">Total estimado</p>
                             <p class="mt-2 text-3xl font-black">$ <span x-text="total.toLocaleString('es-CO')">0</span></p>
@@ -72,7 +72,7 @@
                             <p class="text-xs uppercase tracking-[0.25em] text-slate-500">Cantidad del registro</p>
                             <p class="mt-2 text-3xl font-black" x-text="cantidad || 0">0</p>
                         </div>
-                    @endunless
+                    @endif
 
                     <button type="submit" class="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white hover:bg-sky-700">
                         Guardar producción
@@ -118,9 +118,9 @@
                             <tr>
                                 <th class="px-6 py-4 font-semibold">Prenda</th>
                                 <th class="px-6 py-4 font-semibold">Cantidad</th>
-                                @unless($esUsuario)
+                                @if (! $esUsuario)
                                     <th class="px-6 py-4 font-semibold">Total</th>
-                                @endunless
+                                @endif
                                 <th class="px-6 py-4 font-semibold">Fecha</th>
                             </tr>
                         </thead>
@@ -129,9 +129,9 @@
                                 <tr class="hover:bg-slate-50">
                                     <td class="px-6 py-4 font-medium text-slate-900">{{ $prod->prenda->nombre ?? 'Sin prenda' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $prod->cantidad }}</td>
-                                    @unless($esUsuario)
+                                    @if (! $esUsuario)
                                         <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($prod->total, 0, ',', '.') }}</td>
-                                    @endunless
+                                    @endif
                                     <td class="px-6 py-4 text-slate-500">{{ optional($prod->fecha)->format('d/m/Y') }}</td>
                                 </tr>
                             @empty

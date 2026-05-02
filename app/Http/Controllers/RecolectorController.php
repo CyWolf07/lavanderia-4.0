@@ -18,7 +18,9 @@ use Illuminate\Validation\ValidationException;
 
 class RecolectorController extends Controller
 {
-    public function __construct(private readonly FacturaRecolectorAuditService $auditService)
+    public function __construct(
+        private readonly FacturaRecolectorAuditService $auditService,
+    )
     {
     }
 
@@ -169,7 +171,7 @@ class RecolectorController extends Controller
         $totalPrendas = (int) $detalles->sum('cantidad');
         $totalFactura = $detalles->sum('subtotal');
 
-        DB::transaction(function () use ($cliente, $fechaIngreso, $fechaEntrega, $data, $detalles, $totalPrendas, $totalFactura) {
+        $factura = DB::transaction(function () use ($cliente, $fechaIngreso, $fechaEntrega, $data, $detalles, $totalPrendas, $totalFactura) {
             $factura = FacturaRecolector::create([
                 'recolector_id' => Auth::id(),
                 'cliente_id' => $cliente->id,
@@ -186,9 +188,14 @@ class RecolectorController extends Controller
             $factura->detalles()->createMany($detalles->all());
 
             $this->registrarIncongruencias($factura);
+
+            return $factura;
         });
 
-        return redirect()->route('recolector.index')->with('success', 'Factura del recolector registrada correctamente.');
+        return redirect()
+            ->route('recolector.index')
+            ->with('success', 'Orden guardada correctamente.')
+            ->with('nueva_factura_id', $factura->id);
     }
 
     private function itemSeleccionado(mixed $item): bool

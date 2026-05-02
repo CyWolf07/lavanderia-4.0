@@ -20,6 +20,21 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
+test('users can authenticate using formatted cedula', function () {
+    $user = User::factory()->create([
+        'cedula' => '1000000003',
+        'activo' => true,
+    ]);
+
+    $response = $this->post('/login', [
+        'login' => '1.000.000.003',
+        'password' => 'password',
+    ]);
+
+    $this->assertAuthenticatedAs($user);
+    $response->assertRedirect(route('dashboard', absolute: false));
+});
+
 test('users can not authenticate with invalid password', function () {
     $user = User::factory()->create();
 

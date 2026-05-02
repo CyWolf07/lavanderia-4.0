@@ -40,7 +40,7 @@
                 {{-- Datos básicos del cliente --}}
                 <input type="text" name="nombre" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input type="text" name="nit_cedula" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                <input type="text" name="celular" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                <x-input-celular class="w-full" />
                 <input type="text" name="direccion" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                 <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
                     Guardar cliente
@@ -63,7 +63,7 @@
                             @method('PUT')
                             <input name="nombre" type="text" value="{{ $cliente->nombre }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                             <input name="nit_cedula" type="text" value="{{ $cliente->nit_cedula }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                            <input name="celular" type="text" value="{{ $cliente->celular }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                            <x-input-celular :value="$cliente->celular" class="md:col-span-1" />
                             <input name="direccion" type="text" value="{{ $cliente->direccion }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                             <div class="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                 <p class="text-sm text-slate-500">{{ $cliente->nombre }} | {{ $cliente->nit_cedula }}</p>

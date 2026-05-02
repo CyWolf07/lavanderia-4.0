@@ -14,6 +14,9 @@
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row">
+            <a href="{{ route('produccion.index') }}" class="rounded-full border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100">
+                Ingresar a produccion
+            </a>
             <a href="{{ route('prendas.index') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
                 Gesti?nar prendas
             </a>

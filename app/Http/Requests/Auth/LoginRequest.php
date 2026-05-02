@@ -12,6 +12,21 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $login = trim((string) ($this->input('login') ?: $this->input('email')));
+
+        if ($login === '') {
+            return;
+        }
+
+        $this->merge([
+            'login' => filter_var($login, FILTER_VALIDATE_EMAIL)
+                ? Str::lower($login)
+                : (preg_replace('/\D+/', '', $login) ?: $login),
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -43,7 +58,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $login = (string) ($this->input('login') ?: $this->input('email'));
+        $login = trim((string) ($this->input('login') ?: $this->input('email')));
         $campo = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'cedula';
 
         if (! Auth::attempt([$campo => $login, 'password' => $this->string('password')->toString()], $this->boolean('remember'))) {

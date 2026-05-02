@@ -59,8 +59,46 @@
     </div>
 
     @if (session('success'))
-        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {{ session('success') }}
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">
+            <p class="font-semibold">{{ session('success') }}</p>
+
+            @if (session('nueva_factura_id'))
+                @php
+                    $facturaFlash = $facturas->firstWhere('id', session('nueva_factura_id'));
+                @endphp
+
+                @if ($facturaFlash && $facturaFlash->celular)
+                    @php
+                        $numLimpio   = preg_replace('/\D+/', '', (string) $facturaFlash->celular);
+                        $numWa       = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
+                        $numeroOrden = str_pad((string) $facturaFlash->id, 6, '0', STR_PAD_LEFT);
+                        $nombreCliente = $facturaFlash->cliente->nombre ?? 'Cliente';
+                        $valorTotal  = number_format((float) $facturaFlash->total, 0, ',', '.');
+                        $mensaje = "Orden de Pedido #" . $numeroOrden . "%0ACliente: " . rawurlencode($nombreCliente) . "%0AValor Total: $ " . rawurlencode($valorTotal) . "%0A%0AMetodos de Pago%0AEfectivo%0ATransferencia (nequi)%0ALlave Breve (@VIL207)";
+                        $waUrl = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
+                    @endphp
+                    <div class="mt-3">
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">Notificar al cliente por WhatsApp</p>
+                        <a
+                            href="{{ $waUrl }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
+                            Enviar WhatsApp al cliente
+                        </a>
+                    </div>
+                @else
+                    <p class="mt-2 text-xs text-emerald-600">El cliente no tiene celular registrado. No se puede generar el enlace de WhatsApp.</p>
+                @endif
+            @endif
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -92,7 +130,7 @@
                     @csrf
                     <input name="nombre" type="text" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     <input name="nit_cedula" type="text" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                    <input name="celular" type="text" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                    <x-input-celular class="w-full" />
                     <input name="direccion" type="text" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                     <button type="submit" class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
                         Guardar cliente
@@ -304,14 +342,16 @@
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        class="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
-                        :disabled="!puedeGuardarFactura"
-                        {{ $clientes->isEmpty() || $prendas->isEmpty() ? 'disabled' : '' }}
-                    >
-                        Guardar orden de pedido
-                    </button>
+                    <div class="space-y-3">
+                        <button
+                            type="submit"
+                            class="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
+                            :disabled="!puedeGuardarFactura"
+                            {{ $clientes->isEmpty() || $prendas->isEmpty() ? 'disabled' : '' }}
+                        >
+                            Guardar orden de pedido
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -462,7 +502,31 @@
                                     </tbody>
                                 </table>
                             </div>
-                        </div>
+                            {{-- Botón WhatsApp: abre wa.me con el mensaje pre-escrito --}}
+                            @php
+                                $numLimpio   = preg_replace('/\D+/', '', (string) $factura->celular);
+                                $numWa       = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
+                                $numeroOrden = str_pad((string) $factura->id, 6, '0', STR_PAD_LEFT);
+                                $nombreCliente = $factura->cliente->nombre ?? 'Cliente';
+                                $valorTotal  = number_format((float) $factura->total, 0, ',', '.');
+                                $mensaje = "Orden de Pedido #" . $numeroOrden . "%0ACliente: " . rawurlencode($nombreCliente) . "%0AValor Total: $ " . rawurlencode($valorTotal) . "%0A%0AMetodos de Pago%0AEfectivo%0ATransferencia (nequi)%0ALlave Breve (@VIL207)";
+                                $waUrl   = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
+                            @endphp
+
+                            @if ($factura->celular && $numLimpio)
+                                <div class="mt-4">
+                                    <a
+                                        href="{{ $waUrl }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white shadow transition hover:-translate-y-0.5 hover:shadow-md"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
+                                        Notificar por WhatsApp
+                                    </a>
+                                </div>
+                            @endif
+                        </div>{{-- fin tarjeta factura --}}
                     @empty
                         <p class="text-sm text-slate-500">Todavía no has registrado órdenes de pedido como recolector.</p>
                     @endforelse
@@ -626,7 +690,6 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
 }
 </script>
 @endsection
-
 
 
 
