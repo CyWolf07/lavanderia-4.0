@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 class RecolectorController extends Controller
@@ -192,10 +193,21 @@ class RecolectorController extends Controller
             return $factura;
         });
 
-        return redirect()
+        $whatsappStatus = $this->enviarWhatsappSiFueSolicitado($request, $factura, $cliente);
+        $successMessage = $whatsappStatus === 'sent'
+            ? 'Orden guardada y mensaje de WhatsApp enviado correctamente.'
+            : 'Orden guardada correctamente.';
+
+        $redirect = redirect()
             ->route('recolector.index')
-            ->with('success', 'Orden guardada correctamente.')
+            ->with('success', $successMessage)
             ->with('nueva_factura_id', $factura->id);
+
+        if ($whatsappStatus === 'disabled') {
+            $redirect->with('error', 'La automatizacion de WhatsApp Business no esta habilitada.');
+        }
+
+        return $redirect;
     }
 
     private function itemSeleccionado(mixed $item): bool
@@ -223,6 +235,61 @@ class RecolectorController extends Controller
             $hoy->copy()->startOfMonth()->day(16)->startOfDay(),
             $hoy->copy()->endOfMonth()->endOfDay(),
         ];
+    }
+
+    private function enviarWhatsappSiFueSolicitado(Request $request, FacturaRecolector $factura, Cliente $cliente): ?string
+    {
+        if (! $request->boolean('enviar_whatsapp')) {
+            return null;
+        }
+
+        if (! config('services.whatsapp.enabled') || ! config('services.whatsapp.phone_number_id') || ! config('services.whatsapp.token')) {
+            return 'disabled';
+        }
+
+        $telefono = $this->normalizarTelefonoWhatsapp($cliente->celular);
+
+        if (! $telefono) {
+            return 'disabled';
+        }
+
+        Http::withToken((string) config('services.whatsapp.token'))
+            ->post(sprintf(
+                'https://graph.facebook.com/%s/%s/messages',
+                config('services.whatsapp.api_version', 'v20.0'),
+                config('services.whatsapp.phone_number_id')
+            ), [
+                'messaging_product' => 'whatsapp',
+                'to' => $telefono,
+                'type' => 'text',
+                'text' => [
+                    'body' => sprintf(
+                        'Hola %s, tu orden de lavanderia #%s fue registrada correctamente. Total prendas: %s. Fecha de entrega: %s.',
+                        $cliente->nombre,
+                        $factura->id,
+                        $factura->total_prendas,
+                        optional($factura->fecha_entrega)->format('d/m/Y') ?? $factura->fecha_entrega
+                    ),
+                ],
+            ])
+            ->throw();
+
+        return 'sent';
+    }
+
+    private function normalizarTelefonoWhatsapp(?string $celular): ?string
+    {
+        $digitos = preg_replace('/\D+/', '', (string) $celular);
+
+        if (strlen($digitos) === 10) {
+            return '57'.$digitos;
+        }
+
+        if (str_starts_with($digitos, '57') && strlen($digitos) === 12) {
+            return $digitos;
+        }
+
+        return null;
     }
 
     private function registrarIncongruencias(FacturaRecolector $factura): void

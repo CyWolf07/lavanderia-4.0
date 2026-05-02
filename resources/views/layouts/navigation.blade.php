@@ -25,7 +25,9 @@
                     @endif
                     @if (auth()->user()->tieneRol('admin', 'programador'))
                         <a href="{{ route('admin.dashboard') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('admin.*') || request()->routeIs('prendas.*') || request()->routeIs('clientes.*') || request()->routeIs('recolector-prendas.*') ? 'bg-slate-900 text-white shadow-lg shadow-slate-200/70' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-800' }}">
-                            @php($alertasIncongruencia = auth()->user()->unreadNotifications()->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')->count())
+                            @php
+                                $alertasIncongruencia = auth()->user()->unreadNotifications()->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')->count();
+                            @endphp
                             Panel Admin
                             @if ($alertasIncongruencia > 0)
                                 <span class="ml-2 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">{{ $alertasIncongruencia }}</span>
@@ -78,7 +80,9 @@
                 @endif
                 @if (auth()->user()->tieneRol('admin', 'programador'))
                     <a href="{{ route('admin.dashboard') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('admin.*') || request()->routeIs('prendas.*') || request()->routeIs('clientes.*') || request()->routeIs('recolector-prendas.*') ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800' }}">
-                        @php($alertasIncongruenciaMobile = auth()->user()->unreadNotifications()->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')->count())
+                        @php
+                            $alertasIncongruenciaMobile = auth()->user()->unreadNotifications()->where('type', 'App\\Notifications\\IncongruenciaRecolectorDetectada')->count();
+                        @endphp
                         Panel Admin
                         @if ($alertasIncongruenciaMobile > 0)
                             <span class="ml-2 rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">{{ $alertasIncongruenciaMobile }}</span>

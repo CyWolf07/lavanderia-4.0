@@ -3,7 +3,9 @@
 @section('title', 'Producción')
 
 @section('content')
-@php($esUsuario = $user->tieneRol('usuario'))
+@php
+    $esUsuario = $user->tieneRol('usuario');
+@endphp
 <div x-data="produccionForm()" class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
@@ -89,19 +91,21 @@
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
                 <h2 class="text-lg font-bold text-slate-900">Pagos por quincena</h2>
                 <div class="mt-4 space-y-3">
-                    @forelse ($historialQuincenas as $periodo)
-                        @php
-                            preg_match('/^(\d{4})\/(\d{2})\/QUINCENA([12])$/', $periodo->periodo, $matches);
-                            $periodoLabel = $matches ? 'Quincena ' . $matches[3] : $periodo->periodo;
-                        @endphp
-                        <div class="rounded-2xl border border-slate-200 px-4 py-3">
-                            <p class="text-sm font-semibold text-slate-800">{{ $periodoLabel }}</p>
-                            <p class="mt-1 text-sm text-slate-500">{{ $periodo->total_prendas }} prendas registradas</p>
-                            <p class="mt-2 text-xl font-bold text-emerald-700">$ {{ number_format($periodo->total_periodo, 0, ',', '.') }}</p>
-                        </div>
-                    @empty
+                    @if ($historialQuincenas->isEmpty())
                         <p class="text-sm text-slate-500">Aún no tienes quincenas cerradas en el historial.</p>
-                    @endforelse
+                    @else
+                        @foreach ($historialQuincenas as $periodo)
+                            @php
+                                preg_match('/^(\d{4})\/(\d{2})\/QUINCENA([12])$/', $periodo->periodo, $matches);
+                                $periodoLabel = $matches ? 'Quincena ' . $matches[3] : $periodo->periodo;
+                            @endphp
+                            <div class="rounded-2xl border border-slate-200 px-4 py-3">
+                                <p class="text-sm font-semibold text-slate-800">{{ $periodoLabel }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ $periodo->total_prendas }} prendas registradas</p>
+                                <p class="mt-2 text-xl font-bold text-emerald-700">$ {{ number_format($periodo->total_periodo, 0, ',', '.') }}</p>
+                            </div>
+                        @endforeach
+                    @endif
                 </div>
             </div>
         </div>

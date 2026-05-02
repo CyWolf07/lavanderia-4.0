@@ -3,10 +3,12 @@
 @section('title', 'Informes imprimibles')
 
 @section('content')
-@php($opcionesRegistro = $grupo === 'recolectores' ? $resumenRecolectores : $resumenUsuarios)
-@php($detalleActual = $grupo === 'recolectores' ? $detalleRecolectores : $detalleUsuarios)
-@php($totalGrupoActual = $grupo === 'recolectores' ? $totalGeneralRecolectores : $totalGeneralUsuarios)
-@php($totalPrendasGrupoActual = $grupo === 'recolectores' ? $totalPrendasRecolectores : $totalPrendasUsuarios)
+@php
+    $opcionesRegistro = $grupo === 'recolectores' ? $resumenRecolectores : $resumenUsuarios;
+    $detalleActual = $grupo === 'recolectores' ? $detalleRecolectores : $detalleUsuarios;
+    $totalGrupoActual = $grupo === 'recolectores' ? $totalGeneralRecolectores : $totalGeneralUsuarios;
+    $totalPrendasGrupoActual = $grupo === 'recolectores' ? $totalPrendasRecolectores : $totalPrendasUsuarios;
+@endphp
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
         <div>
