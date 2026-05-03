@@ -186,6 +186,9 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::patch('/recolector-prendas/{recolectorPrenda}/estado', [RecolectorPrendaController::class, 'toggleStatus'])->name('recolector-prendas.toggle-status');
 
     // ── CIERRE DE QUINCENA Y REPORTES ─────────────────────────────────────────
+    Route::delete('/produccion/{produccion}', [AdminController::class, 'destroyProduccion'])->name('admin.produccion.destroy');
+    Route::delete('/facturas-recolector/{facturaRecolector}', [AdminController::class, 'destroyFacturaRecolector'])->name('admin.facturas-recolector.destroy');
+    Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])->name('admin.historial.destroy');
     Route::post('/produccion/cerrar', [ProduccionController::class, 'cerrar'])->name('produccion.cerrar');
     Route::get('/reportes/{periodo}', [ProduccionController::class, 'reportePeriodo'])
         ->where('periodo', '.*')              // Permite el formato AÑO/MES/QUINCENA con slash

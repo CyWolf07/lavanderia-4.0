@@ -42,9 +42,9 @@
                 Informe incongruencias
             </a>
             {{-- Imprimir resumen de quincena directamente desde el navegador --}}
-            <button onclick="window.print()" class="rounded-full border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100">
+            <a href="{{ route('admin.reportes.impresion', ['tipo_reporte' => 'resumen_diario', 'imprimir' => 1]) }}" target="_blank" class="rounded-full border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100">
                 Imprimir resumen
-            </button>
+            </a>
             {{-- Cerrar la quincena activa y generar el historial --}}
             <form action="{{ route('produccion.cerrar') }}" method="POST">
                 @csrf
@@ -298,7 +298,8 @@
             {{-- Tabla de últimos registros de producción activos --}}
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Últimos registros activos</h2>
+                    <h2 class="text-lg font-bold text-slate-900">Registros activos de usuarios</h2>
+                    <p class="mt-1 text-sm text-slate-500">Produccion pendiente de cierre con opcion de borrar si hubo error.</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
@@ -308,6 +309,7 @@
                                 <th class="px-6 py-4 font-semibold">Prenda</th>
                                 <th class="px-6 py-4 font-semibold">Cantidad</th>
                                 <th class="px-6 py-4 font-semibold">Total</th>
+                                <th class="px-6 py-4 font-semibold">Accion</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -317,10 +319,65 @@
                                     <td class="px-6 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $item->cantidad }}</td>
                                     <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4">
+                                        <form action="{{ route('admin.produccion.destroy', $item) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button onclick="return confirm('Eliminar este registro de produccion?')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
+                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Tabla de ultimos registros activos de recolectores --}}
+            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+                <div class="border-b border-slate-200 px-6 py-5">
+                    <h2 class="text-lg font-bold text-slate-900">Ultimos registros de recolectores</h2>
+                    <p class="mt-1 text-sm text-slate-500">Facturas de la quincena actual con opcion de borrar si hubo error.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-slate-500">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold">Recolector</th>
+                                <th class="px-6 py-4 font-semibold">Cliente</th>
+                                <th class="px-6 py-4 font-semibold">Fecha</th>
+                                <th class="px-6 py-4 font-semibold">Prendas</th>
+                                <th class="px-6 py-4 font-semibold">Total</th>
+                                <th class="px-6 py-4 font-semibold">Accion</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse ($ultimasFacturasRecolector as $factura)
+                                <tr>
+                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->recolector->name ?? 'Sin recolector' }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ $factura->cliente->nombre ?? 'Sin cliente' }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ $factura->total_prendas }}</td>
+                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4">
+                                        <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-6 py-8 text-center text-slate-500">No hay facturas de recolectores en esta quincena.</td>
                                 </tr>
                             @endforelse
                         </tbody>

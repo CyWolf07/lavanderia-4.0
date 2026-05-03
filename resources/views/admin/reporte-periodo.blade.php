@@ -68,7 +68,7 @@
                             <th class="px-6 py-4 font-semibold">Prenda</th>
                             <th class="px-6 py-4 font-semibold">Cantidad</th>
                             <th class="px-6 py-4 font-semibold">Total</th>
-                            @if (auth()->user()->tieneRol('programador'))
+                            @if (auth()->user()->tieneRol('admin', 'programador'))
                                 <th class="px-6 py-4 font-semibold">Acci?n</th>
                             @endif
                         </tr>
@@ -80,9 +80,9 @@
                                 <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda_nombre }}</td>
                                 <td class="px-6 py-4 text-slate-700">{{ $registro->cantidad }}</td>
                                 <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($registro->total, 0, ',', '.') }}</td>
-                                @if (auth()->user()->tieneRol('programador'))
+                                @if (auth()->user()->tieneRol('admin', 'programador'))
                                     <td class="px-6 py-4">
-                                        <form action="{{ route('programador.historial.destroy', $registro) }}" method="POST">
+                                        <form action="{{ route('admin.historial.destroy', $registro) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
                                             <button onclick="return confirm('Â¿Eliminar este registro historico?')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
@@ -106,4 +106,3 @@
     </script>
 @endif
 @endsection
-

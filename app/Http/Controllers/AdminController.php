@@ -11,6 +11,7 @@ use App\Models\Rol;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -41,8 +42,14 @@ class AdminController extends Controller
         $periodoActual = $periodoActual['periodo'];
 
         $ultimasProducciones = Produccion::with(['user', 'prenda'])
-            ->latest()
-            ->take(10)
+            ->orderByDesc('fecha')
+            ->orderByDesc('id')
+            ->get();
+
+        $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente'])
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->orderByDesc('fecha_ingreso')
+            ->orderByDesc('id')
             ->get();
 
         $usuarios = User::query()
@@ -84,6 +91,7 @@ class AdminController extends Controller
             'incongruenciasPendientes',
             'notificacionesIncongruencias',
             'ultimasProducciones',
+            'ultimasFacturasRecolector',
             'usuarios',
             'resumenMensualPrendas',
             'periodosCerrados'
@@ -225,6 +233,9 @@ class AdminController extends Controller
 
     public function printReports(Request $request)
     {
+        [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
+        $tomadoHasta = now();
+
         $producciones = Produccion::with(['user', 'prenda'])
             ->orderBy('fecha')
             ->orderBy('user_id')
@@ -232,6 +243,7 @@ class AdminController extends Controller
             ->get();
 
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->orderBy('fecha_ingreso')
             ->orderBy('recolector_id')
             ->orderBy('id')
@@ -246,26 +258,51 @@ class AdminController extends Controller
 
         $detalleUsuarios = $this->detalleProduccionUsuarios($producciones);
         $detalleRecolectores = $this->detalleFacturasRecolector($facturasRecolector);
+        $resumenDiarioUsuarios = $this->resumenDiarioProduccionUsuarios($producciones);
+        $resumenDiarioRecolectores = $this->resumenDiarioRecolectores($facturasRecolector);
 
         if ($registroId) {
             $detalleUsuarios = $detalleUsuarios->where('id', $registroId)->values();
             $detalleRecolectores = $detalleRecolectores->where('id', $registroId)->values();
+            $resumenDiarioUsuarios = $resumenDiarioUsuarios->where('id', $registroId)->values();
+            $resumenDiarioRecolectores = $resumenDiarioRecolectores->where('id', $registroId)->values();
         }
 
         return view('admin.reportes-impresion', [
             'tipoReporte' => $tipoReporte,
             'grupo' => $grupo,
             'registroId' => $registroId,
+            'tomadoHasta' => $tomadoHasta,
+            'inicioQuincena' => $inicioQuincena,
+            'finQuincena' => $finQuincena,
             'resumenUsuarios' => $resumenUsuarios,
             'resumenRecolectores' => $resumenRecolectores,
             'detalleUsuarios' => $detalleUsuarios,
             'detalleRecolectores' => $detalleRecolectores,
+            'resumenDiarioUsuarios' => $resumenDiarioUsuarios,
+            'resumenDiarioRecolectores' => $resumenDiarioRecolectores,
             'totalGeneralUsuarios' => $resumenUsuarios->sum('total'),
             'totalGeneralRecolectores' => $resumenRecolectores->sum('total'),
             'totalPrendasUsuarios' => $resumenUsuarios->sum('cantidad'),
             'totalPrendasRecolectores' => $resumenRecolectores->sum('cantidad'),
             'autoPrint' => $request->boolean('imprimir'),
         ]);
+    }
+
+    public function destroyProduccion(Produccion $produccion)
+    {
+        $produccion->delete();
+
+        return redirect()->route('admin.dashboard')->with('success', 'Registro de usuario eliminado correctamente.');
+    }
+
+    public function destroyFacturaRecolector(FacturaRecolector $facturaRecolector)
+    {
+        DB::transaction(function () use ($facturaRecolector) {
+            $facturaRecolector->delete();
+        });
+
+        return redirect()->route('admin.dashboard')->with('success', 'Registro del recolector eliminado correctamente.');
     }
 
     public function destroyHistorial(HistorialProduccion $historialProduccion)
@@ -405,6 +442,96 @@ class AdminController extends Controller
             ->values();
     }
 
+    private function resumenDiarioProduccionUsuarios(Collection $producciones): Collection
+    {
+        return $producciones
+            ->groupBy('user_id')
+            ->map(function (Collection $registros, $userId) {
+                $usuario = $registros->first()->user;
+                $dias = $registros
+                    ->groupBy(fn (Produccion $registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
+                    ->map(function (Collection $registrosDia, string $fecha) {
+                        $detalle = $registrosDia
+                            ->groupBy(fn (Produccion $registro) => $registro->prenda->nombre ?? 'Sin prenda')
+                            ->map(function (Collection $registrosPrenda, string $nombrePrenda) {
+                                return [
+                                    'nombre' => $nombrePrenda,
+                                    'cantidad' => (int) $registrosPrenda->sum('cantidad'),
+                                    'total' => (float) $registrosPrenda->sum('total'),
+                                ];
+                            })
+                            ->sortBy('nombre')
+                            ->values();
+
+                        return [
+                            'fecha' => $fecha,
+                            'cantidad' => (int) $registrosDia->sum('cantidad'),
+                            'total' => (float) $registrosDia->sum('total'),
+                            'detalle' => $detalle,
+                        ];
+                    })
+                    ->sortBy('fecha')
+                    ->values();
+
+                return [
+                    'id' => (int) $userId,
+                    'nombre' => $usuario->name ?? 'Usuario eliminado',
+                    'rol' => $usuario?->obtenerRol() ?? 'usuario',
+                    'dias' => $dias,
+                    'cantidad' => (int) $registros->sum('cantidad'),
+                    'total' => (float) $registros->sum('total'),
+                ];
+            })
+            ->sortBy('nombre')
+            ->values();
+    }
+
+    private function resumenDiarioRecolectores(Collection $facturas): Collection
+    {
+        return $facturas
+            ->groupBy('recolector_id')
+            ->map(function (Collection $registros, $recolectorId) {
+                $recolector = $registros->first()->recolector;
+                $dias = $registros
+                    ->groupBy(fn (FacturaRecolector $factura) => optional($factura->fecha_ingreso)->toDateString() ?? 'Sin fecha')
+                    ->map(function (Collection $registrosDia, string $fecha) {
+                        $detalle = $registrosDia
+                            ->map(function (FacturaRecolector $factura) {
+                                return [
+                                    'factura' => $factura->id,
+                                    'cliente' => $factura->cliente->nombre ?? 'Cliente eliminado',
+                                    'cantidad' => (int) $factura->total_prendas,
+                                    'total' => (float) $factura->total,
+                                    'prendas' => $factura->detalles
+                                        ->map(fn ($detalle) => $detalle->prenda_nombre.' x '.$detalle->cantidad)
+                                        ->implode(', '),
+                                ];
+                            })
+                            ->values();
+
+                        return [
+                            'fecha' => $fecha,
+                            'cantidad' => (int) $registrosDia->sum('total_prendas'),
+                            'total' => (float) $registrosDia->sum('total'),
+                            'detalle' => $detalle,
+                        ];
+                    })
+                    ->sortBy('fecha')
+                    ->values();
+
+                return [
+                    'id' => (int) $recolectorId,
+                    'nombre' => $recolector->name ?? 'Recolector eliminado',
+                    'rol' => $recolector?->obtenerRol() ?? 'recolector',
+                    'dias' => $dias,
+                    'cantidad' => (int) $registros->sum('total_prendas'),
+                    'total' => (float) $registros->sum('total'),
+                ];
+            })
+            ->sortBy('nombre')
+            ->values();
+    }
+
     private function rangoQuincenaActual(): array
     {
         $hoy = now();
@@ -422,5 +549,3 @@ class AdminController extends Controller
         ];
     }
 }
-
-

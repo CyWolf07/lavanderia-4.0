@@ -8,9 +8,19 @@
     $detalleActual = $grupo === 'recolectores' ? $detalleRecolectores : $detalleUsuarios;
     $totalGrupoActual = $grupo === 'recolectores' ? $totalGeneralRecolectores : $totalGeneralUsuarios;
     $totalPrendasGrupoActual = $grupo === 'recolectores' ? $totalPrendasRecolectores : $totalPrendasUsuarios;
+    $totalCierreResumen = $totalGeneralUsuarios + $totalGeneralRecolectores;
+    $totalPrendasResumen = $totalPrendasUsuarios + $totalPrendasRecolectores;
 @endphp
+<style>
+    @media print {
+        .no-print { display: none !important; }
+        body { background: #fff !important; }
+        .print-page { max-width: none !important; padding: 0 !important; }
+        .print-card { box-shadow: none !important; border: 1px solid #d1d5db !important; break-inside: avoid; }
+    }
+</style>
 <div class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
-    <div class="flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
+    <div class="no-print flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Informes imprimibles</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Usuarios y recolectores</h1>
@@ -21,11 +31,12 @@
         </a>
     </div>
 
-    <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+    <div class="no-print rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
         <form method="GET" action="{{ route('admin.reportes.impresion') }}" class="grid gap-4 xl:grid-cols-[1fr_1fr_1fr_auto_auto]">
             <div>
                 <label for="tipo_reporte" class="mb-2 block text-sm font-semibold text-slate-700">Tipo de informe</label>
                 <select id="tipo_reporte" name="tipo_reporte" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                    <option value="resumen_diario" @selected($tipoReporte === 'resumen_diario')>Resumen por dia</option>
                     <option value="detallado" @selected($tipoReporte === 'detallado')>Informe detallado</option>
                     <option value="general" @selected($tipoReporte === 'general')>Informe general</option>
                 </select>
@@ -61,7 +72,170 @@
         </form>
     </div>
 
-    @if ($tipoReporte === 'general')
+    @if ($tipoReporte === 'resumen_diario')
+        <div class="print-page space-y-6">
+            <div class="print-card rounded-2xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
+                <div class="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-500">Lavanderia Exclusiva</p>
+                        <h1 class="mt-2 text-3xl font-black text-slate-950">Resumen de cierre</h1>
+                        <p class="mt-2 text-sm text-slate-600">
+                            Tomado hasta {{ optional($tomadoHasta)->format('d/m/Y H:i') }}.
+                            Facturas de recolector entre {{ optional($inicioQuincena)->format('d/m/Y') }} y {{ optional($finQuincena)->format('d/m/Y') }}.
+                        </p>
+                    </div>
+                    <div class="text-left sm:text-right">
+                        <p class="text-sm font-semibold text-slate-500">Valor total del cierre</p>
+                        <p class="text-3xl font-black text-emerald-700">$ {{ number_format($totalCierreResumen, 0, ',', '.') }}</p>
+                        <p class="mt-1 text-sm text-slate-500">{{ $totalPrendasResumen }} prendas registradas</p>
+                    </div>
+                </div>
+
+                <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Usuarios</p>
+                        <p class="mt-2 text-2xl font-black text-slate-900">$ {{ number_format($totalGeneralUsuarios, 0, ',', '.') }}</p>
+                        <p class="text-sm text-slate-500">{{ $totalPrendasUsuarios }} prendas</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Recolectores</p>
+                        <p class="mt-2 text-2xl font-black text-slate-900">$ {{ number_format($totalGeneralRecolectores, 0, ',', '.') }}</p>
+                        <p class="text-sm text-slate-500">{{ $totalPrendasRecolectores }} prendas</p>
+                    </div>
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total final</p>
+                        <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalCierreResumen, 0, ',', '.') }}</p>
+                        <p class="text-sm text-emerald-700">Hasta el momento de imprimir</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid gap-6 xl:grid-cols-2">
+                <div class="print-card rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
+                    <h2 class="text-xl font-black text-slate-950">Usuarios</h2>
+                    <div class="mt-4 space-y-5">
+                        @forelse ($resumenDiarioUsuarios as $persona)
+                            <div class="break-inside-avoid rounded-xl border border-slate-200 p-4">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-900">{{ $persona['nombre'] }}</h3>
+                                        <p class="text-sm text-slate-500">{{ ucfirst($persona['rol']) }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-black text-emerald-700">$ {{ number_format($persona['total'], 0, ',', '.') }}</p>
+                                        <p class="text-sm text-slate-500">{{ $persona['cantidad'] }} prendas</p>
+                                    </div>
+                                </div>
+                                <table class="mt-4 w-full text-sm">
+                                    <thead class="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
+                                        <tr>
+                                            <th class="px-3 py-2 font-semibold">Dia</th>
+                                            <th class="px-3 py-2 font-semibold">Datos de ingreso</th>
+                                            <th class="px-3 py-2 text-right font-semibold">Prendas</th>
+                                            <th class="px-3 py-2 text-right font-semibold">Valor del dia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        @foreach ($persona['dias'] as $dia)
+                                            <tr>
+                                                <td class="px-3 py-3 align-top font-semibold text-slate-800">{{ $dia['fecha'] === 'Sin fecha' ? 'Sin fecha' : \Carbon\Carbon::parse($dia['fecha'])->format('d/m/Y') }}</td>
+                                                <td class="px-3 py-3 align-top text-slate-700">
+                                                    <div class="space-y-1">
+                                                        @foreach ($dia['detalle'] as $detalle)
+                                                            <p>
+                                                                {{ $detalle['nombre'] }}:
+                                                                {{ $detalle['cantidad'] }} prendas,
+                                                                $ {{ number_format($detalle['total'], 0, ',', '.') }}
+                                                            </p>
+                                                        @endforeach
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3 align-top text-right text-slate-700">{{ $dia['cantidad'] }}</td>
+                                                <td class="px-3 py-3 align-top text-right font-bold text-slate-950">$ {{ number_format($dia['total'], 0, ',', '.') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot class="border-t border-slate-300 bg-slate-50">
+                                        <tr>
+                                            <td colspan="2" class="px-3 py-2 font-bold text-slate-900">Total {{ $persona['nombre'] }}</td>
+                                            <td class="px-3 py-2 text-right font-bold text-slate-900">{{ $persona['cantidad'] }}</td>
+                                            <td class="px-3 py-2 text-right font-black text-emerald-700">$ {{ number_format($persona['total'], 0, ',', '.') }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">No hay registros activos de usuarios.</p>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="print-card rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
+                    <h2 class="text-xl font-black text-slate-950">Recolectores</h2>
+                    <div class="mt-4 space-y-5">
+                        @forelse ($resumenDiarioRecolectores as $persona)
+                            <div class="break-inside-avoid rounded-xl border border-slate-200 p-4">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-900">{{ $persona['nombre'] }}</h3>
+                                        <p class="text-sm text-slate-500">{{ ucfirst($persona['rol']) }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-black text-emerald-700">$ {{ number_format($persona['total'], 0, ',', '.') }}</p>
+                                        <p class="text-sm text-slate-500">{{ $persona['cantidad'] }} prendas</p>
+                                    </div>
+                                </div>
+                                <table class="mt-4 w-full text-sm">
+                                    <thead class="border-y border-slate-200 bg-slate-50 text-left text-slate-600">
+                                        <tr>
+                                            <th class="px-3 py-2 font-semibold">Dia</th>
+                                            <th class="px-3 py-2 font-semibold">Datos de ingreso</th>
+                                            <th class="px-3 py-2 text-right font-semibold">Prendas</th>
+                                            <th class="px-3 py-2 text-right font-semibold">Valor del dia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        @foreach ($persona['dias'] as $dia)
+                                            <tr>
+                                                <td class="px-3 py-3 align-top font-semibold text-slate-800">{{ $dia['fecha'] === 'Sin fecha' ? 'Sin fecha' : \Carbon\Carbon::parse($dia['fecha'])->format('d/m/Y') }}</td>
+                                                <td class="px-3 py-3 align-top text-slate-700">
+                                                    <div class="space-y-2">
+                                                        @foreach ($dia['detalle'] as $detalle)
+                                                            <div>
+                                                                <p class="font-semibold text-slate-900">
+                                                                    Factura #{{ str_pad((string) $detalle['factura'], 6, '0', STR_PAD_LEFT) }} - {{ $detalle['cliente'] }}
+                                                                </p>
+                                                                <p class="text-slate-600">{{ $detalle['prendas'] ?: 'Sin detalle de prendas' }}</p>
+                                                                <p class="text-slate-600">
+                                                                    {{ $detalle['cantidad'] }} prendas,
+                                                                    $ {{ number_format($detalle['total'], 0, ',', '.') }}
+                                                                </p>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-3 align-top text-right text-slate-700">{{ $dia['cantidad'] }}</td>
+                                                <td class="px-3 py-3 align-top text-right font-bold text-slate-950">$ {{ number_format($dia['total'], 0, ',', '.') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot class="border-t border-slate-300 bg-slate-50">
+                                        <tr>
+                                            <td colspan="2" class="px-3 py-2 font-bold text-slate-900">Total {{ $persona['nombre'] }}</td>
+                                            <td class="px-3 py-2 text-right font-bold text-slate-900">{{ $persona['cantidad'] }}</td>
+                                            <td class="px-3 py-2 text-right font-black text-emerald-700">$ {{ number_format($persona['total'], 0, ',', '.') }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">No hay facturas de recolectores en esta quincena.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    @elseif ($tipoReporte === 'general')
         <div class="grid gap-4 md:grid-cols-2">
             <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
                 <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Total usuarios</p>
