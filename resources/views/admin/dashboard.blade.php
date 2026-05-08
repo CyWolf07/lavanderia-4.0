@@ -309,7 +309,7 @@
                                 <th class="px-6 py-4 font-semibold">Prenda</th>
                                 <th class="px-6 py-4 font-semibold">Cantidad</th>
                                 <th class="px-6 py-4 font-semibold">Total</th>
-                                <th class="px-6 py-4 font-semibold">Accion</th>
+                                <th class="px-6 py-4 font-semibold">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -320,13 +320,19 @@
                                     <td class="px-6 py-4 text-slate-600">{{ $item->cantidad }}</td>
                                     <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4">
-                                        <form action="{{ route('admin.produccion.destroy', $item) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button onclick="return confirm('Eliminar este registro de produccion?')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
-                                                Eliminar
-                                            </button>
-                                        </form>
+                                        <div class="flex items-center gap-2">
+                                            <a href="{{ route('admin.produccion.edit', $item) }}"
+                                               class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
+                                                Editar
+                                            </a>
+                                            <form action="{{ route('admin.produccion.destroy', $item) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button onclick="return confirm('Eliminar este registro de produccion?')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
@@ -349,35 +355,45 @@
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-left text-slate-500">
                             <tr>
+                                <th class="px-6 py-4 font-semibold">Orden #</th>
                                 <th class="px-6 py-4 font-semibold">Recolector</th>
                                 <th class="px-6 py-4 font-semibold">Cliente</th>
                                 <th class="px-6 py-4 font-semibold">Fecha</th>
                                 <th class="px-6 py-4 font-semibold">Prendas</th>
                                 <th class="px-6 py-4 font-semibold">Total</th>
-                                <th class="px-6 py-4 font-semibold">Accion</th>
+                                <th class="px-6 py-4 font-semibold">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @forelse ($ultimasFacturasRecolector as $factura)
                                 <tr>
+                                    <td class="px-6 py-4 font-semibold text-amber-700">
+                                        #{{ str_pad((string) $factura->numero_orden, 6, '0', STR_PAD_LEFT) }}
+                                    </td>
                                     <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->recolector->name ?? 'Sin recolector' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $factura->cliente->nombre ?? 'Sin cliente' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $factura->total_prendas }}</td>
                                     <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
                                     <td class="px-6 py-4">
-                                        <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
-                                                Eliminar
-                                            </button>
-                                        </form>
+                                        <div class="flex items-center gap-2">
+                                            <a href="{{ route('admin.facturas-recolector.edit', $factura) }}"
+                                               class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
+                                                Editar
+                                            </a>
+                                            <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+                                                    Eliminar
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-8 text-center text-slate-500">No hay facturas de recolectores en esta quincena.</td>
+                                    <td colspan="7" class="px-6 py-8 text-center text-slate-500">No hay facturas de recolectores en esta quincena.</td>
                                 </tr>
                             @endforelse
                         </tbody>

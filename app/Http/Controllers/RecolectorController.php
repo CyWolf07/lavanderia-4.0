@@ -10,6 +10,7 @@ use App\Models\RecolectorPrenda;
 use App\Models\User;
 use App\Notifications\IncongruenciaRecolectorDetectada;
 use App\Services\FacturaRecolectorAuditService;
+use App\Services\NumeroOrdenService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class RecolectorController extends Controller
 {
     public function __construct(
         private readonly FacturaRecolectorAuditService $auditService,
+        private readonly NumeroOrdenService $numeroOrdenService,
     )
     {
     }
@@ -33,7 +35,7 @@ class RecolectorController extends Controller
 
         $clientes = Cliente::activos()->orderBy('nombre')->get();
         $prendas = RecolectorPrenda::activas()->orderBy('nombre')->get();
-        $siguienteNumeroFactura = ((int) FacturaRecolector::max('id')) + 1;
+        $siguienteNumeroFactura = $this->numeroOrdenService->peekSiguiente($user->id);
 
         $facturas = FacturaRecolector::with(['cliente', 'detalles'])
             ->where('recolector_id', Auth::id())
@@ -174,16 +176,17 @@ class RecolectorController extends Controller
 
         $factura = DB::transaction(function () use ($cliente, $fechaIngreso, $fechaEntrega, $data, $detalles, $totalPrendas, $totalFactura) {
             $factura = FacturaRecolector::create([
+                'numero_orden'  => $this->numeroOrdenService->obtenerSiguiente(Auth::id()),
                 'recolector_id' => Auth::id(),
-                'cliente_id' => $cliente->id,
+                'cliente_id'    => $cliente->id,
                 'fecha_ingreso' => $fechaIngreso,
                 'fecha_entrega' => $fechaEntrega->toDateString(),
-                'direccion' => $cliente->direccion,
-                'nit_cedula' => $cliente->nit_cedula,
-                'celular' => $cliente->celular,
+                'direccion'     => $cliente->direccion,
+                'nit_cedula'    => $cliente->nit_cedula,
+                'celular'       => $cliente->celular,
                 'observaciones' => array_values($data['observaciones'] ?? []),
                 'total_prendas' => $totalPrendas,
-                'total' => $totalFactura,
+                'total'         => $totalFactura,
             ]);
 
             $factura->detalles()->createMany($detalles->all());

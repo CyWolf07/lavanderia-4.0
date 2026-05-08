@@ -12,6 +12,7 @@ class FacturaRecolector extends Model
     protected $table = 'facturas_recolector';
 
     protected $fillable = [
+        'numero_orden',
         'recolector_id',
         'cliente_id',
         'fecha_ingreso',

@@ -187,7 +187,13 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
 
     // ── CIERRE DE QUINCENA Y REPORTES ─────────────────────────────────────────
     Route::delete('/produccion/{produccion}', [AdminController::class, 'destroyProduccion'])->name('admin.produccion.destroy');
-    Route::delete('/facturas-recolector/{facturaRecolector}', [AdminController::class, 'destroyFacturaRecolector'])->name('admin.facturas-recolector.destroy');
+    Route::get('/produccion/{produccion}/edit', [AdminController::class, 'editProduccion'])->name('admin.produccion.edit');
+    Route::put('/produccion/{produccion}',      [AdminController::class, 'updateProduccion'])->name('admin.produccion.update');
+
+    Route::delete('/facturas-recolector/{facturaRecolector}',        [AdminController::class, 'destroyFacturaRecolector'])->name('admin.facturas-recolector.destroy');
+    Route::get('/facturas-recolector/{facturaRecolector}/edit',       [AdminController::class, 'editFacturaRecolector'])->name('admin.facturas-recolector.edit');
+    Route::put('/facturas-recolector/{facturaRecolector}',            [AdminController::class, 'updateFacturaRecolector'])->name('admin.facturas-recolector.update');
+
     Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])->name('admin.historial.destroy');
     Route::post('/produccion/cerrar', [ProduccionController::class, 'cerrar'])->name('produccion.cerrar');
     Route::get('/reportes/{periodo}', [ProduccionController::class, 'reportePeriodo'])

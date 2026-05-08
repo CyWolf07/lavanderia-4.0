@@ -69,12 +69,27 @@
 
                 @if ($facturaFlash && $facturaFlash->celular)
                     @php
-                        $numLimpio   = preg_replace('/\D+/', '', (string) $facturaFlash->celular);
-                        $numWa       = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
-                        $numeroOrden = str_pad((string) $facturaFlash->id, 6, '0', STR_PAD_LEFT);
+                        $numLimpio     = preg_replace('/\D+/', '', (string) $facturaFlash->celular);
+                        $numWa         = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
+                        $numeroOrden   = str_pad((string) ($facturaFlash->numero_orden ?? $facturaFlash->id), 6, '0', STR_PAD_LEFT);
                         $nombreCliente = $facturaFlash->cliente->nombre ?? 'Cliente';
-                        $valorTotal  = number_format((float) $facturaFlash->total, 0, ',', '.');
-                        $mensaje = "Orden de Pedido #" . $numeroOrden . "%0ACliente: " . rawurlencode($nombreCliente) . "%0AValor Total: $ " . rawurlencode($valorTotal) . "%0A%0AMetodos de Pago%0AEfectivo%0ATransferencia (nequi)%0ALlave Breve (@VIL207)";
+                        $valorTotal    = number_format((float) $facturaFlash->total, 0, ',', '.');
+
+                        // Construir líneas de prendas
+                        $lineasPrendas = '';
+                        foreach ($facturaFlash->detalles as $det) {
+                            $lineasPrendas .= '%0A-' . rawurlencode($det->prenda_nombre) . ' x ' . $det->cantidad;
+                        }
+
+                        $mensaje = 'Orden de pedido: ' . $numeroOrden
+                            . '%0ANombre Cliente: ' . rawurlencode($nombreCliente)
+                            . '%0ATipo de Prenda: ' . $lineasPrendas
+                            . '%0ACantidad: ' . $facturaFlash->total_prendas
+                            . '%0ATotal: $%20' . rawurlencode($valorTotal)
+                            . '%0A%0A%C2%A1%C2%A1%C2%A1Muchas gracias por escoger nuestro servicio!!!'
+                            . '%0ALavanderia Exclusiva'
+                            . '%0Aa su servicio...';
+
                         $waUrl = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
                     @endphp
                     <div class="mt-3">
@@ -83,7 +98,8 @@
                             href="{{ $waUrl }}"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+                            class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-bold shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+                            style="color: #ffffff;"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
                             Enviar WhatsApp al cliente
@@ -454,7 +470,7 @@
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                                        Orden #{{ str_pad((string) $factura->id, 6, '0', STR_PAD_LEFT) }}
+                                        Orden #{{ str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT) }}
                                     </p>
                                     <p class="text-lg font-bold text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</p>
                                     <p class="mt-1 text-sm text-slate-500">
@@ -504,13 +520,28 @@
                             </div>
                             {{-- Botón WhatsApp: abre wa.me con el mensaje pre-escrito --}}
                             @php
-                                $numLimpio   = preg_replace('/\D+/', '', (string) $factura->celular);
-                                $numWa       = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
-                                $numeroOrden = str_pad((string) $factura->id, 6, '0', STR_PAD_LEFT);
+                                $numLimpio     = preg_replace('/\D+/', '', (string) $factura->celular);
+                                $numWa         = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
+                                $numeroOrden   = str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
                                 $nombreCliente = $factura->cliente->nombre ?? 'Cliente';
-                                $valorTotal  = number_format((float) $factura->total, 0, ',', '.');
-                                $mensaje = "Orden de Pedido #" . $numeroOrden . "%0ACliente: " . rawurlencode($nombreCliente) . "%0AValor Total: $ " . rawurlencode($valorTotal) . "%0A%0AMetodos de Pago%0AEfectivo%0ATransferencia (nequi)%0ALlave Breve (@VIL207)";
-                                $waUrl   = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
+                                $valorTotal    = number_format((float) $factura->total, 0, ',', '.');
+
+                                // Construir líneas de prendas
+                                $lineasPrendas = '';
+                                foreach ($factura->detalles as $det) {
+                                    $lineasPrendas .= '%0A-' . rawurlencode($det->prenda_nombre) . ' x ' . $det->cantidad;
+                                }
+
+                                $mensaje = 'Orden de pedido: ' . $numeroOrden
+                                    . '%0ANombre Cliente: ' . rawurlencode($nombreCliente)
+                                    . '%0ATipo de Prenda: ' . $lineasPrendas
+                                    . '%0ACantidad: ' . $factura->total_prendas
+                                    . '%0ATotal: $%20' . rawurlencode($valorTotal)
+                                    . '%0A%0A%C2%A1%C2%A1%C2%A1Muchas gracias por escoger nuestro servicio!!!'
+                                    . '%0ALavanderia Exclusiva'
+                                    . '%0Aa su servicio...';
+
+                                $waUrl = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
                             @endphp
 
                             @if ($factura->celular && $numLimpio)
@@ -519,7 +550,8 @@
                                         href="{{ $waUrl }}"
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-white shadow transition hover:-translate-y-0.5 hover:shadow-md"
+                                        class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold shadow transition hover:-translate-y-0.5 hover:shadow-md"
+                                        style="color: #ffffff;"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
                                         Notificar por WhatsApp

@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Models\Rol;
 use App\Models\Prenda;
 use App\Models\Cliente;
-use App\Models\RecolectorPrenda;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -80,8 +79,6 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Maria Gomez', 'celular' => '3115550002', 'direccion' => 'Calle 8 #22-10']
         );
 
-        RecolectorPrenda::firstOrCreate(['nombre' => 'Cobija'], ['tipo' => 'Hogar', 'precio' => 28000]);
-        RecolectorPrenda::firstOrCreate(['nombre' => 'Cortina'], ['tipo' => 'Hogar', 'precio' => 32000]);
-        RecolectorPrenda::firstOrCreate(['nombre' => 'Edredon'], ['tipo' => 'Hogar', 'precio' => 45000]);
+        $this->call(RecolectorPrendasSeeder::class);
     }
 }

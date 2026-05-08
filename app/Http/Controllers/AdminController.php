@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\FacturaRecolector;
+use App\Models\FacturaRecolectorDetalle;
 use App\Models\Gasto;
 use App\Models\HistorialProduccion;
 use App\Models\IncongruenciaRecolector;
 use App\Models\Produccion;
+use App\Models\RecolectorPrenda;
 use App\Models\Rol;
 use App\Models\User;
+use App\Services\NumeroOrdenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -296,11 +299,20 @@ class AdminController extends Controller
         return redirect()->route('admin.dashboard')->with('success', 'Registro de usuario eliminado correctamente.');
     }
 
-    public function destroyFacturaRecolector(FacturaRecolector $facturaRecolector)
-    {
+    public function destroyFacturaRecolector(
+        FacturaRecolector $facturaRecolector,
+        NumeroOrdenService $numeroOrdenService,
+    ) {
+        $numeroOrden = $facturaRecolector->numero_orden;
+
         DB::transaction(function () use ($facturaRecolector) {
             $facturaRecolector->delete();
         });
+
+        // Reajustar el consecutivo global si la orden tenía numero_orden asignado
+        if ($numeroOrden !== null) {
+            $numeroOrdenService->reajustar($numeroOrden);
+        }
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro del recolector eliminado correctamente.');
     }
@@ -310,6 +322,110 @@ class AdminController extends Controller
         $historialProduccion->delete();
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro historico eliminado correctamente.');
+    }
+
+    // ── EDICIÓN DE FACTURAS DE RECOLECTOR ─────────────────────────────────────
+
+    public function editFacturaRecolector(FacturaRecolector $facturaRecolector)
+    {
+        $facturaRecolector->load(['cliente', 'detalles', 'recolector']);
+        $clientes = \App\Models\Cliente::activos()->orderBy('nombre')->get();
+        $prendas  = RecolectorPrenda::activas()->orderBy('nombre')->get();
+
+        return view('admin.facturas-recolector-edit', [
+            'factura'  => $facturaRecolector,
+            'clientes' => $clientes,
+            'prendas'  => $prendas,
+        ]);
+    }
+
+    public function updateFacturaRecolector(Request $request, FacturaRecolector $facturaRecolector)
+    {
+        $data = $request->validate([
+            'cliente_id'              => ['required', 'exists:clientes,id'],
+            'fecha_entrega'           => ['nullable', 'date'],
+            'observaciones'           => ['nullable', 'array'],
+            'observaciones.*'         => ['string'],
+            'items'                   => ['required', 'array', 'min:1'],
+            'items.*.prenda_id'       => ['required', 'integer', 'exists:recolector_prendas,id'],
+            'items.*.cantidad'        => ['required', 'integer', 'min:1'],
+            'items.*.precio_unitario' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $cliente = \App\Models\Cliente::findOrFail($data['cliente_id']);
+
+        $detalles = collect($data['items'])->map(function ($item) {
+            $prenda    = RecolectorPrenda::findOrFail($item['prenda_id']);
+            $subtotal  = $item['cantidad'] * $item['precio_unitario'];
+
+            return [
+                'recolector_prenda_id' => $prenda->id,
+                'prenda_nombre'        => $prenda->nombre,
+                'valor_unitario'       => (float) $item['precio_unitario'],
+                'cantidad'             => (int) $item['cantidad'],
+                'subtotal'             => $subtotal,
+            ];
+        });
+
+        $totalPrendas = (int) $detalles->sum('cantidad');
+        $totalFactura = $detalles->sum('subtotal');
+
+        DB::transaction(function () use ($facturaRecolector, $cliente, $data, $detalles, $totalPrendas, $totalFactura) {
+            $facturaRecolector->update([
+                'cliente_id'    => $cliente->id,
+                'direccion'     => $cliente->direccion,
+                'nit_cedula'    => $cliente->nit_cedula,
+                'celular'       => $cliente->celular,
+                'fecha_entrega' => $data['fecha_entrega'] ?? null,
+                'observaciones' => array_values($data['observaciones'] ?? []),
+                'total_prendas' => $totalPrendas,
+                'total'         => $totalFactura,
+            ]);
+
+            // Reemplazar detalles por completo
+            $facturaRecolector->detalles()->delete();
+            $facturaRecolector->detalles()->createMany($detalles->all());
+        });
+
+        return redirect()->route('admin.dashboard')->with('success', 'Orden de recolector actualizada correctamente.');
+    }
+
+    // ── EDICIÓN DE REGISTROS DE PRODUCCIÓN ────────────────────────────────────
+
+    public function editProduccion(Produccion $produccion)
+    {
+        $produccion->load(['user', 'prenda']);
+        $prendas  = \App\Models\Prenda::orderBy('nombre')->get();
+        $usuarios = User::orderBy('name')->get();
+
+        return view('admin.produccion-edit', [
+            'produccion' => $produccion,
+            'prendas'    => $prendas,
+            'usuarios'   => $usuarios,
+        ]);
+    }
+
+    public function updateProduccion(Request $request, Produccion $produccion)
+    {
+        $data = $request->validate([
+            'user_id'   => ['required', 'exists:users,id'],
+            'prenda_id' => ['required', 'exists:prendas,id'],
+            'cantidad'  => ['required', 'integer', 'min:1'],
+            'fecha'     => ['required', 'date'],
+        ]);
+
+        $prenda = \App\Models\Prenda::findOrFail($data['prenda_id']);
+        $total  = $data['cantidad'] * $prenda->precio;
+
+        $produccion->update([
+            'user_id'   => $data['user_id'],
+            'prenda_id' => $data['prenda_id'],
+            'cantidad'  => $data['cantidad'],
+            'total'     => $total,
+            'fecha'     => $data['fecha'],
+        ]);
+
+        return redirect()->route('admin.dashboard')->with('success', 'Registro de producción actualizado correctamente.');
     }
 
     private function resolverRol(string $rol): Rol
