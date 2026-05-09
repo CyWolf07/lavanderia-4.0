@@ -187,6 +187,7 @@ class RecolectorController extends Controller
                 'observaciones' => array_values($data['observaciones'] ?? []),
                 'total_prendas' => $totalPrendas,
                 'total'         => $totalFactura,
+                'estado_factura' => 'pendiente',
             ]);
 
             $factura->detalles()->createMany($detalles->all());
@@ -211,6 +212,35 @@ class RecolectorController extends Controller
         }
 
         return $redirect;
+    }
+
+    public function updateFacturaEstado(Request $request, FacturaRecolector $facturaRecolector)
+    {
+        if ((int) $facturaRecolector->recolector_id !== (int) $request->user()->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'estado_factura' => ['required', 'in:pagado,pendiente'],
+            'metodo_pago' => ['nullable', 'required_if:estado_factura,pagado', 'in:efectivo,qr,nequi,llave_breve'],
+        ]);
+
+        if ($facturaRecolector->estaPagada()) {
+            return back()->with('error', 'Las facturas pagadas ya no se pueden modificar.');
+        }
+
+        if ($facturaRecolector->estaCancelada()) {
+            return back()->with('error', 'Una factura cancelada solo puede ser modificada por el administrador.');
+        }
+
+        $nuevoEstado = $data['estado_factura'];
+
+        $facturaRecolector->update([
+            'estado_factura' => $nuevoEstado,
+            'metodo_pago' => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
+        ]);
+
+        return back()->with('success', 'Estatus de factura actualizado correctamente.');
     }
 
     private function itemSeleccionado(mixed $item): bool

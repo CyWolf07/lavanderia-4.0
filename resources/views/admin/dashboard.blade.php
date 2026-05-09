@@ -9,7 +9,26 @@
 @section('title', 'Panel administrativo')
 
 @section('content')
-<div class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+<div
+    x-data="{
+        paymentOpen: false,
+        cancelOpen: false,
+        selectedOrder: '',
+        paymentAction: '',
+        cancelAction: '',
+        openPayment(action, order) {
+            this.paymentAction = action;
+            this.selectedOrder = order;
+            this.paymentOpen = true;
+        },
+        openCancel(action, order) {
+            this.cancelAction = action;
+            this.selectedOrder = order;
+            this.cancelOpen = true;
+        }
+    }"
+    class="mx-auto max-w-[1500px] space-y-8 px-4 py-8 sm:px-6 lg:px-8"
+>
 
     {{-- Encabezado principal con acciones rápidas --}}
     <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -22,7 +41,7 @@
         </div>
 
         {{-- Botones de acceso rápido a módulos --}}
-        <div class="flex flex-col gap-3 sm:flex-row">
+        <div class="hidden">
             <a href="{{ route('produccion.index') }}" class="rounded-full border border-sky-200 bg-sky-50 px-5 py-3 text-sm font-semibold text-sky-700 hover:bg-sky-100">
                 Ingresar a produccion
             </a>
@@ -69,7 +88,28 @@
     @endif
 
     {{-- Tarjetas de estadísticas globales --}}
-    <div class="grid gap-5 md:grid-cols-3">
+    <div class="grid gap-6 lg:grid-cols-[260px_1fr]">
+        <aside class="lg:sticky lg:top-24 lg:self-start">
+            <div class="rounded-[1.5rem] border border-sky-100 bg-white/90 p-3 shadow-xl shadow-sky-100">
+                <nav class="grid gap-3">
+                    <a href="{{ route('produccion.index') }}" class="rounded-[1.35rem] border border-sky-200 bg-sky-50 px-5 py-4 text-sm font-bold text-sky-700 shadow-sm hover:-translate-y-0.5 hover:bg-sky-100">Ingresar a produccion</a>
+                    <a href="{{ route('prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gestionar prendas</a>
+                    <a href="{{ route('clientes.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gestionar clientes</a>
+                    <a href="{{ route('recolector-prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Prendas recolector</a>
+                    <a href="{{ route('admin.incongruencias.index') }}" class="rounded-[1.35rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700 shadow-sm hover:-translate-y-0.5 hover:bg-rose-100">Informe incongruencias</a>
+                    <a href="{{ route('admin.reportes.impresion', ['tipo_reporte' => 'resumen_diario', 'imprimir' => 1]) }}" target="_blank" class="rounded-[1.35rem] border border-sky-200 bg-white px-5 py-4 text-sm font-bold text-sky-700 shadow-sm hover:-translate-y-0.5 hover:bg-sky-50">Imprimir resumen</a>
+                    <form action="{{ route('produccion.cerrar') }}" method="POST">
+                        @csrf
+                        <button type="submit" onclick="return confirm('Cerrar la quincena actual y generar informe imprimible?')" class="w-full rounded-[1.35rem] bg-rose-600 px-5 py-4 text-sm font-black text-white shadow-lg shadow-rose-100 hover:-translate-y-0.5 hover:bg-rose-700">
+                            Cerrar quincena
+                        </button>
+                    </form>
+                </nav>
+            </div>
+        </aside>
+
+        <section class="space-y-8">
+	    <div class="grid gap-5 md:grid-cols-3">
         {{-- Total de usuarios registrados en el sistema --}}
         <div class="rounded-[1.75rem] bg-slate-900 p-6 text-white shadow-xl">
             <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Usuarios registrados</p>
@@ -85,9 +125,61 @@
             <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Ingreso activo</p>
             <p class="mt-3 text-4xl font-black">$ {{ number_format($ingresosTotales, 0, ',', '.') }}</p>
         </div>
-    </div>
+	    </div>
 
-    <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        @php
+            $maxFacturasDia = max(1, $ingresoFacturasPorDia->max('cantidad') ?? 1);
+            $maxProduccionDia = max(1, $produccionUsuariosPorDia->max('cantidad') ?? 1);
+            $estadoClases = [
+                'pagado' => 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+                'pendiente' => 'bg-amber-100 text-amber-700 ring-amber-200',
+                'cancelado' => 'bg-rose-100 text-rose-700 ring-rose-200',
+            ];
+        @endphp
+
+        <div class="grid gap-5 xl:grid-cols-2">
+            <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Ingreso de facturas</h2>
+                        <p class="mt-1 text-sm text-slate-500">Cantidad registrada por dia en la quincena.</p>
+                    </div>
+                    <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-sky-700 ring-1 ring-sky-100">{{ $periodoActual }}</span>
+                </div>
+                <div class="mt-6 flex h-56 items-end gap-3 border-b border-slate-200">
+                    @forelse ($ingresoFacturasPorDia as $dia)
+                        <div class="flex min-w-10 flex-1 flex-col items-center justify-end gap-2">
+                            <div class="w-full rounded-t-xl bg-sky-500" style="height: {{ max(8, ($dia['cantidad'] / $maxFacturasDia) * 190) }}px"></div>
+                            <span class="text-xs font-semibold text-slate-500">{{ $dia['dia'] }}</span>
+                        </div>
+                    @empty
+                        <div class="flex h-full w-full items-center justify-center text-sm text-slate-500">Sin facturas en esta quincena.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Sistema de usuarios</h2>
+                        <p class="mt-1 text-sm text-slate-500">Prendas ingresadas por dia en la quincena.</p>
+                    </div>
+                    <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700 ring-1 ring-emerald-100">{{ $totalProducciones }} registros</span>
+                </div>
+                <div class="mt-6 flex h-56 items-end gap-3 border-b border-slate-200">
+                    @forelse ($produccionUsuariosPorDia as $dia)
+                        <div class="flex min-w-10 flex-1 flex-col items-center justify-end gap-2">
+                            <div class="w-full rounded-t-xl bg-emerald-500" style="height: {{ max(8, ($dia['cantidad'] / $maxProduccionDia) * 190) }}px"></div>
+                            <span class="text-xs font-semibold text-slate-500">{{ $dia['dia'] }}</span>
+                        </div>
+                    @empty
+                        <div class="flex h-full w-full items-center justify-center text-sm text-slate-500">Sin produccion en esta quincena.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+	    <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h2 class="text-lg font-bold text-slate-900">Gastos y reporte de pago quincenal</h2>
@@ -346,56 +438,112 @@
             </div>
 
             {{-- Tabla de ultimos registros activos de recolectores --}}
-            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Ultimos registros de recolectores</h2>
-                    <p class="mt-1 text-sm text-slate-500">Facturas de la quincena actual con opcion de borrar si hubo error.</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-slate-500">
-                            <tr>
-                                <th class="px-6 py-4 font-semibold">Orden #</th>
-                                <th class="px-6 py-4 font-semibold">Recolector</th>
-                                <th class="px-6 py-4 font-semibold">Cliente</th>
-                                <th class="px-6 py-4 font-semibold">Fecha</th>
-                                <th class="px-6 py-4 font-semibold">Prendas</th>
-                                <th class="px-6 py-4 font-semibold">Total</th>
-                                <th class="px-6 py-4 font-semibold">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @forelse ($ultimasFacturasRecolector as $factura)
-                                <tr>
-                                    <td class="px-6 py-4 font-semibold text-amber-700">
-                                        #{{ str_pad((string) $factura->numero_orden, 6, '0', STR_PAD_LEFT) }}
-                                    </td>
-                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->recolector->name ?? 'Sin recolector' }}</td>
-                                    <td class="px-6 py-4 text-slate-600">{{ $factura->cliente->nombre ?? 'Sin cliente' }}</td>
-                                    <td class="px-6 py-4 text-slate-600">{{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }}</td>
-                                    <td class="px-6 py-4 text-slate-600">{{ $factura->total_prendas }}</td>
-                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
-                                            <a href="{{ route('admin.facturas-recolector.edit', $factura) }}"
-                                               class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
-                                                Editar
-                                            </a>
-                                            <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
-                                                    Eliminar
+	            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+	                <div class="border-b border-slate-200 px-6 py-5">
+	                    <h2 class="text-lg font-bold text-slate-900">Estatus factura</h2>
+	                    <p class="mt-1 text-sm text-slate-500">Facturas metidas por recolector con orden, cliente, total y estado de pago.</p>
+	                </div>
+                    <div class="grid gap-3 p-6 pb-0 md:grid-cols-3">
+                        @foreach (['pendiente' => 'Pendientes', 'pagado' => 'Pagadas', 'cancelado' => 'Canceladas'] as $estado => $label)
+                            @php($resumenEstado = $facturaStatusResumen->get($estado))
+                            <div class="rounded-2xl px-4 py-3 ring-1 {{ $estadoClases[$estado] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                                <p class="text-xs font-bold uppercase tracking-[0.18em]">{{ $label }}</p>
+                                <p class="mt-1 text-2xl font-black">{{ $resumenEstado->cantidad ?? 0 }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+	                <div class="overflow-x-auto">
+	                    <table class="min-w-full text-sm">
+	                        <thead class="bg-slate-50 text-left text-slate-500">
+	                            <tr>
+	                                <th class="px-6 py-4 font-semibold">Orden #</th>
+	                                <th class="px-6 py-4 font-semibold">Recolector</th>
+	                                <th class="px-6 py-4 font-semibold">Cliente</th>
+	                                <th class="px-6 py-4 font-semibold">Total</th>
+	                                <th class="px-6 py-4 font-semibold">Estatus</th>
+	                                <th class="px-6 py-4 font-semibold">Cambiar estado</th>
+	                                <th class="px-6 py-4 font-semibold">Acciones</th>
+	                            </tr>
+	                        </thead>
+		                        <tbody class="divide-y divide-slate-100">
+                                    <?php if ($ultimasFacturasRecolector->isEmpty()): ?>
+                                        <tr>
+                                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">No hay facturas de recolectores en esta quincena.</td>
+                                        </tr>
+                                    <?php else: ?>
+		                            <?php foreach ($ultimasFacturasRecolector as $factura): ?>
+                                    <?php
+                                        $estadoFactura = $factura->estado_factura ?? 'pendiente';
+                                        $ordenFactura = '#'.str_pad((string) $factura->numero_orden, 6, '0', STR_PAD_LEFT);
+                                        $estatusAction = route('admin.facturas-recolector.estatus', $factura);
+                                    ?>
+	                                <tr>
+	                                    <td class="px-6 py-4 font-semibold text-amber-700">
+	                                        {{ $ordenFactura }}
+	                                    </td>
+	                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->recolector->name ?? 'Sin recolector' }}</td>
+	                                    <td class="px-6 py-4 text-slate-600">{{ $factura->cliente->nombre ?? 'Sin cliente' }}</td>
+	                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
+	                                    <td class="px-6 py-4">
+                                            <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ring-1 {{ $estadoClases[$estadoFactura] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                                                {{ $estadoFactura }}
+                                            </span>
+                                            @if ($factura->metodo_pago)
+                                                <p class="mt-2 text-xs font-semibold text-slate-500">{{ str_replace('_', ' ', $factura->metodo_pago) }}</p>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-wrap gap-2">
+                                                <button
+                                                    type="button"
+                                                    @click="openPayment('{{ $estatusAction }}', '{{ $ordenFactura }}')"
+                                                    @disabled($estadoFactura !== 'pendiente')
+                                                    class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                                                >
+                                                    Pagado
                                                 </button>
-                                            </form>
-                                        </div>
-                                    </td>
+                                                <form action="{{ $estatusAction }}" method="POST">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <input type="hidden" name="estado_factura" value="pendiente">
+                                                    <button @disabled($estadoFactura === 'pagado') class="rounded-full border border-amber-200 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+                                                        Pendiente
+                                                    </button>
+                                                </form>
+                                                @if (auth()->user()->esAdmin())
+                                                    <button
+                                                        type="button"
+                                                        @click="openCancel('{{ $estatusAction }}', '{{ $ordenFactura }}')"
+                                                        @disabled($estadoFactura === 'pagado')
+                                                        class="rounded-full border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
+                                                    >
+                                                        Cancelado
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </td>
+	                                    <td class="px-6 py-4">
+	                                        <div class="flex items-center gap-2">
+                                                @if ($estadoFactura === 'pagado')
+                                                    <span class="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Bloqueada</span>
+                                                @else
+	                                                <a href="{{ route('admin.facturas-recolector.edit', $factura) }}"
+	                                                   class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
+	                                                    Editar
+	                                                </a>
+                                                @endif
+	                                            <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
+	                                                @csrf
+	                                                @method('DELETE')
+	                                                <button @disabled($estadoFactura === 'pagado') onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+	                                                    Eliminar
+	                                                </button>
+	                                            </form>
+	                                        </div>
+	                                    </td>
                                 </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="px-6 py-8 text-center text-slate-500">No hay facturas de recolectores en esta quincena.</td>
-                                </tr>
-                            @endforelse
+	                            <?php endforeach; ?>
+                                    <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -423,6 +571,56 @@
                     @endforelse
                 </div>
             </div>
+        </div>
+    </div>
+        </section>
+    </div>
+
+    <div x-cloak x-show="paymentOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+        <div @click.outside="paymentOpen = false" class="w-full max-w-md rounded-[1.5rem] bg-white p-6 shadow-2xl">
+            <h2 class="text-xl font-black text-slate-900">Metodo de Pago</h2>
+            <p class="mt-1 text-sm text-slate-500">Orden <span x-text="selectedOrder"></span></p>
+            <form :action="paymentAction" method="POST" class="mt-5 space-y-3">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="estado_factura" value="pagado">
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="efectivo" class="h-4 w-4 text-emerald-600" required>
+                    Efectivo
+                </label>
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="qr" class="h-4 w-4 text-emerald-600" required>
+                    Qr
+                </label>
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="nequi" class="h-4 w-4 text-emerald-600" required>
+                    Nequi
+                </label>
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="llave_breve" class="h-4 w-4 text-emerald-600" required>
+                    LLave Breve
+                </label>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="paymentOpen = false" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Aceptar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div x-cloak x-show="cancelOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+        <div @click.outside="cancelOpen = false" class="w-full max-w-md rounded-[1.5rem] bg-white p-6 shadow-2xl">
+            <h2 class="text-xl font-black text-slate-900">Confirmar cancelacion</h2>
+            <p class="mt-3 text-sm text-slate-600">
+                Confirmar cancelacion de la orden de pedido <span class="font-bold text-slate-900" x-text="selectedOrder"></span>, esta informacion no se podra recuperar desea seguir con el proceso.
+            </p>
+            <form :action="cancelAction" method="POST" class="mt-6 flex justify-end gap-3">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="estado_factura" value="cancelado">
+                <button type="button" @click="cancelOpen = false" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                <button class="rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700">Aceptar</button>
+            </form>
         </div>
     </div>
 </div>

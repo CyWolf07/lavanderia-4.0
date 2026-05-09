@@ -25,7 +25,7 @@
         numeroFactura: @js($siguienteNumeroFactura),
     })"
     :class="isTouchDevice ? 'touch-ui' : ''"
-    class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8"
+    class="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8"
 >
     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
@@ -136,8 +136,21 @@
         </div>
     @endif
 
-    <div class="grid gap-8" :class="isTouchDevice ? 'xl:grid-cols-1' : 'xl:grid-cols-[420px_1fr]'">
-        <div class="space-y-6">
+    <div class="grid gap-6 xl:grid-cols-[250px_minmax(0,1fr)]">
+        <aside class="xl:sticky xl:top-24 xl:self-start">
+            <div class="rounded-[1.5rem] border border-amber-100 bg-white/90 p-3 shadow-xl shadow-amber-100">
+                <nav class="grid gap-3">
+                    <a href="#ingresar-orden" class="rounded-[1.35rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-800 shadow-sm hover:-translate-y-0.5 hover:bg-amber-100">Ingresar orden</a>
+                    <a href="#estatus-factura" class="rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700 shadow-sm hover:-translate-y-0.5 hover:bg-emerald-100">Estatus factura</a>
+                    <a href="#gastos-quincena" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gastos quincena</a>
+                    <a href="#ordenes-recientes" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Ordenes recientes</a>
+                </nav>
+            </div>
+        </aside>
+
+        <section class="min-w-0 space-y-8">
+    <div id="ingresar-orden" class="grid min-w-0 gap-8 scroll-mt-24" :class="isTouchDevice ? '2xl:grid-cols-1' : '2xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]'">
+        <div class="min-w-0 space-y-6">
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
                 <h2 class="text-lg font-bold text-slate-900">Crear cliente rápido</h2>
                 <p class="mt-1 text-sm text-slate-500">Si el cliente no existe, puedes registrarlo aquí mismo sin salir del módulo.</p>
@@ -372,34 +385,34 @@
             </div>
         </div>
 
-        <div class="space-y-8">
-            <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4" :class="isTouchDevice ? 'md:grid-cols-1 xl:grid-cols-1' : ''">
-                <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        <div class="min-w-0 space-y-8">
+            <div class="grid min-w-0 gap-5" :class="isTouchDevice ? 'grid-cols-1' : '[grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))]'">
+                <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-slate-400">Órdenes registradas</p>
-                    <p class="mt-3 text-4xl font-black text-slate-900">{{ $facturas->count() }}</p>
+                    <p class="mt-3 break-words text-4xl font-black text-slate-900">{{ $facturas->count() }}</p>
                 </div>
-                <div class="rounded-[1.75rem] bg-amber-500 p-6 text-white shadow-xl">
+                <div class="min-w-0 rounded-[1.75rem] bg-amber-500 p-5 text-white shadow-xl sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-amber-50">Prendas registradas</p>
-                    <p class="mt-3 text-4xl font-black">{{ $facturas->sum('total_prendas') }}</p>
+                    <p class="mt-3 break-words text-4xl font-black">{{ $facturas->sum('total_prendas') }}</p>
                 </div>
-                <div class="rounded-[1.75rem] bg-slate-900 p-6 text-white shadow-xl">
+                <div class="min-w-0 rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Valor acumulado</p>
-                    <p class="mt-3 text-4xl font-black">$ {{ number_format($facturas->sum('total'), 0, ',', '.') }}</p>
+                    <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($facturas->sum('total'), 0, ',', '.') }}</p>
                 </div>
-                <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
+                <div class="min-w-0 rounded-[1.75rem] bg-emerald-600 p-5 text-white shadow-xl sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Reporte quincena</p>
-                    <p class="mt-3 text-3xl font-black">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
-                    <p class="mt-2 text-xs text-emerald-100">{{ $periodoActual }}</p>
+                    <p class="mt-3 break-words text-3xl font-black">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
+                    <p class="mt-2 break-words text-xs text-emerald-100">{{ $periodoActual }}</p>
                 </div>
             </div>
 
-            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            <div id="gastos-quincena" class="scroll-mt-24 rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
                     <h2 class="text-lg font-bold text-slate-900">Gastos de quincena</h2>
                     <p class="mt-1 text-sm text-slate-500">Fórmula aplicada: total de facturas - gastos = reporte de pago.</p>
                 </div>
-                <div class="grid gap-6 p-6 xl:grid-cols-[380px_1fr]">
-                    <div>
+                <div class="grid min-w-0 gap-6 p-4 sm:p-6 2xl:grid-cols-[minmax(20rem,24rem)_minmax(0,1fr)]">
+                    <div class="min-w-0">
                         <form action="{{ route('recolector.gastos.store') }}" method="POST" class="space-y-3">
                             @csrf
                             <input
@@ -423,19 +436,19 @@
                             </button>
                         </form>
                     </div>
-                    <div class="space-y-3">
-                        <div class="grid gap-3 sm:grid-cols-3">
-                            <div class="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+                    <div class="min-w-0 space-y-3">
+                        <div class="grid min-w-0 gap-3 [grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr))]">
+                            <div class="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
                                 <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Facturas quincena</p>
-                                <p class="mt-2 text-xl font-black text-slate-900">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
+                                <p class="mt-2 break-words text-xl font-black text-slate-900">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
                             </div>
-                            <div class="rounded-2xl bg-rose-50 px-4 py-4 ring-1 ring-rose-200">
+                            <div class="min-w-0 rounded-2xl bg-rose-50 px-4 py-4 ring-1 ring-rose-200">
                                 <p class="text-xs uppercase tracking-[0.22em] text-rose-600">Gastos quincena</p>
-                                <p class="mt-2 text-xl font-black text-rose-700">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
+                                <p class="mt-2 break-words text-xl font-black text-rose-700">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
                             </div>
-                            <div class="rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-200">
+                            <div class="min-w-0 rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-200">
                                 <p class="text-xs uppercase tracking-[0.22em] text-emerald-600">Reporte pago</p>
-                                <p class="mt-2 text-xl font-black text-emerald-700">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
+                                <p class="mt-2 break-words text-xl font-black text-emerald-700">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
                             </div>
                         </div>
                         <div class="rounded-2xl border border-slate-200">
@@ -458,7 +471,84 @@
                 </div>
             </div>
 
-            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            @php
+                $estadoClases = [
+                    'pagado' => 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+                    'pendiente' => 'bg-amber-100 text-amber-700 ring-amber-200',
+                    'cancelado' => 'bg-rose-100 text-rose-700 ring-rose-200',
+                ];
+            @endphp
+
+            <div id="estatus-factura" class="scroll-mt-24 rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+                <div class="border-b border-slate-200 px-6 py-5">
+                    <h2 class="text-lg font-bold text-slate-900">Estatus factura</h2>
+                    <p class="mt-1 text-sm text-slate-500">Consulta tus ordenes de pedido y actualiza el estado de pago cuando corresponda.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-slate-500">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold">Orden #</th>
+                                <th class="px-6 py-4 font-semibold">Cliente</th>
+                                <th class="px-6 py-4 font-semibold">Valor total</th>
+                                <th class="px-6 py-4 font-semibold">Estatus</th>
+                                <th class="px-6 py-4 font-semibold">Cambiar estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse ($facturas as $factura)
+                                @php
+                                    $estadoFactura = $factura->estado_factura ?? 'pendiente';
+                                    $ordenFactura = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
+                                    $estatusAction = route('recolector.facturas.estatus', $factura);
+                                @endphp
+                                <tr>
+                                    <td class="px-6 py-4 font-semibold text-amber-700">{{ $ordenFactura }}</td>
+                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</td>
+                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4">
+                                        <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ring-1 {{ $estadoClases[$estadoFactura] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                                            {{ $estadoFactura }}
+                                        </span>
+                                        @if ($factura->metodo_pago)
+                                            <p class="mt-2 text-xs font-semibold text-slate-500">{{ str_replace('_', ' ', $factura->metodo_pago) }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                @click="openPayment('{{ $estatusAction }}', '{{ $ordenFactura }}')"
+                                                @disabled($estadoFactura !== 'pendiente')
+                                                class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                                            >
+                                                Pagado
+                                            </button>
+                                            <form action="{{ $estatusAction }}" method="POST">
+                                                @csrf
+                                                @method('PATCH')
+                                                <input type="hidden" name="estado_factura" value="pendiente">
+                                                <button @disabled($estadoFactura !== 'pendiente') class="rounded-full border border-amber-200 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+                                                    Pendiente
+                                                </button>
+                                            </form>
+                                            <span class="rounded-full border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-500">
+                                                Cancelado admin
+                                            </span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">Todavia no has registrado ordenes de pedido.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="ordenes-recientes" class="scroll-mt-24 rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
                     <h2 class="text-lg font-bold text-slate-900">Órdenes recientes</h2>
                     <p class="mt-1 text-sm text-slate-500">Cada orden de pedido conserva el cliente, fecha de entrega, observaciones y detalle de prendas.</p>
@@ -564,6 +654,40 @@
                     @endforelse
                 </div>
             </div>
+	        </div>
+	    </div>
+        </section>
+    </div>
+
+    <div x-cloak x-show="paymentOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+        <div @click.outside="paymentOpen = false" class="w-full max-w-md rounded-[1.5rem] bg-white p-6 shadow-2xl">
+            <h2 class="text-xl font-black text-slate-900">Metodo de Pago</h2>
+            <p class="mt-1 text-sm text-slate-500">Orden <span x-text="selectedOrder"></span></p>
+            <form :action="paymentAction" method="POST" class="mt-5 space-y-3">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="estado_factura" value="pagado">
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="efectivo" class="h-4 w-4 text-emerald-600" required>
+                    Efectivo
+                </label>
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="qr" class="h-4 w-4 text-emerald-600" required>
+                    Qr
+                </label>
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="nequi" class="h-4 w-4 text-emerald-600" required>
+                    Nequi
+                </label>
+                <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    <input type="radio" name="metodo_pago" value="llave_breve" class="h-4 w-4 text-emerald-600" required>
+                    LLave Breve
+                </label>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="paymentOpen = false" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Aceptar</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -578,11 +702,14 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         numeroFactura,
         clienteId: clienteInicial ? String(clienteInicial) : '',
         clienteActual: {},
-        selectedPrendaId: '',
-        items: [],
-        nextItemKey: 0,
-        isTouchDevice: false,
-        isMobileViewport: false,
+	        selectedPrendaId: '',
+	        items: [],
+	        nextItemKey: 0,
+            paymentOpen: false,
+            selectedOrder: '',
+            paymentAction: '',
+	        isTouchDevice: false,
+	        isMobileViewport: false,
         init() {
             this.actualizarDispositivo();
             window.addEventListener('resize', () => this.actualizarDispositivo());
@@ -611,9 +738,14 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
             this.isTouchDevice = pointerCoarse || (navigator.maxTouchPoints || 0) > 0;
             this.isMobileViewport = window.innerWidth < 1024;
         },
-        seleccionarCliente() {
-            this.clienteActual = this.clientes.find((cliente) => String(cliente.id) === String(this.clienteId)) || {};
-        },
+	        seleccionarCliente() {
+	            this.clienteActual = this.clientes.find((cliente) => String(cliente.id) === String(this.clienteId)) || {};
+	        },
+            openPayment(action, order) {
+                this.paymentAction = action;
+                this.selectedOrder = order;
+                this.paymentOpen = true;
+            },
         datosPrenda(prendaId) {
             return this.prendas.find((prenda) => Number(prenda.id) === Number(prendaId)) || null;
         },
@@ -722,9 +854,3 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
 }
 </script>
 @endsection
-
-
-
-
-
-

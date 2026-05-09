@@ -131,6 +131,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::get('/',         [RecolectorController::class,  'index'])->name('recolector.index');         // Ver facturas y formulario
         Route::post('/clientes',[ClienteController::class,     'storeFromRecolector'])->name('recolector.clientes.store'); // Crear cliente rápido
         Route::post('/facturas',[RecolectorController::class,  'store'])->name('recolector.facturas.store'); // Guardar factura nueva
+        Route::patch('/facturas/{facturaRecolector}/estatus', [RecolectorController::class, 'updateFacturaEstado'])->name('recolector.facturas.estatus');
         Route::post('/gastos',  [GastoController::class,       'storeFromRecolector'])->name('recolector.gastos.store'); // Guardar gasto de quincena
     });
 
@@ -193,6 +194,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::delete('/facturas-recolector/{facturaRecolector}',        [AdminController::class, 'destroyFacturaRecolector'])->name('admin.facturas-recolector.destroy');
     Route::get('/facturas-recolector/{facturaRecolector}/edit',       [AdminController::class, 'editFacturaRecolector'])->name('admin.facturas-recolector.edit');
     Route::put('/facturas-recolector/{facturaRecolector}',            [AdminController::class, 'updateFacturaRecolector'])->name('admin.facturas-recolector.update');
+    Route::patch('/facturas-recolector/{facturaRecolector}/estatus',   [AdminController::class, 'updateFacturaEstado'])->name('admin.facturas-recolector.estatus');
 
     Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])->name('admin.historial.destroy');
     Route::post('/produccion/cerrar', [ProduccionController::class, 'cerrar'])->name('produccion.cerrar');

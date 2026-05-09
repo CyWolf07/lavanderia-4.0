@@ -55,11 +55,37 @@ class AdminController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $facturaStatusResumen = FacturaRecolector::query()
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->selectRaw("COALESCE(estado_factura, 'pendiente') as estado, COUNT(*) as cantidad, SUM(total) as total")
+            ->groupBy('estado')
+            ->get()
+            ->keyBy('estado');
+
+        $ingresoFacturasPorDia = $ultimasFacturasRecolector
+            ->groupBy(fn (FacturaRecolector $factura) => optional($factura->fecha_ingreso)->format('d/m') ?? 'Sin fecha')
+            ->map(fn (Collection $facturas, string $dia) => [
+                'dia' => $dia,
+                'cantidad' => $facturas->count(),
+                'total' => (float) $facturas->sum('total'),
+            ])
+            ->values();
+
         $usuarios = User::query()
             ->orderBy('name')
             ->get();
 
         $resumenMensualPrendas = $this->resumenMensualPrendas();
+
+        $produccionUsuariosPorDia = $ultimasProducciones
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+            ->groupBy(fn (Produccion $produccion) => optional($produccion->fecha)->format('d/m') ?? 'Sin fecha')
+            ->map(fn (Collection $producciones, string $dia) => [
+                'dia' => $dia,
+                'cantidad' => (int) $producciones->sum('cantidad'),
+                'total' => (float) $producciones->sum('total'),
+            ])
+            ->values();
 
         $periodosCerrados = HistorialProduccion::query()
             ->selectRaw('periodo, SUM(total) as total_general, SUM(cantidad) as total_prendas')
@@ -95,8 +121,11 @@ class AdminController extends Controller
             'notificacionesIncongruencias',
             'ultimasProducciones',
             'ultimasFacturasRecolector',
+            'facturaStatusResumen',
+            'ingresoFacturasPorDia',
             'usuarios',
             'resumenMensualPrendas',
+            'produccionUsuariosPorDia',
             'periodosCerrados'
         ));
     }
@@ -303,6 +332,10 @@ class AdminController extends Controller
         FacturaRecolector $facturaRecolector,
         NumeroOrdenService $numeroOrdenService,
     ) {
+        if ($facturaRecolector->estaPagada()) {
+            return redirect()->route('admin.dashboard')->with('error', 'Las facturas pagadas no se pueden eliminar ni editar.');
+        }
+
         $numeroOrden = $facturaRecolector->numero_orden;
 
         DB::transaction(function () use ($facturaRecolector) {
@@ -328,6 +361,10 @@ class AdminController extends Controller
 
     public function editFacturaRecolector(FacturaRecolector $facturaRecolector)
     {
+        if ($facturaRecolector->estaPagada()) {
+            return redirect()->route('admin.dashboard')->with('error', 'Las facturas pagadas no se pueden editar.');
+        }
+
         $facturaRecolector->load(['cliente', 'detalles', 'recolector']);
         $clientes = \App\Models\Cliente::activos()->orderBy('nombre')->get();
         $prendas  = RecolectorPrenda::activas()->orderBy('nombre')->get();
@@ -341,6 +378,10 @@ class AdminController extends Controller
 
     public function updateFacturaRecolector(Request $request, FacturaRecolector $facturaRecolector)
     {
+        if ($facturaRecolector->estaPagada()) {
+            return redirect()->route('admin.dashboard')->with('error', 'Las facturas pagadas no se pueden editar.');
+        }
+
         $data = $request->validate([
             'cliente_id'              => ['required', 'exists:clientes,id'],
             'fecha_entrega'           => ['nullable', 'date'],
@@ -388,6 +429,32 @@ class AdminController extends Controller
         });
 
         return redirect()->route('admin.dashboard')->with('success', 'Orden de recolector actualizada correctamente.');
+    }
+
+    public function updateFacturaEstado(Request $request, FacturaRecolector $facturaRecolector)
+    {
+        $data = $request->validate([
+            'estado_factura' => ['required', 'in:pagado,pendiente,cancelado'],
+            'metodo_pago' => ['nullable', 'required_if:estado_factura,pagado', 'in:efectivo,qr,nequi,llave_breve'],
+        ]);
+
+        $nuevoEstado = $data['estado_factura'];
+        $usuario = $request->user();
+
+        if ($facturaRecolector->estaPagada()) {
+            return back()->with('error', 'Las facturas pagadas ya no se pueden modificar.');
+        }
+
+        if (($facturaRecolector->estaCancelada() || $nuevoEstado === 'cancelado') && ! $usuario->esAdmin()) {
+            return back()->with('error', 'Solo el administrador puede cambiar facturas canceladas.');
+        }
+
+        $facturaRecolector->update([
+            'estado_factura' => $nuevoEstado,
+            'metodo_pago' => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
+        ]);
+
+        return back()->with('success', 'Estatus de factura actualizado correctamente.');
     }
 
     // ── EDICIÓN DE REGISTROS DE PRODUCCIÓN ────────────────────────────────────

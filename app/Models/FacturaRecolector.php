@@ -23,6 +23,8 @@ class FacturaRecolector extends Model
         'observaciones',
         'total_prendas',
         'total',
+        'estado_factura',
+        'metodo_pago',
     ];
 
     protected function casts(): array
@@ -33,6 +35,16 @@ class FacturaRecolector extends Model
             'observaciones' => 'array',
             'total' => 'decimal:2',
         ];
+    }
+
+    public function estaPagada(): bool
+    {
+        return $this->estado_factura === 'pagado';
+    }
+
+    public function estaCancelada(): bool
+    {
+        return $this->estado_factura === 'cancelado';
     }
 
     public function recolector()
