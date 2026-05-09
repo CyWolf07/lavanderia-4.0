@@ -27,7 +27,7 @@
             this.cancelOpen = true;
         }
     }"
-    class="mx-auto max-w-[1500px] space-y-8 px-4 py-8 sm:px-6 lg:px-8"
+    class="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8"
 >
 
     {{-- Encabezado principal con acciones rápidas --}}
@@ -88,8 +88,8 @@
     @endif
 
     {{-- Tarjetas de estadísticas globales --}}
-    <div class="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside class="lg:sticky lg:top-24 lg:self-start">
+    <div class="grid min-w-0 gap-6 xl:grid-cols-[260px_minmax(0,1fr)]">
+        <aside class="xl:sticky xl:top-24 xl:self-start">
             <div class="rounded-[1.5rem] border border-sky-100 bg-white/90 p-3 shadow-xl shadow-sky-100">
                 <nav class="grid gap-3">
                     <a href="{{ route('produccion.index') }}" class="rounded-[1.35rem] border border-sky-200 bg-sky-50 px-5 py-4 text-sm font-bold text-sky-700 shadow-sm hover:-translate-y-0.5 hover:bg-sky-100">Ingresar a produccion</a>
@@ -108,22 +108,22 @@
             </div>
         </aside>
 
-        <section class="space-y-8">
-	    <div class="grid gap-5 md:grid-cols-3">
+        <section class="min-w-0 space-y-8">
+	    <div class="grid min-w-0 gap-5 [grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))]">
         {{-- Total de usuarios registrados en el sistema --}}
-        <div class="rounded-[1.75rem] bg-slate-900 p-6 text-white shadow-xl">
-            <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Usuarios registrados</p>
-            <p class="mt-3 text-4xl font-black">{{ $totalUsuarios }}</p>
+        <div class="min-w-0 rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl sm:p-6">
+            <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-slate-300 sm:text-sm sm:tracking-[0.22em]">Usuarios registrados</p>
+            <p class="mt-3 break-words text-4xl font-black">{{ $totalUsuarios }}</p>
         </div>
         {{-- Registros de producción activos (quincena actual) --}}
-        <div class="rounded-[1.75rem] bg-sky-600 p-6 text-white shadow-xl">
-            <p class="text-sm uppercase tracking-[0.25em] text-sky-100">Registros activos</p>
-            <p class="mt-3 text-4xl font-black">{{ $totalProducciones }}</p>
+        <div class="min-w-0 rounded-[1.75rem] bg-sky-600 p-5 text-white shadow-xl sm:p-6">
+            <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-sky-100 sm:text-sm sm:tracking-[0.22em]">Registros activos</p>
+            <p class="mt-3 break-words text-4xl font-black">{{ $totalProducciones }}</p>
         </div>
         {{-- Ingreso total acumulado en la quincena activa --}}
-        <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
-            <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Ingreso activo</p>
-            <p class="mt-3 text-4xl font-black">$ {{ number_format($ingresosTotales, 0, ',', '.') }}</p>
+        <div class="min-w-0 rounded-[1.75rem] bg-emerald-600 p-5 text-white shadow-xl sm:p-6">
+            <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100 sm:text-sm sm:tracking-[0.22em]">Ingreso activo</p>
+            <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($ingresosTotales, 0, ',', '.') }}</p>
         </div>
 	    </div>
 
@@ -137,8 +137,8 @@
             ];
         @endphp
 
-        <div class="grid gap-5 xl:grid-cols-2">
-            <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        <div class="grid min-w-0 gap-5 2xl:grid-cols-2">
+            <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">Ingreso de facturas</h2>
@@ -158,7 +158,7 @@
                 </div>
             </div>
 
-            <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+            <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">Sistema de usuarios</h2>
@@ -179,14 +179,14 @@
             </div>
         </div>
 
-	    <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+	    <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h2 class="text-lg font-bold text-slate-900">Gastos y reporte de pago quincenal</h2>
                 <p class="mt-1 text-sm text-slate-500">Disponible para admin y programador. Fórmula: total facturas metidas - gastos = reporte de pago.</p>
                 <p class="mt-2 text-xs uppercase tracking-[0.22em] text-slate-400">{{ $periodoActual }}</p>
             </div>
-            <form action="{{ route('admin.gastos.store') }}" method="POST" class="grid w-full max-w-xl gap-3 sm:grid-cols-[1fr_180px_auto]">
+            <form action="{{ route('admin.gastos.store') }}" method="POST" class="grid w-full gap-3 xl:max-w-2xl xl:grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)_auto]">
                 @csrf
                 <input name="concepto" type="text" placeholder="Concepto del gasto" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <input name="monto" type="number" min="0.01" step="0.01" placeholder="Monto" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
@@ -194,18 +194,18 @@
             </form>
         </div>
 
-        <div class="mt-5 grid gap-3 md:grid-cols-3">
-            <div class="rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
-                <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Facturas quincena</p>
-                <p class="mt-2 text-2xl font-black text-slate-900">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
+        <div class="mt-5 grid min-w-0 gap-3 [grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))]">
+            <div class="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 ring-1 ring-slate-200">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Facturas quincena</p>
+                <p class="mt-2 break-words text-2xl font-black text-slate-900">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
             </div>
-            <div class="rounded-2xl bg-rose-50 px-4 py-4 ring-1 ring-rose-200">
-                <p class="text-xs uppercase tracking-[0.22em] text-rose-600">Gastos quincena</p>
-                <p class="mt-2 text-2xl font-black text-rose-700">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
+            <div class="min-w-0 rounded-2xl bg-rose-50 px-4 py-4 ring-1 ring-rose-200">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-rose-600">Gastos quincena</p>
+                <p class="mt-2 break-words text-2xl font-black text-rose-700">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
             </div>
-            <div class="rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-200">
-                <p class="text-xs uppercase tracking-[0.22em] text-emerald-600">Reporte de pago</p>
-                <p class="mt-2 text-2xl font-black text-emerald-700">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
+            <div class="min-w-0 rounded-2xl bg-emerald-50 px-4 py-4 ring-1 ring-emerald-200">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Reporte de pago</p>
+                <p class="mt-2 break-words text-2xl font-black text-emerald-700">$ {{ number_format($reportePagoQuincena, 0, ',', '.') }}</p>
             </div>
         </div>
 
@@ -227,7 +227,7 @@
         </div>
     </div>
 
-    <div class="grid gap-6 xl:grid-cols-2">
+    <div class="grid min-w-0 gap-6 2xl:grid-cols-2">
         <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
             <div class="border-b border-slate-200 px-6 py-5">
                 <h2 class="text-lg font-bold text-slate-900">Notificaciones de incongruencias</h2>
@@ -272,8 +272,8 @@
         </div>
     </div>
 
-    <div class="grid gap-8 xl:grid-cols-[420px_1fr]">
-        <div class="space-y-8">
+    <div class="grid min-w-0 gap-8 2xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
+        <div class="min-w-0 space-y-8">
 
             {{-- Formulario: Crear nuevo usuario --}}
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">

@@ -6,7 +6,7 @@
 @php
     $esUsuario = $user->tieneRol('usuario');
 @endphp
-<div x-data="produccionForm()" class="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
+<div x-data="produccionForm()" class="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
     <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-sky-700">Producción</p>
@@ -38,8 +38,8 @@
         </div>
     @endif
 
-    <div class="grid gap-8 xl:grid-cols-[360px_1fr]">
-        <div class="space-y-6">
+    <div class="grid min-w-0 gap-8 2xl:grid-cols-[minmax(320px,360px)_minmax(0,1fr)]">
+        <div class="min-w-0 space-y-6">
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
                 <h2 class="text-lg font-bold text-slate-900">Nuevo registro</h2>
                 <p class="mt-1 text-sm text-slate-500">Selecciona la prenda y escribe la cantidad producida.</p>
@@ -82,9 +82,9 @@
                 </form>
             </div>
 
-            <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
-                <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Quincena activa</p>
-                <p class="mt-3 text-4xl font-black">$ {{ number_format($totalQuincena, 0, ',', '.') }}</p>
+            <div class="min-w-0 rounded-[1.75rem] bg-emerald-600 p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100 sm:text-sm sm:tracking-[0.22em]">Quincena activa</p>
+                <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($totalQuincena, 0, ',', '.') }}</p>
                 <p class="mt-2 text-sm text-emerald-50">Este valor se reinicia visualmente al cerrar la quincena, pero queda guardado en el historial.</p>
             </div>
 
@@ -102,7 +102,7 @@
                             <div class="rounded-2xl border border-slate-200 px-4 py-3">
                                 <p class="text-sm font-semibold text-slate-800">{{ $periodoLabel }}</p>
                                 <p class="mt-1 text-sm text-slate-500">{{ $periodo->total_prendas }} prendas registradas</p>
-                                <p class="mt-2 text-xl font-bold text-emerald-700">$ {{ number_format($periodo->total_periodo, 0, ',', '.') }}</p>
+                                <p class="mt-2 break-words text-xl font-bold text-emerald-700">$ {{ number_format($periodo->total_periodo, 0, ',', '.') }}</p>
                             </div>
                         @endforeach
                     @endif
@@ -110,7 +110,7 @@
             </div>
         </div>
 
-        <div class="space-y-8">
+        <div class="min-w-0 space-y-8">
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
                     <h2 class="text-lg font-bold text-slate-900">Registros actuales</h2>

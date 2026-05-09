@@ -26,8 +26,15 @@ class AdminController extends Controller
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
 
         $totalUsuarios = User::count();
-        $totalProducciones = Produccion::count();
-        $ingresosTotales = Produccion::sum('total');
+        $totalProduccionesActivas = Produccion::count();
+        $ingresosProduccionActiva = Produccion::sum('total');
+        $totalFacturasActivas = FacturaRecolector::query()
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->count();
+        $totalProducciones = $totalProduccionesActivas + $totalFacturasActivas;
+        $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->sum('total');
         $totalFacturasQuincena = FacturaRecolector::query()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
