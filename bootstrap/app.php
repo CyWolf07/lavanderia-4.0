@@ -41,6 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: env('TRUSTED_PROXIES', '*'));
         $middleware->preventRequestsDuringMaintenance(['/up', '/up/database']);
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+        ]);
 
         $middleware->alias([
             'activo' => EnsureUserIsActive::class,

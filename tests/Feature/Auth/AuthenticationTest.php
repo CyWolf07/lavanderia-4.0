@@ -54,3 +54,17 @@ test('users can logout', function () {
     $this->assertGuest();
     $response->assertRedirect('/');
 });
+
+test('logout does not fail with csrf page expired for any role', function (string $rol) {
+    $this->withMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+
+    $user = User::factory()->create([
+        'rol' => $rol,
+        'activo' => true,
+    ]);
+
+    $response = $this->actingAs($user)->post('/logout');
+
+    $this->assertGuest();
+    $response->assertRedirect('/');
+})->with(['admin', 'programador', 'usuario', 'recolector']);
