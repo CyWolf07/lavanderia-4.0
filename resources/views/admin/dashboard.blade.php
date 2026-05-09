@@ -25,6 +25,9 @@
             this.cancelAction = action;
             this.selectedOrder = order;
             this.cancelOpen = true;
+        },
+        copyEnterpriseCode(code) {
+            navigator.clipboard.writeText(code);
         }
     }"
     class="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8"
@@ -84,6 +87,67 @@
     @if (session('error'))
         <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             {{ session('error') }}
+        </div>
+    @endif
+
+    @if (auth()->user()->esProgramador())
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)]">
+            <div class="min-w-0 rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl sm:p-6">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="min-w-0">
+                        <p class="text-xs font-bold uppercase tracking-[0.22em] text-sky-200">Codigo empresarial</p>
+                        <p class="mt-3 break-all rounded-2xl border border-white/10 bg-white/10 px-4 py-3 font-mono text-lg font-black text-white">
+                            {{ $codigoEmpresarial }}
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 lg:justify-end">
+                        <button
+                            type="button"
+                            @click="copyEnterpriseCode('{{ $codigoEmpresarial }}')"
+                            class="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-slate-900 hover:bg-sky-50"
+                        >
+                            Copiar
+                        </button>
+                        <form action="{{ route('admin.codigo-empresarial.regenerate') }}" method="POST">
+                            @csrf
+                            <button
+                                onclick="return confirm('Regenerar el codigo empresarial cerrara todas las sesiones activas. Deseas continuar?')"
+                                class="rounded-2xl border border-amber-500 bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"
+                            >
+                                Regenerar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
+                <h2 class="text-lg font-bold text-slate-900">Dispositivos bloqueados</h2>
+                <div class="mt-4 space-y-3">
+                    @forelse ($dispositivosBloqueados as $bloqueo)
+                        <div class="rounded-2xl border border-slate-200 px-4 py-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                                        {{ $bloqueo->area === 'enterprise_code' ? 'Codigo empresarial' : 'Inicio de sesion' }}
+                                    </p>
+                                    <p class="mt-1 truncate font-mono text-xs text-slate-500">{{ $bloqueo->device_id }}</p>
+                                    <p class="mt-1 text-xs text-rose-600">{{ optional($bloqueo->locked_at)->format('d/m/Y H:i') }}</p>
+                                </div>
+                                <form action="{{ route('admin.dispositivos.unlock', $bloqueo) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="rounded-full border border-emerald-200 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50">
+                                        Desbloquear
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-500">No hay dispositivos bloqueados.</p>
+                    @endforelse
+                </div>
+            </div>
         </div>
     @endif
 
@@ -532,13 +596,15 @@
 	                                                    Editar
 	                                                </a>
                                                 @endif
-	                                            <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
-	                                                @csrf
-	                                                @method('DELETE')
-	                                                <button @disabled($estadoFactura === 'pagado') onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
-	                                                    Eliminar
-	                                                </button>
-	                                            </form>
+                                                @if (auth()->user()->tieneRol('admin', 'programador'))
+    	                                            <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST">
+    	                                                @csrf
+    	                                                @method('DELETE')
+    	                                                <button onclick="return confirm('Eliminar este registro del recolector? Tambien se borraran sus detalles.')" class="rounded-full border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">
+    	                                                    Eliminar
+    	                                                </button>
+    	                                            </form>
+                                                @endif
 	                                        </div>
 	                                    </td>
                                 </tr>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\EnterpriseAccessControl;
+use App\Services\DeviceAccessService;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -56,6 +58,14 @@ class LoginRequest extends FormRequest
      */
     public function authenticate(): void
     {
+        $devices = app(DeviceAccessService::class);
+
+        if ($devices->isLocked($this, EnterpriseAccessControl::AREA_LOGIN)) {
+            throw ValidationException::withMessages([
+                'login' => 'Este dispositivo esta bloqueado por intentos fallidos. Solo el programador puede desbloquearlo.',
+            ]);
+        }
+
         $this->ensureIsNotRateLimited();
 
         $login = trim((string) ($this->input('login') ?: $this->input('email')));
@@ -63,21 +73,30 @@ class LoginRequest extends FormRequest
 
         if (! Auth::attempt([$campo => $login, 'password' => $this->string('password')->toString()], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
+            $control = $devices->registerFailure($this, EnterpriseAccessControl::AREA_LOGIN);
+            $remaining = max(0, DeviceAccessService::MAX_ATTEMPTS - $control->attempts);
 
             throw ValidationException::withMessages([
-                'login' => trans('auth.failed'),
+                'login' => $control->estaBloqueado()
+                    ? 'Este dispositivo quedo bloqueado por intentos fallidos. Solo el programador puede desbloquearlo.'
+                    : trans('auth.failed').' Te quedan '.$remaining.' intento(s).',
             ]);
         }
 
         if (! optional(Auth::user())->estaActivo()) {
             Auth::logout();
             RateLimiter::hit($this->throttleKey());
+            $control = $devices->registerFailure($this, EnterpriseAccessControl::AREA_LOGIN);
+            $remaining = max(0, DeviceAccessService::MAX_ATTEMPTS - $control->attempts);
 
             throw ValidationException::withMessages([
-                'login' => 'Tu cuenta se encuentra inhabilitada. Contacta al administrador.',
+                'login' => $control->estaBloqueado()
+                    ? 'Este dispositivo quedo bloqueado por intentos fallidos. Solo el programador puede desbloquearlo.'
+                    : 'Tu cuenta se encuentra inhabilitada. Contacta al administrador. Te quedan '.$remaining.' intento(s).',
             ]);
         }
 
+        $devices->clear($this, EnterpriseAccessControl::AREA_LOGIN);
         RateLimiter::clear($this->throttleKey());
     }
 
@@ -88,7 +107,7 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), DeviceAccessService::MAX_ATTEMPTS)) {
             return;
         }
 

@@ -44,6 +44,7 @@ class RecolectorController extends Controller
             ->get();
 
         $totalFacturasQuincena = FacturaRecolector::query()
+            ->noCanceladas()
             ->where('recolector_id', $user->id)
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');

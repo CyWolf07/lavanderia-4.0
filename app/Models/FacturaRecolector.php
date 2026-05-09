@@ -47,6 +47,14 @@ class FacturaRecolector extends Model
         return $this->estado_factura === 'cancelado';
     }
 
+    public function scopeNoCanceladas($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereNull('estado_factura')
+                ->orWhere('estado_factura', '!=', 'cancelado');
+        });
+    }
+
     public function recolector()
     {
         return $this->belongsTo(User::class, 'recolector_id');

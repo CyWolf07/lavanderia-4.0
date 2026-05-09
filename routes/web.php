@@ -31,6 +31,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\EnterpriseAccessController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\PqrsController;
 use App\Http\Controllers\PrendaController;
@@ -58,6 +59,8 @@ Route::get('/', function () {
 */
 
 // Iniciar sesión
+Route::get('/codigo-empresarial', [EnterpriseAccessController::class, 'create'])->name('enterprise-code.create');
+Route::post('/codigo-empresarial', [EnterpriseAccessController::class, 'store'])->name('enterprise-code.store');
 Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
@@ -205,6 +208,8 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::post('/gastos', [GastoController::class, 'storeFromAdmin'])->name('admin.gastos.store');
     Route::get('/incongruencias', [AdminController::class, 'incongruencias'])->name('admin.incongruencias.index');
     Route::patch('/notificaciones/{notificationId}/leer', [AdminController::class, 'markNotificationAsRead'])->name('admin.notificaciones.read');
+    Route::patch('/dispositivos-bloqueados/{accessControl}/desbloquear', [EnterpriseAccessController::class, 'unlock'])->name('admin.dispositivos.unlock');
+    Route::post('/codigo-empresarial/regenerar', [EnterpriseAccessController::class, 'regenerate'])->name('admin.codigo-empresarial.regenerate');
 
 });
 

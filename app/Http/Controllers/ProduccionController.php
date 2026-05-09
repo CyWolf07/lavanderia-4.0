@@ -138,6 +138,7 @@ class ProduccionController extends Controller
         abort_if($registros->isEmpty(), 404);
 
         $totalFacturasPeriodo = FacturaRecolector::query()
+            ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioPeriodo, $finPeriodo])
             ->sum('total');
         $gastosPeriodo = Gasto::query()
@@ -185,4 +186,3 @@ class ProduccionController extends Controller
         ];
     }
 }
-

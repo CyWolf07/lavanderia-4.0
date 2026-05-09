@@ -70,6 +70,17 @@ it('shows active admin totals from production and collector invoices', function 
         'estado_factura' => 'pendiente',
     ]);
 
+    FacturaRecolector::create([
+        'numero_orden' => 2,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => now(),
+        'fecha_entrega' => now()->addDays(3)->toDateString(),
+        'total_prendas' => 5,
+        'total' => 70000,
+        'estado_factura' => 'cancelado',
+    ]);
+
     $this->actingAs($admin)
         ->get(route('admin.dashboard'))
         ->assertOk()
@@ -78,5 +89,45 @@ it('shows active admin totals from production and collector invoices', function 
         ->assertSeeText('Registros activos')
         ->assertSeeText('2')
         ->assertSeeText('Ingreso activo')
-        ->assertSeeText('$ 50.000');
+        ->assertSeeText('$ 50.000')
+        ->assertDontSeeText('$ 120.000');
+});
+
+it('allows programmers to delete paid collector invoices from the status table', function () {
+    $programmer = User::factory()->create([
+        'rol' => 'programador',
+        'activo' => true,
+    ]);
+
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente pago',
+        'nit_cedula' => '900987654',
+        'celular' => '3009876543',
+        'direccion' => 'Calle 2',
+    ]);
+
+    $factura = FacturaRecolector::create([
+        'numero_orden' => 9,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => now(),
+        'fecha_entrega' => now()->addDays(3)->toDateString(),
+        'total_prendas' => 1,
+        'total' => 15000,
+        'estado_factura' => 'pagado',
+        'metodo_pago' => 'efectivo',
+    ]);
+
+    $this->actingAs($programmer)
+        ->delete(route('admin.facturas-recolector.destroy', $factura))
+        ->assertRedirect(route('admin.dashboard'));
+
+    $this->assertDatabaseMissing('facturas_recolector', [
+        'id' => $factura->id,
+    ]);
 });

@@ -11,6 +11,8 @@ use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
 use App\Models\Rol;
 use App\Models\User;
+use App\Services\DeviceAccessService;
+use App\Services\EnterpriseCodeService;
 use App\Services\NumeroOrdenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -20,7 +22,7 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    public function dashboard()
+    public function dashboard(EnterpriseCodeService $enterpriseCodes, DeviceAccessService $deviceAccess)
     {
         $periodoActual = Gasto::periodoDesdeFecha(now());
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
@@ -29,13 +31,16 @@ class AdminController extends Controller
         $totalProduccionesActivas = Produccion::count();
         $ingresosProduccionActiva = Produccion::sum('total');
         $totalFacturasActivas = FacturaRecolector::query()
+            ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->count();
         $totalProducciones = $totalProduccionesActivas + $totalFacturasActivas;
         $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
+            ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
         $totalFacturasQuincena = FacturaRecolector::query()
+            ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
         $gastosQuincena = Gasto::query()
@@ -115,6 +120,13 @@ class AdminController extends Controller
             ->take(10)
             ->get();
 
+        $codigoEmpresarial = auth()->user()->esProgramador()
+            ? $enterpriseCodes->current()
+            : null;
+        $dispositivosBloqueados = auth()->user()->esProgramador()
+            ? $deviceAccess->lockedDevices()
+            : collect();
+
         return view('admin.dashboard', compact(
             'totalUsuarios',
             'totalProducciones',
@@ -133,7 +145,9 @@ class AdminController extends Controller
             'usuarios',
             'resumenMensualPrendas',
             'produccionUsuariosPorDia',
-            'periodosCerrados'
+            'periodosCerrados',
+            'codigoEmpresarial',
+            'dispositivosBloqueados'
         ));
     }
 
@@ -339,10 +353,6 @@ class AdminController extends Controller
         FacturaRecolector $facturaRecolector,
         NumeroOrdenService $numeroOrdenService,
     ) {
-        if ($facturaRecolector->estaPagada()) {
-            return redirect()->route('admin.dashboard')->with('error', 'Las facturas pagadas no se pueden eliminar ni editar.');
-        }
-
         $numeroOrden = $facturaRecolector->numero_orden;
 
         DB::transaction(function () use ($facturaRecolector) {

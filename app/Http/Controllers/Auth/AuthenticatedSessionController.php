@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Services\DeviceAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,8 +15,12 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request, DeviceAccessService $devices): View|RedirectResponse
     {
+        if (! (bool) $request->session()->get('enterprise_code_validated', false)) {
+            return redirect()->route('enterprise-code.create');
+        }
+
         return view('auth.login');
     }
 
@@ -24,6 +29,10 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        if (! (bool) $request->session()->get('enterprise_code_validated', false)) {
+            return redirect()->route('enterprise-code.create');
+        }
+
         $request->authenticate();
 
         $request->session()->regenerate();
