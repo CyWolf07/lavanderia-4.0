@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 class EnterpriseCodeService
 {
     private const SETTING_KEY = 'enterprise_code';
+    private const DEFAULT_CODE = 'Lavanderia2026!*';
 
     public function current(): string
     {
@@ -21,14 +22,7 @@ class EnterpriseCodeService
                 return (string) $setting->value;
             }
 
-            $code = $this->generate();
-
-            SystemSetting::create([
-                'key' => self::SETTING_KEY,
-                'value' => $code,
-            ]);
-
-            return $code;
+            return self::DEFAULT_CODE;
         });
     }
 

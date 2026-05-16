@@ -3,6 +3,7 @@
 use App\Models\EnterpriseAccessControl;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\EnterpriseCodeService;
 
 test('enterprise code screen is shown before login', function () {
     $response = $this->get('/login');
@@ -14,6 +15,26 @@ test('login screen can be rendered after enterprise code validation', function (
     $response = $this->withSession(['enterprise_code_validated' => true])->get('/login');
 
     $response->assertStatus(200);
+});
+
+test('enterprise code is static until programmer regenerates it', function () {
+    $codes = app(EnterpriseCodeService::class);
+
+    $currentCode = $codes->current();
+
+    expect($codes->current())->toBe($currentCode);
+    $this->assertDatabaseMissing('system_settings', [
+        'key' => 'enterprise_code',
+    ]);
+
+    $newCode = $codes->regenerate();
+
+    expect($newCode)->not->toBe($currentCode)
+        ->and($codes->current())->toBe($newCode);
+    $this->assertDatabaseHas('system_settings', [
+        'key' => 'enterprise_code',
+        'value' => $newCode,
+    ]);
 });
 
 test('enterprise code validates device before showing login', function () {
