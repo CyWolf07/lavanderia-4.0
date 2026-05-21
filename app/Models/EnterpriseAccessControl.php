@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class EnterpriseAccessControl extends Model
 {
     public const AREA_CODE = 'enterprise_code';
+
     public const AREA_LOGIN = 'login';
 
     protected $fillable = [

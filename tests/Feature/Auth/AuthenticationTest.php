@@ -4,6 +4,7 @@ use App\Models\EnterpriseAccessControl;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\EnterpriseCodeService;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 
 test('enterprise code screen is shown before login', function () {
     $response = $this->get('/login');
@@ -173,7 +174,7 @@ test('users can logout', function () {
 });
 
 test('logout does not fail with csrf page expired for any role', function (string $rol) {
-    $this->withMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
+    $this->withMiddleware(ValidateCsrfToken::class);
 
     $user = User::factory()->create([
         'rol' => $rol,

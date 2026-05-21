@@ -16,7 +16,7 @@ class Produccion extends Model
         'prenda_id',
         'cantidad',
         'total',
-        'fecha' // 🔥 AGREGADO para control por día y quincena
+        'fecha', // 🔥 AGREGADO para control por día y quincena
     ];
 
     // 🔗 RELACIÓN USUARIO

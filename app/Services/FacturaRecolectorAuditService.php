@@ -57,6 +57,7 @@ class FacturaRecolectorAuditService
                         $detalle->id
                     ),
                 ];
+
                 continue;
             }
 

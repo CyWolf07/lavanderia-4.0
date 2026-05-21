@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Pqrs;
+use Illuminate\Http\Request;
 
 /**
  * PqrsController
@@ -34,10 +34,10 @@ class PqrsController extends Controller
     {
         // Validación de los campos del formulario de radicación
         $request->validate([
-            'tipo'       => 'required|string',              // Tipo: Petición, Queja, Reclamo o Sugerencia
-            'nombre'     => 'required|string|max:255',      // Nombre completo del solicitante
-            'correo'     => 'required|email|max:255',       // Correo electrónico válido
-            'descripcion'=> 'required|string',              // Descripción detallada de la solicitud
+            'tipo' => 'required|string',              // Tipo: Petición, Queja, Reclamo o Sugerencia
+            'nombre' => 'required|string|max:255',      // Nombre completo del solicitante
+            'correo' => 'required|email|max:255',       // Correo electrónico válido
+            'descripcion' => 'required|string',              // Descripción detallada de la solicitud
         ]);
 
         // Crea el registro con todos los campos validados
@@ -68,10 +68,10 @@ class PqrsController extends Controller
     {
         // Valida los mismos campos que en el store
         $request->validate([
-            'tipo'       => 'required|string',
-            'nombre'     => 'required|string|max:255',
-            'correo'     => 'required|email|max:255',
-            'descripcion'=> 'required|string',
+            'tipo' => 'required|string',
+            'nombre' => 'required|string|max:255',
+            'correo' => 'required|email|max:255',
+            'descripcion' => 'required|string',
         ]);
 
         // Busca y actualiza el registro

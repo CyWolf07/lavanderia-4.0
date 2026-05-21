@@ -1,6 +1,8 @@
 <?php
 
-uses(Tests\TestCase::class);
+use Tests\TestCase;
+
+uses(TestCase::class);
 
 beforeEach(function () {
     $this->deploymentEnvKeys = [
@@ -37,18 +39,18 @@ afterEach(function () {
     }
 });
 
-it('uses railway postgres variables when db variables are missing', function () {
+it('uses external postgres variables when db variables are missing', function () {
     setDeploymentEnv('DB_CONNECTION', '');
     setDeploymentEnv('DB_URL', null);
-    setDeploymentEnv('DATABASE_URL', 'postgresql://railway:secret@postgres.railway.internal:6543/lavanderia?sslmode=require');
+    setDeploymentEnv('DATABASE_URL', 'postgresql://supabase:secret@db.supabase.co:6543/lavanderia?sslmode=require');
     setDeploymentEnv('DB_HOST', null);
-    setDeploymentEnv('PGHOST', 'postgres.railway.internal');
+    setDeploymentEnv('PGHOST', 'db.supabase.co');
     setDeploymentEnv('DB_PORT', null);
     setDeploymentEnv('PGPORT', '6543');
     setDeploymentEnv('DB_DATABASE', null);
     setDeploymentEnv('PGDATABASE', 'lavanderia');
     setDeploymentEnv('DB_USERNAME', null);
-    setDeploymentEnv('PGUSER', 'railway');
+    setDeploymentEnv('PGUSER', 'postgres');
     setDeploymentEnv('DB_PASSWORD', null);
     setDeploymentEnv('PGPASSWORD', 'secret');
     setDeploymentEnv('DB_SCHEMA', null);
@@ -59,11 +61,11 @@ it('uses railway postgres variables when db variables are missing', function () 
     $config = require __DIR__.'/../../config/database.php';
 
     expect($config['default'])->toBe('pgsql')
-        ->and($config['connections']['pgsql']['url'])->toBe('postgresql://railway:secret@postgres.railway.internal:6543/lavanderia?sslmode=require')
-        ->and($config['connections']['pgsql']['host'])->toBe('postgres.railway.internal')
+        ->and($config['connections']['pgsql']['url'])->toBe('postgresql://supabase:secret@db.supabase.co:6543/lavanderia?sslmode=require')
+        ->and($config['connections']['pgsql']['host'])->toBe('db.supabase.co')
         ->and($config['connections']['pgsql']['port'])->toBe('6543')
         ->and($config['connections']['pgsql']['database'])->toBe('lavanderia')
-        ->and($config['connections']['pgsql']['username'])->toBe('railway')
+        ->and($config['connections']['pgsql']['username'])->toBe('postgres')
         ->and($config['connections']['pgsql']['password'])->toBe('secret')
         ->and($config['connections']['pgsql']['search_path'])->toBe('public')
         ->and($config['connections']['pgsql']['sslmode'])->toBe('require');
@@ -82,18 +84,18 @@ it('does not let an empty db url hide database url', function () {
         ->and($config['connections']['pgsql']['url'])->toBe('postgresql://supabase:secret@aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require');
 });
 
-it('keeps explicit db variables above railway fallbacks', function () {
+it('keeps explicit db variables above external postgres fallbacks', function () {
     setDeploymentEnv('DB_CONNECTION', 'pgsql');
     setDeploymentEnv('DB_URL', null);
-    setDeploymentEnv('DATABASE_URL', 'postgresql://railway:secret@postgres.railway.internal:6543/lavanderia');
+    setDeploymentEnv('DATABASE_URL', 'postgresql://supabase:secret@db.supabase.co:6543/lavanderia');
     setDeploymentEnv('DB_HOST', 'db.internal');
-    setDeploymentEnv('PGHOST', 'postgres.railway.internal');
+    setDeploymentEnv('PGHOST', 'db.supabase.co');
     setDeploymentEnv('DB_PORT', '5432');
     setDeploymentEnv('PGPORT', '6543');
     setDeploymentEnv('DB_DATABASE', 'custom_db');
     setDeploymentEnv('PGDATABASE', 'lavanderia');
     setDeploymentEnv('DB_USERNAME', 'custom_user');
-    setDeploymentEnv('PGUSER', 'railway');
+    setDeploymentEnv('PGUSER', 'postgres');
     setDeploymentEnv('DB_PASSWORD', 'custom_secret');
     setDeploymentEnv('PGPASSWORD', 'secret');
     setDeploymentEnv('DB_SCHEMA', 'tenant');
@@ -113,11 +115,24 @@ it('keeps explicit db variables above railway fallbacks', function () {
         ->and($config['connections']['pgsql']['sslmode'])->toBe('prefer');
 });
 
-it('points railway healthchecks to the laravel up endpoint', function () {
-    $config = json_decode(file_get_contents(__DIR__.'/../../railway.json'), true, flags: JSON_THROW_ON_ERROR);
+it('keeps the docker image using the container startup script', function () {
+    $dockerfile = file_get_contents(__DIR__.'/../../Dockerfile');
+    $startupScript = file_get_contents(__DIR__.'/../../docker/start-container.sh');
 
-    expect($config['deploy']['startCommand'] ?? null)->toBe('start-container')
-        ->and($config['deploy']['healthcheckPath'] ?? null)->toBe('/up');
+    expect($dockerfile)->toContain('CMD ["start-container"]')
+        ->and($startupScript)->toContain('php artisan migrate --force')
+        ->and($startupScript)->toContain('exec apache2-foreground');
+});
+
+it('keeps render configured for a free docker web service with external postgres', function () {
+    $renderConfig = file_get_contents(__DIR__.'/../../render.yaml');
+
+    expect($renderConfig)->toContain('runtime: docker')
+        ->and($renderConfig)->toContain('plan: free')
+        ->and($renderConfig)->toContain('dockerfilePath: ./Dockerfile')
+        ->and($renderConfig)->toContain('healthCheckPath: /up')
+        ->and($renderConfig)->toContain('key: DATABASE_URL')
+        ->and($renderConfig)->not->toContain('type: pserv');
 });
 
 it('pins local docker postgres to version 16', function () {

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 class EnterpriseCodeService
 {
     private const SETTING_KEY = 'enterprise_code';
+
     private const DEFAULT_CODE = 'Lavanderia2026!*';
 
     public function current(): string

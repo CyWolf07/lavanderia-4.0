@@ -1,23 +1,21 @@
 # Guia de despliegue online - Lavanderia Exclusiva
 
-Validada en este repo el 2026-04-29.
-
 ## Decision recomendada
 
-Este proyecto es Laravel, no una pagina estatica. GitHub Pages no sirve para dejarlo funcionando como plataforma web con login, sesiones y base de datos, porque GitHub Pages no ejecuta PHP ni puede proteger credenciales PostgreSQL.
+Este proyecto es Laravel, no una pagina estatica. Para funcionar necesita PHP, Apache, variables privadas, sesiones y PostgreSQL.
 
-La ruta recomendada es:
+La via clara y portable es:
 
 - GitHub: repositorio del codigo.
-- Railway: servidor online que construye el `Dockerfile` y ejecuta Laravel/Apache.
-- Supabase: PostgreSQL permanente para que la base siga viva aunque se redespliegue la app.
-- Docker: empaque de la aplicacion y entorno local. Docker no reemplaza a Supabase; se complementan.
+- Docker: imagen de la aplicacion Laravel/Apache.
+- Supabase: PostgreSQL permanente.
+- Render Free: hosting Docker de la aplicacion.
 
-## Estado de Supabase
+GitHub Pages no sirve para esta aplicacion.
 
-La conexion de Supabase fue probada desde esta maquina con SSL y respondio correctamente.
+## 1. Base de datos en Supabase
 
-Dato importante: en Supabase el texto `[YOUR-PASSWORD]` es un marcador. Los corchetes no deben quedar en la URL final.
+Crea una base PostgreSQL en Supabase y usa la URL de conexion con SSL.
 
 Correcto:
 
@@ -33,27 +31,9 @@ postgresql://postgres.TU-PROYECTO:[TU_PASSWORD_URL_ENCODED]@aws-1-us-west-2.pool
 
 Si la clave contiene `@`, en la URL debe escribirse como `%40`.
 
-## 1. Subir a GitHub
+## 2. Variables de produccion
 
-```bash
-git add .
-git commit -m "chore: preparar despliegue laravel con supabase"
-git push origin main
-```
-
-## 2. Crear el servicio en Railway
-
-1. Entra a `https://railway.app`.
-2. Inicia sesion con GitHub.
-3. Crea un proyecto nuevo.
-4. Elige `Deploy from GitHub repo`.
-5. Selecciona este repositorio.
-
-Railway detecta `railway.json` y construye la imagen desde `Dockerfile`.
-
-## 3. Variables de Railway
-
-Configura estas variables en el servicio web de Railway:
+Configura estas variables en el hosting que ejecute Docker:
 
 | Variable | Valor |
 |---|---|
@@ -61,7 +41,7 @@ Configura estas variables en el servicio web de Railway:
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
 | `APP_KEY` | salida de `php artisan key:generate --show` |
-| `APP_URL` | dominio publico de Railway |
+| `APP_URL` | dominio publico del hosting |
 | `APP_LOCALE` | `es` |
 | `APP_FALLBACK_LOCALE` | `es` |
 | `APP_FAKER_LOCALE` | `es_CO` |
@@ -77,17 +57,41 @@ Configura estas variables en el servicio web de Railway:
 | `VIEW_COMPILED_PATH` | `storage/framework/views-runtime` |
 | `TRUSTED_PROXIES` | `*` |
 
-No subas `.env` a GitHub. Las variables reales van en Railway.
+No subas `.env` a GitHub. Las variables reales van en el panel del hosting.
 
-Para generar `APP_KEY` localmente:
+Para generar `APP_KEY`:
 
 ```bash
 php artisan key:generate --show
 ```
 
-## 4. Primer despliegue
+## 3. Despliegue en Render Free
 
-En cada arranque el contenedor ejecuta:
+El repo incluye `render.yaml`. Render lo usa como Blueprint para crear un Web Service con:
+
+- `runtime: docker`
+- `plan: free`
+- `dockerfilePath: ./Dockerfile`
+- `healthCheckPath: /up`
+
+Pasos:
+
+1. Sube este repo a GitHub.
+2. En Render, crea un nuevo Blueprint o Web Service desde el repositorio.
+3. Si usas Blueprint, Render leera `render.yaml`.
+4. Completa las variables marcadas como privadas:
+   - `APP_KEY`
+   - `APP_URL`
+   - `DATABASE_URL`
+5. Despliega.
+
+El contenedor arranca con:
+
+```bash
+start-container
+```
+
+En cada arranque ejecuta:
 
 ```bash
 php artisan migrate --force
@@ -96,12 +100,12 @@ php artisan db:seed --force
 
 Luego limpia cache, crea el enlace de `storage` si hace falta e inicia Apache.
 
-## 5. Verificacion
+## 4. Verificacion
 
 Healthcheck de la app:
 
 ```bash
-curl https://TU-DOMINIO.up.railway.app/up
+curl https://TU-DOMINIO/up
 ```
 
 Respuesta esperada:
@@ -113,7 +117,7 @@ Respuesta esperada:
 Diagnostico de base de datos:
 
 ```bash
-curl https://TU-DOMINIO.up.railway.app/up/database
+curl https://TU-DOMINIO/up/database
 ```
 
 Respuesta esperada:
@@ -122,7 +126,7 @@ Respuesta esperada:
 {"success":true,"database":"ok","connection":"pgsql"}
 ```
 
-## 6. Docker local
+## 5. Docker local
 
 Para probar en esta PC con PostgreSQL local:
 
@@ -141,9 +145,15 @@ Tambien puedes usar:
 .\start-web.ps1
 ```
 
+## 6. Proveedores gratuitos sugeridos
+
+La decision actual es Render Free + Supabase.
+
+Ten presente que Render Free puede dormir el servicio tras inactividad. Cuando alguien entra de nuevo, el primer acceso puede tardar mas mientras Render despierta el contenedor.
+
 ## 7. Backups
 
-En Railway:
+Dentro del contenedor:
 
 ```bash
 php artisan db:backup

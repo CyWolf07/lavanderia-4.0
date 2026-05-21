@@ -10,9 +10,7 @@ class IncongruenciaRecolectorDetectada extends Notification
 {
     use Queueable;
 
-    public function __construct(private readonly IncongruenciaRecolector $incongruencia)
-    {
-    }
+    public function __construct(private readonly IncongruenciaRecolector $incongruencia) {}
 
     public function via(object $notifiable): array
     {

@@ -52,6 +52,7 @@ class PrendaController extends Controller
     public function destroy(Prenda $prenda)
     {
         $prenda->delete();
+
         return redirect()->route('prendas.index')->with('success', 'Prenda eliminada correctamente.');
     }
 
@@ -66,4 +67,3 @@ class PrendaController extends Controller
         );
     }
 }
-

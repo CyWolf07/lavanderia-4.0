@@ -8,11 +8,11 @@ Sistema de gestion de lavanderia construido con Laravel y PostgreSQL.
 - Laravel 12
 - PostgreSQL
 - Blade + Vite + Tailwind
-- Docker para entorno local
-- Railway para despliegue recomendado
-- Supabase PostgreSQL para base online permanente
+- Docker para entorno local y despliegue
+- Supabase PostgreSQL recomendado como base online permanente
+- Render Free como hosting Docker elegido
 
-## Modulos principales
+## Modulos activos
 
 - Produccion de prendas
 - PQRS
@@ -20,6 +20,7 @@ Sistema de gestion de lavanderia construido con Laravel y PostgreSQL.
 - Modulo recolector con clientes y facturas
 - Usuarios y roles
 - Historial de produccion
+- Seguridad por codigo empresarial y bloqueo de dispositivo
 
 ## Roles del sistema
 
@@ -29,6 +30,16 @@ Sistema de gestion de lavanderia construido con Laravel y PostgreSQL.
 | `recolector` | Facturas y clientes |
 | `admin` | Panel completo |
 | `programador` | Todo lo de admin y acciones tecnicas |
+
+## Via recomendada
+
+La ruta limpia del proyecto es:
+
+1. Docker empaqueta y ejecuta Laravel/Apache.
+2. Supabase mantiene PostgreSQL fuera del contenedor.
+3. Render Free ejecuta la imagen Docker.
+
+Docker no reemplaza a Supabase: Docker corre la app; Supabase guarda los datos.
 
 ## Ejecucion local con Docker
 
@@ -48,25 +59,26 @@ Usuarios sembrados por defecto:
 - `usuario@lavanderia.com` / `usuario123`
 - `recolector@lavanderia.com` / `recolector123`
 
-## Archivos clave de despliegue
+## Archivos clave
 
-- `Dockerfile`: imagen de produccion y utilidades de PostgreSQL 16
-- `docker-compose.yml`: stack local con app + PostgreSQL 16
-- `docker/start-container.sh`: arranque del contenedor, migraciones, seed y healthcheck
-- `railway.json`: build y healthcheck para Railway
-- `DEPLOYMENT.md`: guia validada de despliegue
-- `WEB_ACCESS.md`: acceso local por red y publicacion
-- `.env.supabase.example`: base de variables para conectar Supabase en produccion
+- `Dockerfile`: imagen de produccion.
+- `docker-compose.yml`: stack local con app + PostgreSQL 16.
+- `docker/start-container.sh`: arranque del contenedor, migraciones, seed y Apache.
+- `render.yaml`: Blueprint de Render Free para construir con Docker.
+- `DEPLOYMENT.md`: guia de despliegue con Docker + Supabase.
+- `WEB_ACCESS.md`: acceso local, red local y publicacion.
+- `.env.supabase.example`: variables base para conectar Supabase.
 
 ## Variables importantes
 
 La app esta preparada para leer:
 
 - `DATABASE_URL`
+- `DB_URL`
 - variables `PG*`
 - variables `DB_*`
 
-La conexion por defecto en este proyecto es PostgreSQL.
+La conexion por defecto cambia a PostgreSQL cuando detecta `DATABASE_URL`, `DB_URL` o `PGHOST`.
 
 ## Pruebas
 
@@ -74,19 +86,19 @@ La conexion por defecto en este proyecto es PostgreSQL.
 php artisan test
 ```
 
-El suite actual valida, entre otras cosas:
+La suite valida, entre otras cosas:
 
 - healthcheck `/up`
-- compatibilidad de `DATABASE_URL` y variables `PG*`
+- diagnostico `/up/database`
+- compatibilidad con `DATABASE_URL` y variables `PG*`
 - que Docker local siga fijado a PostgreSQL 16
 
-## Despliegue online
+## Limpieza realizada
 
-La ruta recomendada es subir el codigo a GitHub y conectar ese repo a Railway. Railway ejecuta Laravel con Docker/Apache, mientras Supabase mantiene PostgreSQL activo fuera del contenedor.
+Se eliminaron piezas sin flujo activo en Laravel:
 
-GitHub Pages no es suficiente para esta app porque no ejecuta PHP ni protege credenciales de base de datos.
+- `legacy_python`: version anterior Flask/Python, no usada por Laravel.
+- modulo `mensajes`: controlador, modelo, vistas y migracion sin rutas activas.
+- `railway.json`: configuracion especifica de Railway. Se reemplazo por `render.yaml`.
 
-Consulta:
-
-- `DEPLOYMENT.md`
-- `.env.supabase.example`
+GitHub Pages no sirve para esta app porque no ejecuta PHP ni protege credenciales de base de datos.

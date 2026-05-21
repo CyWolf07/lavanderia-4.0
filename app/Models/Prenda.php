@@ -10,6 +10,7 @@ class Prenda extends Model
     use HasFactory;
 
     protected $table = 'prendas';
+
     protected $fillable = ['nombre', 'tipo', 'precio', 'activo'];
 
     protected function casts(): array

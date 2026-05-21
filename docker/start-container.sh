@@ -30,7 +30,7 @@ echo "========================================"
 
 if [ -z "${APP_KEY:-}" ]; then
     echo "FATAL: APP_KEY no esta configurada."
-    echo "Configura APP_KEY en Railway antes de desplegar. Puedes generarla con: php artisan key:generate --show"
+    echo "Configura APP_KEY en el hosting antes de desplegar. Puedes generarla con: php artisan key:generate --show"
     exit 1
 fi
 

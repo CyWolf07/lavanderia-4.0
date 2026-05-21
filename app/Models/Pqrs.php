@@ -10,6 +10,6 @@ class Pqrs extends Model
         'tipo',
         'nombre',
         'correo',
-        'descripcion'
+        'descripcion',
     ];
 }

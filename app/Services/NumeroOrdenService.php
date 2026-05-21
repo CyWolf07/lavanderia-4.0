@@ -49,6 +49,7 @@ class NumeroOrdenService
         if (! $bloque) {
             // Calcular cuál sería el inicio del nuevo bloque
             $maxFin = BloqueNumeroOrden::max('fin') ?? 0;
+
             return $maxFin + 1;
         }
 
@@ -74,8 +75,8 @@ class NumeroOrdenService
                 ->get();
 
             foreach ($bloquesPosteriores as $bloque) {
-                $bloque->inicio    -= 1;
-                $bloque->fin       -= 1;
+                $bloque->inicio -= 1;
+                $bloque->fin -= 1;
                 $bloque->siguiente -= 1;
                 $bloque->save();
             }
@@ -106,15 +107,15 @@ class NumeroOrdenService
         // El inicio del nuevo bloque es el máximo fin global + 1
         $maxFin = BloqueNumeroOrden::max('fin') ?? 0;
         $inicio = $maxFin + 1;
-        $fin    = $inicio + self::BLOQUE_TAMAÑO - 1;   // +599 → 600 números
+        $fin = $inicio + self::BLOQUE_TAMAÑO - 1;   // +599 → 600 números
 
         return BloqueNumeroOrden::create([
             'recolector_id' => $recolectorId,
-            'mes'           => now()->month,
-            'anio'          => now()->year,
-            'inicio'        => $inicio,
-            'fin'           => $fin,
-            'siguiente'     => $inicio,
+            'mes' => now()->month,
+            'anio' => now()->year,
+            'inicio' => $inicio,
+            'fin' => $fin,
+            'siguiente' => $inicio,
         ]);
     }
 }

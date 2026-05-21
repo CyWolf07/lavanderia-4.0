@@ -80,6 +80,6 @@ class RecolectorPrendasSeeder extends Seeder
             );
         }
 
-        $this->command?->info(count($prendas) . ' prendas de recolector sincronizadas correctamente.');
+        $this->command?->info(count($prendas).' prendas de recolector sincronizadas correctamente.');
     }
 }

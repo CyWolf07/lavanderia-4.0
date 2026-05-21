@@ -61,20 +61,20 @@ Route::get('/', function () {
 // Iniciar sesión
 Route::get('/codigo-empresarial', [EnterpriseAccessController::class, 'create'])->name('enterprise-code.create');
 Route::post('/codigo-empresarial', [EnterpriseAccessController::class, 'store'])->name('enterprise-code.store');
-Route::get('/login',  [AuthenticatedSessionController::class, 'create'])->name('login');
+Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
 // Registro de nuevos usuarios (puede estar deshabilitado en producción)
-Route::get('/register',  [RegisteredUserController::class, 'create'])->name('register');
+Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('/register', [RegisteredUserController::class, 'store']);
 
 // Recuperación de contraseña olvidada
-Route::get('/forgot-password',  [PasswordResetLinkController::class, 'create'])->name('password.request');
+Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
 Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 
 // Restablecer contraseña con token enviado por correo
 Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
-Route::post('/reset-password',        [NewPasswordController::class, 'store'])->name('password.store');
+Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 
 // Cerrar sesión
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -103,8 +103,8 @@ Route::middleware(['auth', 'activo'])->group(function () {
     })->name('dashboard');
 
     // ── PERFIL DEL USUARIO ─────────────────────────────────────────────────────
-    Route::get('/profile',    [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile',  [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // ── VERIFICACIÓN DE EMAIL ──────────────────────────────────────────────────
@@ -117,35 +117,35 @@ Route::middleware(['auth', 'activo'])->group(function () {
         ->name('verification.send');
 
     // ── CAMBIO DE CONTRASEÑA ───────────────────────────────────────────────────
-    Route::get('/confirm-password',  [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
+    Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
     Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store']);
-    Route::put('/password',          [PasswordController::class, 'update'])->name('password.update');
+    Route::put('/password', [PasswordController::class, 'update'])->name('password.update');
 
     // ── MÓDULO PRODUCCIÓN ──────────────────────────────────────────────────────
     // Roles: usuario (solo registro propio), admin y programador (con totales)
     Route::middleware('rol:admin,programador,usuario')->prefix('produccion')->group(function () {
-        Route::get('/',  [ProduccionController::class, 'index'])->name('produccion.index'); // Ver registros propios + formulario
+        Route::get('/', [ProduccionController::class, 'index'])->name('produccion.index'); // Ver registros propios + formulario
         Route::post('/', [ProduccionController::class, 'store'])->name('produccion.store'); // Guardar nuevo registro
     });
 
     // ── MÓDULO RECOLECTOR ──────────────────────────────────────────────────────
     // Solo para el rol 'recolector'. Gestiona facturas de entrega de ropa.
     Route::middleware('rol:recolector')->prefix('recolector')->group(function () {
-        Route::get('/',         [RecolectorController::class,  'index'])->name('recolector.index');         // Ver facturas y formulario
-        Route::post('/clientes',[ClienteController::class,     'storeFromRecolector'])->name('recolector.clientes.store'); // Crear cliente rápido
-        Route::post('/facturas',[RecolectorController::class,  'store'])->name('recolector.facturas.store'); // Guardar factura nueva
+        Route::get('/', [RecolectorController::class,  'index'])->name('recolector.index');         // Ver facturas y formulario
+        Route::post('/clientes', [ClienteController::class,     'storeFromRecolector'])->name('recolector.clientes.store'); // Crear cliente rápido
+        Route::post('/facturas', [RecolectorController::class,  'store'])->name('recolector.facturas.store'); // Guardar factura nueva
         Route::patch('/facturas/{facturaRecolector}/estatus', [RecolectorController::class, 'updateFacturaEstado'])->name('recolector.facturas.estatus');
-        Route::post('/gastos',  [GastoController::class,       'storeFromRecolector'])->name('recolector.gastos.store'); // Guardar gasto de quincena
+        Route::post('/gastos', [GastoController::class,       'storeFromRecolector'])->name('recolector.gastos.store'); // Guardar gasto de quincena
     });
 
     // ── MÓDULO PQRS (Peticiones, Quejas, Reclamos y Sugerencias) ──────────────
     // Accesible para cualquier usuario autenticado y activo
     Route::prefix('pqrs')->group(function () {
-        Route::get('/',            [PqrsController::class, 'index'])->name('pqrs.index');     // Listado + formulario de radicación
-        Route::post('/',           [PqrsController::class, 'store'])->name('pqrs.store');     // Guardar nuevo PQRS
-        Route::get('/{id}/edit',   [PqrsController::class, 'edit'])->name('pqrs.edit');       // Formulario de edición
-        Route::put('/{id}',        [PqrsController::class, 'update'])->name('pqrs.update');   // Actualizar PQRS existente
-        Route::delete('/{id}',     [PqrsController::class, 'destroy'])->name('pqrs.destroy'); // Eliminar PQRS
+        Route::get('/', [PqrsController::class, 'index'])->name('pqrs.index');     // Listado + formulario de radicación
+        Route::post('/', [PqrsController::class, 'store'])->name('pqrs.store');     // Guardar nuevo PQRS
+        Route::get('/{id}/edit', [PqrsController::class, 'edit'])->name('pqrs.edit');       // Formulario de edición
+        Route::put('/{id}', [PqrsController::class, 'update'])->name('pqrs.update');   // Actualizar PQRS existente
+        Route::delete('/{id}', [PqrsController::class, 'destroy'])->name('pqrs.destroy'); // Eliminar PQRS
     });
 
 });
@@ -161,43 +161,43 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 
     // ── GESTIÓN DE USUARIOS ────────────────────────────────────────────────────
-    Route::post('/usuarios',                         [AdminController::class, 'storeUser'])->name('admin.usuarios.store');
-    Route::put('/usuarios/{user}',                   [AdminController::class, 'updateUser'])->name('admin.usuarios.update');
-    Route::delete('/usuarios/{user}',                [AdminController::class, 'destroyUser'])->name('admin.usuarios.destroy');
-    Route::patch('/usuarios/{user}/estado',          [AdminController::class, 'toggleUserStatus'])->name('admin.usuarios.toggle-status');
+    Route::post('/usuarios', [AdminController::class, 'storeUser'])->name('admin.usuarios.store');
+    Route::put('/usuarios/{user}', [AdminController::class, 'updateUser'])->name('admin.usuarios.update');
+    Route::delete('/usuarios/{user}', [AdminController::class, 'destroyUser'])->name('admin.usuarios.destroy');
+    Route::patch('/usuarios/{user}/estado', [AdminController::class, 'toggleUserStatus'])->name('admin.usuarios.toggle-status');
     Route::patch('/usuarios/{user}/permisos-precio', [AdminController::class, 'toggleRecolectorPriceEdit'])->name('admin.usuarios.toggle-precios');
 
     // ── GESTIÓN DE PRENDAS (producción) ───────────────────────────────────────
-    Route::get('/prendas',              [PrendaController::class, 'index'])->name('prendas.index');
-    Route::post('/prendas',             [PrendaController::class, 'store'])->name('prendas.store');
-    Route::put('/prendas/{prenda}',     [PrendaController::class, 'update'])->name('prendas.update');
-    Route::delete('/prendas/{prenda}',  [PrendaController::class, 'destroy'])->name('prendas.destroy');
+    Route::get('/prendas', [PrendaController::class, 'index'])->name('prendas.index');
+    Route::post('/prendas', [PrendaController::class, 'store'])->name('prendas.store');
+    Route::put('/prendas/{prenda}', [PrendaController::class, 'update'])->name('prendas.update');
+    Route::delete('/prendas/{prenda}', [PrendaController::class, 'destroy'])->name('prendas.destroy');
     Route::patch('/prendas/{prenda}/estado', [PrendaController::class, 'toggleStatus'])->name('prendas.toggle-status');
 
     // ── GESTIÓN DE CLIENTES ────────────────────────────────────────────────────
-    Route::get('/clientes',              [ClienteController::class, 'index'])->name('clientes.index');
-    Route::post('/clientes',             [ClienteController::class, 'store'])->name('clientes.store');
-    Route::put('/clientes/{cliente}',    [ClienteController::class, 'update'])->name('clientes.update');
+    Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index');
+    Route::post('/clientes', [ClienteController::class, 'store'])->name('clientes.store');
+    Route::put('/clientes/{cliente}', [ClienteController::class, 'update'])->name('clientes.update');
     Route::delete('/clientes/{cliente}', [ClienteController::class, 'destroy'])->name('clientes.destroy');
     Route::patch('/clientes/{cliente}/estado', [ClienteController::class, 'toggleStatus'])->name('clientes.toggle-status');
 
     // ── GESTIÓN DE PRENDAS DEL RECOLECTOR ─────────────────────────────────────
     // Prendas exclusivas para el módulo de recolección (independientes de producción)
-    Route::get('/recolector-prendas',                        [RecolectorPrendaController::class, 'index'])->name('recolector-prendas.index');
-    Route::post('/recolector-prendas',                       [RecolectorPrendaController::class, 'store'])->name('recolector-prendas.store');
-    Route::put('/recolector-prendas/{recolectorPrenda}',     [RecolectorPrendaController::class, 'update'])->name('recolector-prendas.update');
-    Route::delete('/recolector-prendas/{recolectorPrenda}',  [RecolectorPrendaController::class, 'destroy'])->name('recolector-prendas.destroy');
+    Route::get('/recolector-prendas', [RecolectorPrendaController::class, 'index'])->name('recolector-prendas.index');
+    Route::post('/recolector-prendas', [RecolectorPrendaController::class, 'store'])->name('recolector-prendas.store');
+    Route::put('/recolector-prendas/{recolectorPrenda}', [RecolectorPrendaController::class, 'update'])->name('recolector-prendas.update');
+    Route::delete('/recolector-prendas/{recolectorPrenda}', [RecolectorPrendaController::class, 'destroy'])->name('recolector-prendas.destroy');
     Route::patch('/recolector-prendas/{recolectorPrenda}/estado', [RecolectorPrendaController::class, 'toggleStatus'])->name('recolector-prendas.toggle-status');
 
     // ── CIERRE DE QUINCENA Y REPORTES ─────────────────────────────────────────
     Route::delete('/produccion/{produccion}', [AdminController::class, 'destroyProduccion'])->name('admin.produccion.destroy');
     Route::get('/produccion/{produccion}/edit', [AdminController::class, 'editProduccion'])->name('admin.produccion.edit');
-    Route::put('/produccion/{produccion}',      [AdminController::class, 'updateProduccion'])->name('admin.produccion.update');
+    Route::put('/produccion/{produccion}', [AdminController::class, 'updateProduccion'])->name('admin.produccion.update');
 
-    Route::delete('/facturas-recolector/{facturaRecolector}',        [AdminController::class, 'destroyFacturaRecolector'])->name('admin.facturas-recolector.destroy');
-    Route::get('/facturas-recolector/{facturaRecolector}/edit',       [AdminController::class, 'editFacturaRecolector'])->name('admin.facturas-recolector.edit');
-    Route::put('/facturas-recolector/{facturaRecolector}',            [AdminController::class, 'updateFacturaRecolector'])->name('admin.facturas-recolector.update');
-    Route::patch('/facturas-recolector/{facturaRecolector}/estatus',   [AdminController::class, 'updateFacturaEstado'])->name('admin.facturas-recolector.estatus');
+    Route::delete('/facturas-recolector/{facturaRecolector}', [AdminController::class, 'destroyFacturaRecolector'])->name('admin.facturas-recolector.destroy');
+    Route::get('/facturas-recolector/{facturaRecolector}/edit', [AdminController::class, 'editFacturaRecolector'])->name('admin.facturas-recolector.edit');
+    Route::put('/facturas-recolector/{facturaRecolector}', [AdminController::class, 'updateFacturaRecolector'])->name('admin.facturas-recolector.update');
+    Route::patch('/facturas-recolector/{facturaRecolector}/estatus', [AdminController::class, 'updateFacturaEstado'])->name('admin.facturas-recolector.estatus');
 
     Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])->name('admin.historial.destroy');
     Route::post('/produccion/cerrar', [ProduccionController::class, 'cerrar'])->name('produccion.cerrar');

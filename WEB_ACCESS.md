@@ -54,20 +54,20 @@ docker compose down
 
 ## Publicacion en internet
 
-La opcion recomendada para este repo es Railway + Supabase.
+La opcion recomendada para este repo es Render Free + Supabase.
 
-GitHub por si solo no hospeda esta app como plataforma web, porque Laravel necesita PHP, Apache y variables privadas. El flujo correcto es subir el repo a GitHub y conectar Railway al repo para que Railway ejecute el contenedor.
+GitHub por si solo no hospeda esta app como plataforma web, porque Laravel necesita PHP, Apache y variables privadas. El flujo correcto es subir el repo a GitHub y conectar Render para que ejecute el contenedor Docker.
 
 Archivos usados:
 
 - `Dockerfile`
-- `railway.json`
+- `render.yaml`
 - `DEPLOYMENT.md`
 - `.env.supabase.example`
 
 Supabase queda como base PostgreSQL permanente. Docker se usa para empaquetar y correr la app; no reemplaza a Supabase.
 
-Si vas a publicar, sigue `DEPLOYMENT.md`, configura las variables de Railway y luego revisa:
+Si vas a publicar, sigue `DEPLOYMENT.md`, configura las variables de Render y luego revisa:
 
-- `https://TU-DOMINIO.up.railway.app/up`
-- `https://TU-DOMINIO.up.railway.app/up/database`
+- `https://TU-DOMINIO/up`
+- `https://TU-DOMINIO/up/database`

@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 class DeviceAccessService
 {
     public const COOKIE_NAME = 'lavanderia_device_id';
+
     public const MAX_ATTEMPTS = 3;
 
     public function deviceId(Request $request): string
