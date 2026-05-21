@@ -13,9 +13,16 @@
     x-data="{
         paymentOpen: false,
         cancelOpen: false,
+        selectedProducciones: [],
         selectedOrder: '',
         paymentAction: '',
         cancelAction: '',
+        allProduccionesSelected(ids) {
+            return ids.length > 0 && ids.every((id) => this.selectedProducciones.includes(String(id)));
+        },
+        toggleAllProducciones(ids, checked) {
+            this.selectedProducciones = checked ? ids.map(String) : [];
+        },
         openPayment(action, order) {
             this.paymentAction = action;
             this.selectedOrder = order;
@@ -453,14 +460,41 @@
 
             {{-- Tabla de últimos registros de producción activos --}}
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Registros activos de usuarios</h2>
-                    <p class="mt-1 text-sm text-slate-500">Produccion pendiente de cierre con opcion de borrar si hubo error.</p>
+                @php($produccionIds = $ultimasProducciones->pluck('id')->values())
+                <form id="bulk-delete-producciones" action="{{ route('admin.produccion.destroy-bulk') }}" method="POST" class="hidden">
+                    @csrf
+                    @method('DELETE')
+                </form>
+                <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Registros activos de usuarios</h2>
+                        <p class="mt-1 text-sm text-slate-500">Produccion pendiente de cierre con opcion de borrar si hubo error.</p>
+                    </div>
+                    @if ($ultimasProducciones->isNotEmpty())
+                        <button
+                            type="submit"
+                            form="bulk-delete-producciones"
+                            x-bind:disabled="selectedProducciones.length === 0"
+                            onclick="return confirm('Eliminar los registros de produccion seleccionados?')"
+                            class="rounded-full border border-rose-200 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-transparent"
+                        >
+                            Eliminar seleccionados
+                        </button>
+                    @endif
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-left text-slate-500">
                             <tr>
+                                <th class="px-6 py-4 font-semibold">
+                                    <input
+                                        type="checkbox"
+                                        class="h-4 w-4 rounded border-slate-300 text-rose-600"
+                                        x-bind:checked="allProduccionesSelected(@js($produccionIds))"
+                                        @change="toggleAllProducciones(@js($produccionIds), $event.target.checked)"
+                                        aria-label="Seleccionar todos los registros activos de usuarios"
+                                    >
+                                </th>
                                 <th class="px-6 py-4 font-semibold">Usuario</th>
                                 <th class="px-6 py-4 font-semibold">Prenda</th>
                                 <th class="px-6 py-4 font-semibold">Cantidad</th>
@@ -471,6 +505,17 @@
                         <tbody class="divide-y divide-slate-100">
                             @forelse ($ultimasProducciones as $item)
                                 <tr>
+                                    <td class="px-6 py-4">
+                                        <input
+                                            form="bulk-delete-producciones"
+                                            type="checkbox"
+                                            name="produccion_ids[]"
+                                            value="{{ $item->id }}"
+                                            x-model="selectedProducciones"
+                                            class="h-4 w-4 rounded border-slate-300 text-rose-600"
+                                            aria-label="Seleccionar registro de produccion {{ $item->id }}"
+                                        >
+                                    </td>
                                     <td class="px-6 py-4 font-medium text-slate-900">{{ $item->user->name ?? 'Sin usuario' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $item->cantidad }}</td>
@@ -493,7 +538,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
+                                    <td colspan="6" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
                                 </tr>
                             @endforelse
                         </tbody>

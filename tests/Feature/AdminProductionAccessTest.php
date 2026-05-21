@@ -131,3 +131,53 @@ it('allows programmers to delete paid collector invoices from the status table',
         'id' => $factura->id,
     ]);
 });
+
+it('allows privileged users to delete selected active production records in bulk', function (string $role) {
+    $user = User::factory()->create([
+        'rol' => $role,
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Pantalon',
+        'tipo' => 'Unidad',
+        'precio' => 12000,
+    ]);
+
+    $selected = collect(range(1, 2))->map(fn () => Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 1,
+        'total' => 12000,
+        'fecha' => now()->toDateString(),
+    ]));
+
+    $kept = Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 3,
+        'total' => 36000,
+        'fecha' => now()->toDateString(),
+    ]);
+
+    $this->actingAs($user)
+        ->delete(route('admin.produccion.destroy-bulk'), [
+            'produccion_ids' => $selected->pluck('id')->all(),
+        ])
+        ->assertRedirect(route('admin.dashboard'));
+
+    foreach ($selected as $produccion) {
+        $this->assertDatabaseMissing('producciones', [
+            'id' => $produccion->id,
+        ]);
+    }
+
+    $this->assertDatabaseHas('producciones', [
+        'id' => $kept->id,
+    ]);
+})->with(['admin', 'programador']);

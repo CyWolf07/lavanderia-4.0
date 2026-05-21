@@ -350,6 +350,20 @@ class AdminController extends Controller
         return redirect()->route('admin.dashboard')->with('success', 'Registro de usuario eliminado correctamente.');
     }
 
+    public function destroyProducciones(Request $request)
+    {
+        $data = $request->validate([
+            'produccion_ids' => ['required', 'array', 'min:1'],
+            'produccion_ids.*' => ['integer', 'exists:producciones,id'],
+        ]);
+
+        $deleted = Produccion::whereIn('id', $data['produccion_ids'])->delete();
+
+        return redirect()
+            ->route('admin.dashboard')
+            ->with('success', "Se eliminaron {$deleted} registros de usuarios correctamente.");
+    }
+
     public function destroyFacturaRecolector(
         FacturaRecolector $facturaRecolector,
         NumeroOrdenService $numeroOrdenService,

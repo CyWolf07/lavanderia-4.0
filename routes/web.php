@@ -190,6 +190,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::patch('/recolector-prendas/{recolectorPrenda}/estado', [RecolectorPrendaController::class, 'toggleStatus'])->name('recolector-prendas.toggle-status');
 
     // ── CIERRE DE QUINCENA Y REPORTES ─────────────────────────────────────────
+    Route::delete('/produccion/bulk-delete', [AdminController::class, 'destroyProducciones'])->name('admin.produccion.destroy-bulk');
     Route::delete('/produccion/{produccion}', [AdminController::class, 'destroyProduccion'])->name('admin.produccion.destroy');
     Route::get('/produccion/{produccion}/edit', [AdminController::class, 'editProduccion'])->name('admin.produccion.edit');
     Route::put('/produccion/{produccion}', [AdminController::class, 'updateProduccion'])->name('admin.produccion.update');
