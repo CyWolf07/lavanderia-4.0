@@ -483,10 +483,10 @@
                     @endif
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
+                    <table class="min-w-full table-auto text-sm">
                         <thead class="bg-slate-50 text-left text-slate-500">
                             <tr>
-                                <th class="px-6 py-4 font-semibold">
+                                <th class="w-12 px-4 py-4 text-center font-semibold">
                                     <input
                                         type="checkbox"
                                         class="h-4 w-4 rounded border-slate-300 text-rose-600"
@@ -495,17 +495,17 @@
                                         aria-label="Seleccionar todos los registros activos de usuarios"
                                     >
                                 </th>
-                                <th class="px-6 py-4 font-semibold">Usuario</th>
-                                <th class="px-6 py-4 font-semibold">Prenda</th>
-                                <th class="px-6 py-4 font-semibold">Cantidad</th>
-                                <th class="px-6 py-4 font-semibold">Total</th>
-                                <th class="px-6 py-4 font-semibold">Acciones</th>
+                                <th class="min-w-36 px-4 py-4 font-semibold">Usuario</th>
+                                <th class="min-w-36 px-4 py-4 font-semibold">Prenda</th>
+                                <th class="w-24 px-4 py-4 text-center font-semibold">Cantidad</th>
+                                <th class="w-28 px-4 py-4 font-semibold">Total</th>
+                                <th class="min-w-40 px-4 py-4 font-semibold">Acciones</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             @forelse ($ultimasProducciones as $item)
                                 <tr>
-                                    <td class="px-6 py-4">
+                                    <td class="px-4 py-4 text-center">
                                         <input
                                             form="bulk-delete-producciones"
                                             type="checkbox"
@@ -516,12 +516,12 @@
                                             aria-label="Seleccionar registro de produccion {{ $item->id }}"
                                         >
                                     </td>
-                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $item->user->name ?? 'Sin usuario' }}</td>
-                                    <td class="px-6 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
-                                    <td class="px-6 py-4 text-slate-600">{{ $item->cantidad }}</td>
-                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center gap-2">
+                                    <td class="px-4 py-4 font-medium leading-tight text-slate-900">{{ $item->user->name ?? 'Sin usuario' }}</td>
+                                    <td class="px-4 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
+                                    <td class="px-4 py-4 text-center text-slate-600">{{ $item->cantidad }}</td>
+                                    <td class="whitespace-nowrap px-4 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
+                                    <td class="px-4 py-4">
+                                        <div class="flex flex-wrap items-center gap-2">
                                             <a href="{{ route('admin.produccion.edit', $item) }}"
                                                class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">
                                                 Editar
