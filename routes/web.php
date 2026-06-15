@@ -186,6 +186,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     // ── MAPA DE CLIENTES ───────────────────────────────────────────────────────
     Route::get('/mapa-clientes', [MapaClientesController::class, 'index'])->name('admin.mapa-clientes');
     Route::patch('/mapa-clientes/{cliente}/coordenadas', [MapaClientesController::class, 'updateCoordenadas'])->name('admin.mapa-clientes.coordenadas');
+    Route::get('/mapa-clientes/geocodificar', [MapaClientesController::class, 'geocodificar'])->name('admin.mapa-clientes.geocodificar');
 
     // ── GESTIÓN DE PRENDAS DEL RECOLECTOR ─────────────────────────────────────
     // Prendas exclusivas para el módulo de recolección (independientes de producción)

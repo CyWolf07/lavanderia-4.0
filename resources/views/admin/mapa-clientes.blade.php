@@ -299,21 +299,38 @@ function mapaClientes() {
         async geocodificarCliente(cliente) {
             if (!cliente) return;
             this.geocodificandoId = cliente.id;
+
             const query = [cliente.direccion, cliente.barrio, 'Pasto', 'Nariño', 'Colombia']
                 .filter(Boolean).join(', ');
+
             try {
+                // Llamar al proxy del servidor (evita bloqueos CORS/User-Agent de Nominatim)
                 const resp = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-                    { headers: { 'Accept-Language': 'es' } }
+                    `/admin/mapa-clientes/geocodificar?q=${encodeURIComponent(query)}`,
+                    { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }
                 );
-                const data = await resp.json();
-                if (data && data[0]) {
-                    await this.asignarCoordenadas(cliente, parseFloat(data[0].lat), parseFloat(data[0].lon));
-                } else {
-                    alert('No se encontró la dirección. Haz clic en el mapa para asignar manualmente.');
+
+                if (!resp.ok) {
+                    alert('Error del servidor al geocodificar. Intenta de nuevo.');
+                    return;
                 }
-            } catch {
-                alert('Error al geocodificar. Verifica tu conexión.');
+
+                const data = await resp.json();
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                if (!data.found) {
+                    alert('No se encontró "' + query + '" en el mapa.\nIntenta hacer clic directamente sobre el mapa para asignar la ubicación.');
+                    return;
+                }
+
+                await this.asignarCoordenadas(cliente, data.lat, data.lon);
+
+            } catch (e) {
+                alert('Error de red al geocodificar. Verifica tu conexión.');
             } finally {
                 this.geocodificandoId = null;
             }
