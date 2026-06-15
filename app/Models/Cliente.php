@@ -32,11 +32,26 @@ class Cliente extends Model
         ];
     }
 
-    /** Siguiente número de cliente disponible (autoincremental). */
+    /**
+     * Siguiente número de cliente disponible.
+     * Usa COUNT de registros existentes + 1 para que los clientes
+     * eliminados (pruebas, errores) no desfasen la secuencia.
+     */
     public static function siguienteNumero(): int
     {
-        $max = DB::table('clientes')->max('numero_cliente');
-        return ($max ?? 0) + 1;
+        return DB::table('clientes')->count() + 1;
+    }
+
+    /**
+     * Reordena todos los numero_cliente en orden ascendente según
+     * la fecha de creación. Llamar tras eliminar clientes de prueba.
+     */
+    public static function reordenarNumeracion(): void
+    {
+        $clientes = DB::table('clientes')->orderBy('created_at')->pluck('id');
+        foreach ($clientes as $index => $id) {
+            DB::table('clientes')->where('id', $id)->update(['numero_cliente' => $index + 1]);
+        }
     }
 
     // ── Relaciones ────────────────────────────────────────────────────────────
