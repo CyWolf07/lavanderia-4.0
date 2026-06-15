@@ -35,10 +35,11 @@ class Cliente extends Model
     /**
      * Siguiente número de cliente disponible.
      * Usa MAX + 1 para continuar desde el último número asignado.
+     * Incorpora lockForUpdate() para transacciones concurrentes.
      */
     public static function siguienteNumero(): int
     {
-        $max = DB::table('clientes')->max('numero_cliente');
+        $max = DB::table('clientes')->lockForUpdate()->max('numero_cliente');
         return ($max ?? 0) + 1;
     }
 

@@ -25,9 +25,12 @@ class ClienteController extends Controller
     {
         $data = $this->validatedData($request);
         $data['activo'] = $request->boolean('activo', true);
-        $data['numero_cliente'] = Cliente::siguienteNumero();
 
-        Cliente::create($data);
+        // Bloque atómico para evitar colisiones concurrentes (race conditions)
+        DB::transaction(function () use (&$data) {
+            $data['numero_cliente'] = Cliente::siguienteNumero();
+            Cliente::create($data);
+        });
 
         return redirect()->route('clientes.index')->with('success', 'Cliente agregado correctamente.');
     }
@@ -36,10 +39,13 @@ class ClienteController extends Controller
     {
         $data = $this->validatedData($request);
         $data['activo'] = true;
-        $data['numero_cliente'] = Cliente::siguienteNumero();
         $data['recolector_id'] = Auth::id();
 
-        $cliente = Cliente::create($data);
+        // Bloque atómico para evitar colisiones concurrentes
+        $cliente = DB::transaction(function () use (&$data) {
+            $data['numero_cliente'] = Cliente::siguienteNumero();
+            return Cliente::create($data);
+        });
 
         return redirect()
             ->route('recolector.index')
