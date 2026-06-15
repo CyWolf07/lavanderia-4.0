@@ -34,12 +34,12 @@ class Cliente extends Model
 
     /**
      * Siguiente número de cliente disponible.
-     * Usa COUNT de registros existentes + 1 para que los clientes
-     * eliminados (pruebas, errores) no desfasen la secuencia.
+     * Usa MAX + 1 para continuar desde el último número asignado.
      */
     public static function siguienteNumero(): int
     {
-        return DB::table('clientes')->count() + 1;
+        $max = DB::table('clientes')->max('numero_cliente');
+        return ($max ?? 0) + 1;
     }
 
     /**
