@@ -31,7 +31,12 @@ class RecolectorController extends Controller
         $periodoActual = Gasto::periodoDesdeFecha(now());
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
 
-        $clientes = Cliente::activos()->orderBy('nombre')->get();
+        // F1: Solo mostrar clientes propios del recolector
+        $clientes = Cliente::activos()
+            ->deRecolector($user->id)
+            ->orderBy('nombre')
+            ->get();
+
         $prendas = RecolectorPrenda::activas()->orderBy('nombre')->get();
         $siguienteNumeroFactura = $this->numeroOrdenService->peekSiguiente($user->id);
 
@@ -59,34 +64,38 @@ class RecolectorController extends Controller
             ->take(6)
             ->get();
 
+        // F2: Reporte pago = 30% del total de facturas de la quincena
+        $reportePagoQuincena = round($totalFacturasQuincena * 0.30, 0);
+
         return view('recolector.index', [
-            'clientes' => $clientes,
-            'prendas' => $prendas,
-            'facturas' => $facturas,
-            'user' => $user,
-            'fechaIngreso' => now(),
-            'clientePreseleccionado' => session('cliente_creado_id'),
-            'puedeEditarPrecios' => $user->puedeEditarPrecios(),
-            'siguienteNumeroFactura' => $siguienteNumeroFactura,
-            'periodoActual' => $periodoActual['periodo'],
+            'clientes'              => $clientes,
+            'prendas'               => $prendas,
+            'facturas'              => $facturas,
+            'user'                  => $user,
+            'fechaIngreso'          => now(),
+            'clientePreseleccionado'=> session('cliente_creado_id'),
+            'puedeEditarPrecios'    => $user->puedeEditarPrecios(),
+            'siguienteNumeroFactura'=> $siguienteNumeroFactura,
+            'periodoActual'         => $periodoActual['periodo'],
             'totalFacturasQuincena' => $totalFacturasQuincena,
-            'gastosQuincena' => $gastosQuincena,
-            'reportePagoQuincena' => $totalFacturasQuincena - $gastosQuincena,
-            'gastosRecientes' => $gastosRecientes,
+            'gastosQuincena'        => $gastosQuincena,
+            'reportePagoQuincena'   => $reportePagoQuincena,
+            'gastosRecientes'       => $gastosRecientes,
         ]);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'cliente_id' => ['required', 'exists:clientes,id'],
-            'fecha_entrega' => ['nullable', 'date', 'after_or_equal:today'],
-            'observaciones' => ['nullable', 'array'],
-            'observaciones.*' => ['string'],
-            'items' => ['nullable', 'array'],
-            'items.*.prenda_id' => ['nullable', 'integer'],
-            'items.*.cantidad' => ['nullable', 'integer', 'min:0'],
-            'items.*.precio_unitario' => ['nullable', 'numeric', 'min:0'],
+            'cliente_id'                    => ['required', 'exists:clientes,id'],
+            'fecha_entrega'                 => ['nullable', 'date', 'after_or_equal:today'],
+            'observaciones'                 => ['nullable', 'array'],
+            'observaciones.*'               => ['string'],
+            'items'                         => ['nullable', 'array'],
+            'items.*.prenda_id'             => ['nullable', 'integer'],
+            'items.*.cantidad'              => ['nullable', 'integer', 'min:0'],
+            'items.*.precio_unitario'       => ['nullable', 'numeric', 'min:0'],
+            'items.*.color_prenda'          => ['nullable', 'string', 'max:50'],
         ]);
 
         $recolector = $request->user();
@@ -110,9 +119,10 @@ class RecolectorController extends Controller
         $itemsSeleccionados = $itemsSeleccionados
             ->map(function ($item) {
                 return [
-                    'prenda_id' => (int) ($item['prenda_id'] ?? 0),
-                    'cantidad' => (int) ($item['cantidad'] ?? 0),
+                    'prenda_id'       => (int) ($item['prenda_id'] ?? 0),
+                    'cantidad'        => (int) ($item['cantidad'] ?? 0),
                     'precio_unitario' => isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : null,
+                    'color_prenda'    => isset($item['color_prenda']) && $item['color_prenda'] !== '' ? $item['color_prenda'] : null,
                 ];
             })
             ->filter(fn (array $item) => $item['prenda_id'] > 0 && $item['cantidad'] > 0)
@@ -135,7 +145,10 @@ class RecolectorController extends Controller
             ]);
         }
 
-        $cliente = Cliente::activos()->find($data['cliente_id']);
+        // F1: El cliente debe pertenecer a este recolector
+        $cliente = Cliente::activos()
+            ->deRecolector($recolector->id)
+            ->find($data['cliente_id']);
 
         if (! $cliente) {
             throw ValidationException::withMessages([
@@ -163,10 +176,11 @@ class RecolectorController extends Controller
 
             return [
                 'recolector_prenda_id' => $prenda->id,
-                'prenda_nombre' => $prenda->nombre,
-                'valor_unitario' => $valorUnitario,
-                'cantidad' => $item['cantidad'],
-                'subtotal' => $subtotal,
+                'prenda_nombre'        => $prenda->nombre,
+                'valor_unitario'       => $valorUnitario,
+                'cantidad'             => $item['cantidad'],
+                'color_prenda'         => $item['color_prenda'],
+                'subtotal'             => $subtotal,
             ];
         });
 
@@ -175,17 +189,17 @@ class RecolectorController extends Controller
 
         $factura = DB::transaction(function () use ($cliente, $fechaIngreso, $fechaEntrega, $data, $detalles, $totalPrendas, $totalFactura) {
             $factura = FacturaRecolector::create([
-                'numero_orden' => $this->numeroOrdenService->obtenerSiguiente(Auth::id()),
-                'recolector_id' => Auth::id(),
-                'cliente_id' => $cliente->id,
-                'fecha_ingreso' => $fechaIngreso,
-                'fecha_entrega' => $fechaEntrega->toDateString(),
-                'direccion' => $cliente->direccion,
-                'nit_cedula' => $cliente->nit_cedula,
-                'celular' => $cliente->celular,
-                'observaciones' => array_values($data['observaciones'] ?? []),
-                'total_prendas' => $totalPrendas,
-                'total' => $totalFactura,
+                'numero_orden'   => $this->numeroOrdenService->obtenerSiguiente(Auth::id()),
+                'recolector_id'  => Auth::id(),
+                'cliente_id'     => $cliente->id,
+                'fecha_ingreso'  => $fechaIngreso,
+                'fecha_entrega'  => $fechaEntrega->toDateString(),
+                'direccion'      => $cliente->direccion,
+                'numero_cliente' => $cliente->numero_cliente,
+                'celular'        => $cliente->celular,
+                'observaciones'  => array_values($data['observaciones'] ?? []),
+                'total_prendas'  => $totalPrendas,
+                'total'          => $totalFactura,
                 'estado_factura' => 'pendiente',
             ]);
 
@@ -221,7 +235,7 @@ class RecolectorController extends Controller
 
         $data = $request->validate([
             'estado_factura' => ['required', 'in:pagado,pendiente'],
-            'metodo_pago' => ['nullable', 'required_if:estado_factura,pagado', 'in:efectivo,qr,nequi,llave_breve'],
+            'metodo_pago'    => ['nullable', 'required_if:estado_factura,pagado', 'in:efectivo,qr,nequi,llave_breve'],
         ]);
 
         if ($facturaRecolector->estaPagada()) {
@@ -236,7 +250,7 @@ class RecolectorController extends Controller
 
         $facturaRecolector->update([
             'estado_factura' => $nuevoEstado,
-            'metodo_pago' => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
+            'metodo_pago'    => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
         ]);
 
         return back()->with('success', 'Estatus de factura actualizado correctamente.');
@@ -292,9 +306,9 @@ class RecolectorController extends Controller
                 config('services.whatsapp.phone_number_id')
             ), [
                 'messaging_product' => 'whatsapp',
-                'to' => $telefono,
-                'type' => 'text',
-                'text' => [
+                'to'                => $telefono,
+                'type'              => 'text',
+                'text'              => [
                     'body' => sprintf(
                         'Hola %s, tu orden de lavanderia #%s fue registrada correctamente. Total prendas: %s. Fecha de entrega: %s.',
                         $cliente->nombre,
@@ -340,12 +354,12 @@ class RecolectorController extends Controller
         foreach ($incongruencias as $dato) {
             $registro = IncongruenciaRecolector::create([
                 'factura_recolector_id' => $factura->id,
-                'recolector_id' => $factura->recolector_id,
-                'cliente_id' => $factura->cliente_id,
-                'titulo' => $dato['titulo'],
-                'detalle' => $dato['detalle'],
-                'estado' => 'pendiente',
-                'detectada_en' => now(),
+                'recolector_id'         => $factura->recolector_id,
+                'cliente_id'            => $factura->cliente_id,
+                'titulo'                => $dato['titulo'],
+                'detalle'               => $dato['detalle'],
+                'estado'                => 'pendiente',
+                'detectada_en'          => now(),
             ]);
 
             $registro->loadMissing('recolector');

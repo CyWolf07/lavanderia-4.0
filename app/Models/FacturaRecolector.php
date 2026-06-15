@@ -18,7 +18,7 @@ class FacturaRecolector extends Model
         'fecha_ingreso',
         'fecha_entrega',
         'direccion',
-        'nit_cedula',
+        'numero_cliente',
         'celular',
         'observaciones',
         'total_prendas',
@@ -33,7 +33,7 @@ class FacturaRecolector extends Model
             'fecha_ingreso' => 'datetime',
             'fecha_entrega' => 'date',
             'observaciones' => 'array',
-            'total' => 'decimal:2',
+            'total'         => 'decimal:2',
         ];
     }
 

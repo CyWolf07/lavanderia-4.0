@@ -33,6 +33,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\EnterpriseAccessController;
 use App\Http\Controllers\GastoController;
+use App\Http\Controllers\MapaClientesController;
 use App\Http\Controllers\PqrsController;
 use App\Http\Controllers\PrendaController;
 use App\Http\Controllers\ProduccionController;
@@ -180,6 +181,11 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::put('/clientes/{cliente}', [ClienteController::class, 'update'])->name('clientes.update');
     Route::delete('/clientes/{cliente}', [ClienteController::class, 'destroy'])->name('clientes.destroy');
     Route::patch('/clientes/{cliente}/estado', [ClienteController::class, 'toggleStatus'])->name('clientes.toggle-status');
+    Route::patch('/clientes/{cliente}/delegar', [ClienteController::class, 'delegarRecolector'])->name('clientes.delegar');
+
+    // ── MAPA DE CLIENTES ───────────────────────────────────────────────────────
+    Route::get('/mapa-clientes', [MapaClientesController::class, 'index'])->name('admin.mapa-clientes');
+    Route::patch('/mapa-clientes/{cliente}/coordenadas', [MapaClientesController::class, 'updateCoordenadas'])->name('admin.mapa-clientes.coordenadas');
 
     // ── GESTIÓN DE PRENDAS DEL RECOLECTOR ─────────────────────────────────────
     // Prendas exclusivas para el módulo de recolección (independientes de producción)

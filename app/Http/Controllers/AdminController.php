@@ -128,6 +128,16 @@ class AdminController extends Controller
             ? $deviceAccess->lockedDevices()
             : collect();
 
+        $recolectores = User::query()
+            ->where('rol', 'recolector')
+            ->where('activo', true)
+            ->orderBy('name')
+            ->get();
+
+        $clientesConRecolector = Cliente::with('recolector')
+            ->orderBy('nombre')
+            ->get();
+
         return view('admin.dashboard', compact(
             'totalUsuarios',
             'totalProducciones',
@@ -148,7 +158,9 @@ class AdminController extends Controller
             'produccionUsuariosPorDia',
             'periodosCerrados',
             'codigoEmpresarial',
-            'dispositivosBloqueados'
+            'dispositivosBloqueados',
+            'recolectores',
+            'clientesConRecolector'
         ));
     }
 
@@ -445,14 +457,14 @@ class AdminController extends Controller
 
         DB::transaction(function () use ($facturaRecolector, $cliente, $data, $detalles, $totalPrendas, $totalFactura) {
             $facturaRecolector->update([
-                'cliente_id' => $cliente->id,
-                'direccion' => $cliente->direccion,
-                'nit_cedula' => $cliente->nit_cedula,
-                'celular' => $cliente->celular,
-                'fecha_entrega' => $data['fecha_entrega'] ?? null,
-                'observaciones' => array_values($data['observaciones'] ?? []),
-                'total_prendas' => $totalPrendas,
-                'total' => $totalFactura,
+                'cliente_id'     => $cliente->id,
+                'direccion'      => $cliente->direccion,
+                'numero_cliente' => $cliente->numero_cliente,
+                'celular'        => $cliente->celular,
+                'fecha_entrega'  => $data['fecha_entrega'] ?? null,
+                'observaciones'  => array_values($data['observaciones'] ?? []),
+                'total_prendas'  => $totalPrendas,
+                'total'          => $totalFactura,
             ]);
 
             // Reemplazar detalles por completo

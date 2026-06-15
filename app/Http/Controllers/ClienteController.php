@@ -4,14 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ClienteController extends Controller
 {
     public function index()
     {
-        $clientes = Cliente::orderByDesc('activo')
-            ->orderBy('nombre')
+        $clientes = Cliente::with('recolector')
+            ->orderByDesc('activo')
+            ->orderBy('numero_cliente')
             ->get();
 
         return view('clientes.index', compact('clientes'));
@@ -20,8 +21,8 @@ class ClienteController extends Controller
     public function store(Request $request)
     {
         $data = $this->validatedData($request);
-
         $data['activo'] = $request->boolean('activo', true);
+        $data['numero_cliente'] = Cliente::siguienteNumero();
 
         Cliente::create($data);
 
@@ -32,12 +33,14 @@ class ClienteController extends Controller
     {
         $data = $this->validatedData($request);
         $data['activo'] = true;
+        $data['numero_cliente'] = Cliente::siguienteNumero();
+        $data['recolector_id'] = Auth::id();
 
         $cliente = Cliente::create($data);
 
         return redirect()
             ->route('recolector.index')
-            ->with('success', 'Cliente creado correctamente desde Recolector.')
+            ->with('success', 'Cliente creado correctamente.')
             ->with('cliente_creado_id', $cliente->id);
     }
 
@@ -69,20 +72,26 @@ class ClienteController extends Controller
         );
     }
 
+    /** Admin: asignar/reasignar cliente a un recolector (o desasignar con null). */
+    public function delegarRecolector(Request $request, Cliente $cliente)
+    {
+        $data = $request->validate([
+            'recolector_id' => ['nullable', 'exists:users,id'],
+        ]);
+
+        $cliente->update(['recolector_id' => $data['recolector_id'] ?? null]);
+
+        return back()->with('success', 'Cliente asignado correctamente.');
+    }
+
     private function validatedData(Request $request, ?Cliente $cliente = null): array
     {
-        $uniqueNit = Rule::unique('clientes', 'nit_cedula');
-
-        if ($cliente) {
-            $uniqueNit = $uniqueNit->ignore($cliente->id);
-        }
-
         return $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'nit_cedula' => ['required', 'string', 'max:50', $uniqueNit],
-            'celular' => ['nullable', 'string', 'max:50'],
+            'nombre'    => ['required', 'string', 'max:255'],
+            'celular'   => ['nullable', 'string', 'max:50'],
             'direccion' => ['nullable', 'string', 'max:255'],
-            'activo' => ['nullable', 'boolean'],
+            'barrio'    => ['required', 'string', 'max:100'],
+            'activo'    => ['nullable', 'boolean'],
         ]);
     }
 }

@@ -17,6 +17,7 @@ class FacturaRecolectorDetalle extends Model
         'prenda_nombre',
         'valor_unitario',
         'cantidad',
+        'color_prenda',
         'subtotal',
     ];
 
@@ -24,7 +25,7 @@ class FacturaRecolectorDetalle extends Model
     {
         return [
             'valor_unitario' => 'decimal:2',
-            'subtotal' => 'decimal:2',
+            'subtotal'       => 'decimal:2',
         ];
     }
 

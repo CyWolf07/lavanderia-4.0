@@ -13,10 +13,16 @@
     x-data="{
         paymentOpen: false,
         cancelOpen: false,
+        orderSummaryOpen: false,
+        delegarOpen: false,
         selectedProducciones: [],
         selectedOrder: '',
         paymentAction: '',
         cancelAction: '',
+        selectedOrderSummary: {},
+        delegarClienteId: null,
+        delegarClienteNombre: '',
+        delegarAction: '',
         allProduccionesSelected(ids) {
             return ids.length > 0 && ids.every((id) => this.selectedProducciones.includes(String(id)));
         },
@@ -32,6 +38,16 @@
             this.cancelAction = action;
             this.selectedOrder = order;
             this.cancelOpen = true;
+        },
+        openOrderSummary(data) {
+            this.selectedOrderSummary = data;
+            this.orderSummaryOpen = true;
+        },
+        openDelegar(clienteId, clienteNombre, action) {
+            this.delegarClienteId = clienteId;
+            this.delegarClienteNombre = clienteNombre;
+            this.delegarAction = action;
+            this.delegarOpen = true;
         },
         copyEnterpriseCode(code) {
             navigator.clipboard.writeText(code);
@@ -167,6 +183,8 @@
                     <a href="{{ route('prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gestionar prendas</a>
                     <a href="{{ route('clientes.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gestionar clientes</a>
                     <a href="{{ route('recolector-prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Prendas recolector</a>
+                    {{-- F6: Botón mapa de clientes --}}
+                    <a href="{{ route('admin.mapa-clientes') }}" class="rounded-[1.35rem] border border-violet-200 bg-violet-50 px-5 py-4 text-sm font-bold text-violet-700 shadow-sm hover:-translate-y-0.5 hover:bg-violet-100">🗺 Mapa de clientes</a>
                     <a href="{{ route('admin.incongruencias.index') }}" class="rounded-[1.35rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700 shadow-sm hover:-translate-y-0.5 hover:bg-rose-100">Informe incongruencias</a>
                     <a href="{{ route('admin.reportes.impresion', ['tipo_reporte' => 'resumen_diario', 'imprimir' => 1]) }}" target="_blank" class="rounded-[1.35rem] border border-sky-200 bg-white px-5 py-4 text-sm font-bold text-sky-700 shadow-sm hover:-translate-y-0.5 hover:bg-sky-50">Imprimir resumen</a>
                     <form action="{{ route('produccion.cerrar') }}" method="POST">
@@ -458,7 +476,67 @@
                 </div>
             </div>
 
+            {{-- ─── F1: DELEGACIÓN DE CLIENTES A RECOLECTORES ─────────────────── --}}
+            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+                <div class="border-b border-slate-200 px-6 py-5">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Delegación de clientes</h2>
+                            <p class="mt-1 text-sm text-slate-500">Asigna o reasigna cada cliente a un recolector específico. Los clientes sin asignar son visibles solo para el admin.</p>
+                        </div>
+                        <span class="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-700 ring-1 ring-violet-200">{{ $clientesConRecolector->count() }} clientes</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-slate-500">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold">N°</th>
+                                <th class="px-6 py-4 font-semibold">Nombre</th>
+                                <th class="px-6 py-4 font-semibold">Barrio</th>
+                                <th class="px-6 py-4 font-semibold">Celular</th>
+                                <th class="px-6 py-4 font-semibold">Recolector asignado</th>
+                                <th class="px-6 py-4 font-semibold">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse ($clientesConRecolector as $cli)
+                                <tr>
+                                    <td class="px-6 py-4">
+                                        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800"># {{ $cli->numero_cliente }}</span>
+                                    </td>
+                                    <td class="px-6 py-4 font-semibold text-slate-900">{{ $cli->nombre }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ $cli->barrio ?: '—' }}</td>
+                                    <td class="px-6 py-4 text-slate-600">{{ $cli->celular ?: '—' }}</td>
+                                    <td class="px-6 py-4">
+                                        @if ($cli->recolector)
+                                            <span class="rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">{{ $cli->recolector->name }}</span>
+                                        @else
+                                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-500">Sin asignar</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <button
+                                            type="button"
+                                            @click="openDelegar({{ $cli->id }}, '{{ addslashes($cli->nombre) }}', '{{ route('clientes.delegar', $cli) }}')"
+                                            class="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100"
+                                        >
+                                            Asignar
+                                        </button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="px-6 py-8 text-center text-slate-500">No hay clientes registrados.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             {{-- Tabla de últimos registros de producción activos --}}
+
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 @php($produccionIds = $ultimasProducciones->pluck('id')->values())
                 <form id="bulk-delete-producciones" action="{{ route('admin.produccion.destroy-bulk') }}" method="POST" class="hidden">
@@ -583,13 +661,29 @@
 		                            <?php foreach ($ultimasFacturasRecolector as $factura): ?>
                                     <?php
                                         $estadoFactura = $factura->estado_factura ?? 'pendiente';
-                                        $ordenFactura = '#'.str_pad((string) $factura->numero_orden, 6, '0', STR_PAD_LEFT);
+                                        $ordenFactura = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
                                         $estatusAction = route('admin.facturas-recolector.estatus', $factura);
+                                        $facturaResumenJson = json_encode([
+                                            'numero_orden'   => $ordenFactura,
+                                            'cliente_nombre' => $factura->cliente->nombre ?? 'Sin cliente',
+                                            'celular'        => $factura->celular ?? '',
+                                            'total'          => number_format((float)$factura->total, 0, ',', '.'),
+                                            'total_prendas'  => $factura->total_prendas,
+                                            'estado'         => $estadoFactura,
+                                            'recolector'     => $factura->recolector->name ?? 'Sin recolector',
+                                            'detalles'       => $factura->detalles->map(fn($d) => [
+                                                'prenda_nombre' => $d->prenda_nombre,
+                                                'cantidad'      => $d->cantidad,
+                                                'color_prenda'  => $d->color_prenda ?? '',
+                                                'subtotal'      => number_format((float)$d->subtotal, 0, ',', '.'),
+                                            ])->values(),
+                                        ]);
                                     ?>
-	                                <tr>
-	                                    <td class="px-6 py-4 font-semibold text-amber-700">
-	                                        {{ $ordenFactura }}
-	                                    </td>
+	                                	<tr>
+                                	    <td class="px-6 py-4">
+                                	        {{-- F3: Clic en número de orden abre modal resumen --}}
+                                	        <button type="button" @click="openOrderSummary({{ $facturaResumenJson }})" class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 transition hover:bg-amber-200 hover:shadow-sm">{{ $ordenFactura }}</button>
+                                	    </td>
 	                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->recolector->name ?? 'Sin recolector' }}</td>
 	                                    <td class="px-6 py-4 text-slate-600">{{ $factura->cliente->nombre ?? 'Sin cliente' }}</td>
 	                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
@@ -734,5 +828,94 @@
             </form>
         </div>
     </div>
+
+    {{-- ─── F3: MODAL RESUMEN DE ORDEN ──────────────────────────────────────── --}}
+    <div x-cloak x-show="orderSummaryOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
+        <div @click.outside="orderSummaryOpen = false" class="w-full max-w-lg rounded-[1.75rem] bg-white p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">Resumen de Orden</p>
+                    <h2 class="mt-1 text-2xl font-black text-slate-900" x-text="selectedOrderSummary.numero_orden"></h2>
+                </div>
+                <button @click="orderSummaryOpen = false" class="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Cliente</p>
+                    <p class="mt-1 font-bold text-slate-900" x-text="selectedOrderSummary.cliente_nombre"></p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Celular</p>
+                    <p class="mt-1 font-bold text-slate-900" x-text="selectedOrderSummary.celular || 'Sin celular'"></p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Recolector</p>
+                    <p class="mt-1 font-bold text-slate-900" x-text="selectedOrderSummary.recolector"></p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Total prendas</p>
+                    <p class="mt-1 font-bold text-slate-900" x-text="selectedOrderSummary.total_prendas"></p>
+                </div>
+                <div class="sm:col-span-2">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Valor total</p>
+                    <p class="mt-1 text-2xl font-black text-emerald-700">$ <span x-text="selectedOrderSummary.total"></span></p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Detalle de prendas</p>
+                <div class="mt-2 divide-y divide-slate-100 rounded-2xl border border-slate-200">
+                    <template x-for="(d, i) in (selectedOrderSummary.detalles || [])" :key="i">
+                        <div class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                            <div>
+                                <p class="font-semibold text-slate-900" x-text="d.prenda_nombre"></p>
+                                <p class="text-slate-500">
+                                    <span x-text="'x' + d.cantidad"></span>
+                                    <span x-show="d.color_prenda" class="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs" x-text="d.color_prenda"></span>
+                                </p>
+                            </div>
+                            <p class="font-semibold text-slate-900">$ <span x-text="d.subtotal"></span></p>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            <button @click="orderSummaryOpen = false" class="mt-5 w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    {{-- ─── F1: MODAL DELEGACIÓN DE CLIENTES ────────────────────────────────── --}}
+    <div x-cloak x-show="delegarOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
+        <div @click.outside="delegarOpen = false" class="w-full max-w-md rounded-[1.75rem] bg-white p-6 shadow-2xl">
+            <h2 class="text-xl font-black text-slate-900">Asignar cliente a recolector</h2>
+            <p class="mt-1 text-sm text-slate-500">Cliente: <span class="font-semibold text-slate-900" x-text="delegarClienteNombre"></span></p>
+            <form :action="delegarAction" method="POST" class="mt-5 space-y-4">
+                @csrf
+                @method('PATCH')
+                <div>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">Recolector asignado</label>
+                    <select name="recolector_id" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                        <option value="">Sin asignar</option>
+                        @foreach ($recolectores as $rec)
+                            <option value="{{ $rec->id }}">{{ $rec->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="delegarOpen = false" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                    <button class="rounded-full bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </div>
+
+{{-- ─── F1: SECCIÓN DELEGACIÓN DE CLIENTES (fuera del main div para no conflicto de Alpine) --}}
+@push('after-content')
+@endpush
+
 @endsection
+
