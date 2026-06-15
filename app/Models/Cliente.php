@@ -48,10 +48,20 @@ class Cliente extends Model
      */
     public static function reordenarNumeracion(): void
     {
-        $clientes = DB::table('clientes')->orderBy('created_at')->pluck('id');
-        foreach ($clientes as $index => $id) {
-            DB::table('clientes')->where('id', $id)->update(['numero_cliente' => $index + 1]);
-        }
+        DB::transaction(function () {
+            $clientes = self::orderBy('id')->get();
+            
+            // Paso 1: Mover todos a números negativos temporales para liberar el espacio positivo
+            foreach ($clientes as $cliente) {
+                // Usamos queries directos para evitar validaciones de modelo o eventos si los hay
+                DB::table('clientes')->where('id', $cliente->id)->update(['numero_cliente' => -$cliente->id]);
+            }
+
+            // Paso 2: Asignar secuencialmente desde 1
+            foreach ($clientes as $index => $cliente) {
+                DB::table('clientes')->where('id', $cliente->id)->update(['numero_cliente' => $index + 1]);
+            }
+        });
     }
 
     // ── Relaciones ────────────────────────────────────────────────────────────
