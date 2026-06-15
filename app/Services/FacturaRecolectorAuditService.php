@@ -41,9 +41,25 @@ class FacturaRecolectorAuditService
 
         $cliente = $factura->cliente;
         if ($cliente) {
-            $this->compararCampoCliente($incongruencias, 'NIT/Cédula', (string) ($factura->nit_cedula ?? ''), (string) ($cliente->nit_cedula ?? ''), $factura->id);
-            $this->compararCampoCliente($incongruencias, 'Celular', (string) ($factura->celular ?? ''), (string) ($cliente->celular ?? ''), $factura->id);
-            $this->compararCampoCliente($incongruencias, 'Dirección', (string) ($factura->direccion ?? ''), (string) ($cliente->direccion ?? ''), $factura->id);
+            // Comparar numero_cliente (reemplaza nit_cedula desde la migración)
+            $this->compararCampoCliente(
+                $incongruencias, 'N° de cliente',
+                (string) ($factura->numero_cliente ?? ''),
+                (string) ($cliente->numero_cliente ?? ''),
+                $factura->id
+            );
+            $this->compararCampoCliente(
+                $incongruencias, 'Celular',
+                (string) ($factura->celular ?? ''),
+                (string) ($cliente->celular ?? ''),
+                $factura->id
+            );
+            $this->compararCampoCliente(
+                $incongruencias, 'Dirección',
+                (string) ($factura->direccion ?? ''),
+                (string) ($cliente->direccion ?? ''),
+                $factura->id
+            );
         }
 
         foreach ($factura->detalles as $detalle) {

@@ -15,7 +15,10 @@ class ClienteController extends Controller
             ->orderBy('numero_cliente')
             ->get();
 
-        return view('clientes.index', compact('clientes'));
+        $siguienteNumero = Cliente::siguienteNumero();
+        $barriosCP = \App\Http\Controllers\MapaClientesController::BARRIOS_CP;
+
+        return view('clientes.index', compact('clientes', 'siguienteNumero', 'barriosCP'));
     }
 
     public function store(Request $request)
