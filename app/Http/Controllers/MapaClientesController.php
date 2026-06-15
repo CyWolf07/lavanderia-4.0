@@ -172,25 +172,24 @@ class MapaClientesController extends Controller
     {
         $query = $request->validate(['q' => ['required', 'string', 'max:300']])['q'];
 
-        // Construir URL de Nominatim
-        $url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' . urlencode($query);
-
-        // Usar file_get_contents con User-Agent propio (requerido por Nominatim ToS)
-        $context = stream_context_create([
-            'http' => [
-                'header'  => "User-Agent: LavanderiaPastoApp/1.0 (contacto@lavanderia.co)\r\nAccept-Language: es\r\n",
-                'timeout' => 8,
-            ],
-        ]);
+        $url = 'https://nominatim.openstreetmap.org/search';
 
         try {
-            $raw = @file_get_contents($url, false, $context);
+            // Usar Http Facade de Laravel que usa cURL y evita problemas de allow_url_fopen
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'User-Agent'      => 'LavanderiaPastoApp/1.0 (contacto@lavanderia.co)',
+                'Accept-Language' => 'es',
+            ])->timeout(8)->get($url, [
+                'format' => 'json',
+                'limit'  => 1,
+                'q'      => $query,
+            ]);
 
-            if ($raw === false) {
-                return response()->json(['error' => 'No se pudo contactar con el servicio de geocodificación.'], 502);
+            if ($response->failed()) {
+                return response()->json(['error' => 'No se pudo contactar con OSM Nominatim (Error HTTP ' . $response->status() . ').'], 502);
             }
 
-            $data = json_decode($raw, true);
+            $data = $response->json();
 
             if (empty($data)) {
                 return response()->json(['found' => false]);
@@ -203,7 +202,7 @@ class MapaClientesController extends Controller
                 'display' => $data[0]['display_name'] ?? '',
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['error' => 'Error al geocodificar: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error de conexión al geocodificar: ' . $e->getMessage()], 500);
         }
     }
 }

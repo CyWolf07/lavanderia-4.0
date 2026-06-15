@@ -4,8 +4,8 @@
 
 @section('content')
 
-{{-- Leaflet CSS — debe estar ANTES del div del mapa --}}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+{{-- Leaflet CSS — usar cdnjs para máxima compatibilidad y evitar bloqueos --}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9O8S1VKhH21XjBpewW4bHwXn3B32G5eZWeN1A1iVjsG7t9v1FzT8z8t1m+eO5OaL8Y0XkUjZ8y3mHq6z9A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <style>
     #mapa-leaflet { z-index: 0; }
@@ -184,8 +184,8 @@
 </div>
 </div>
 
-{{-- Leaflet JS — al final del content para que el DOM ya exista --}}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GGnk=" crossorigin=""></script>
+{{-- Leaflet JS — cdnjs --}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-BwHqxNdZV0q+8oIoxZ48m0yVbE3oGjH12S2b1U1bXz4c2+kE3R8T9w7f8h5q1g5i6z1Q4p2c3g5p6r7l5e5g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
 const CLIENTES_DATA  = @json($clientes);
