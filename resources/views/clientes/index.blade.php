@@ -35,13 +35,20 @@
         {{-- Formulario: Crear nuevo cliente --}}
         <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
             <h2 class="text-lg font-bold text-slate-900">Nuevo cliente</h2>
+            <p class="mt-1 text-sm text-slate-500">Completa los datos para registrar un nuevo cliente.</p>
             <form action="{{ route('clientes.store') }}" method="POST" class="mt-6 space-y-4">
                 @csrf
-                {{-- Datos básicos del cliente --}}
-                <input type="text" name="nombre" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                <input type="text" name="nit_cedula" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                {{-- Número de cliente (autoasignado, solo lectura) --}}
+                <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+                    Número de cliente: <span class="font-bold text-amber-700">{{ \App\Models\Cliente::siguienteNumero() }}</span>
+                    <span class="text-slate-400">(se asigna automáticamente)</span>
+                </div>
+                {{-- Datos básicos --}}
+                <input type="text" name="nombre" placeholder="Nombre del cliente *" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <x-input-celular class="w-full" />
                 <input type="text" name="direccion" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                <input type="text" name="barrio" placeholder="Barrio *" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                 <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
                     Guardar cliente
                 </button>
@@ -57,16 +64,24 @@
                 @forelse ($clientes as $cliente)
                     <div class="rounded-[1.5rem] border border-slate-200 p-4">
 
+                        {{-- Encabezado del cliente: número y nombre --}}
+                        <div class="mb-3 flex items-center gap-3">
+                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                                # {{ $cliente->numero_cliente ?? 'N/A' }}
+                            </span>
+                            <span class="text-sm font-semibold text-slate-700">{{ $cliente->nombre }}</span>
+                        </div>
+
                         {{-- Formulario de actualización del cliente --}}
                         <form action="{{ route('clientes.update', $cliente) }}" method="POST" class="grid gap-3 md:grid-cols-2">
                             @csrf
                             @method('PUT')
-                            <input name="nombre" type="text" value="{{ $cliente->nombre }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                            <input name="nit_cedula" type="text" value="{{ $cliente->nit_cedula }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                            <input name="nombre" type="text" value="{{ $cliente->nombre }}" placeholder="Nombre completo del cliente" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                            <input name="barrio" type="text" value="{{ $cliente->barrio }}" placeholder="Barrio donde vive el cliente" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                             <x-input-celular :value="$cliente->celular" class="md:col-span-1" />
-                            <input name="direccion" type="text" value="{{ $cliente->direccion }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+                            <input name="direccion" type="text" value="{{ $cliente->direccion }}" placeholder="Dirección de domicilio" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                             <div class="md:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <p class="text-sm text-slate-500">{{ $cliente->nombre }} | {{ $cliente->nit_cedula }}</p>
+                                <p class="text-sm text-slate-500">{{ $cliente->nombre }} | Barrio: {{ $cliente->barrio ?: 'Sin barrio' }}</p>
                                 <button class="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
                                     Guardar cambios
                                 </button>
@@ -77,7 +92,7 @@
                         <form action="{{ route('clientes.destroy', $cliente) }}" method="POST" class="mt-3">
                             @csrf
                             @method('DELETE')
-                            <button onclick="return confirm('¿Eliminar este cliente?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                            <button onclick="return confirm('\u00bfEliminar este cliente?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                 Eliminar
                             </button>
                         </form>
