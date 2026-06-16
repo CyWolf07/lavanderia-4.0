@@ -53,14 +53,14 @@ class AdminController extends Controller
             })
             ->sum('total');
 
-        // Panel: Órdenes Pagadas (pagadas en la quincena actual)
+        // Panel: Órdenes Pagadas (usando updated_at para incluir pagos de órdenes pasadas)
         $ordenesPagadasTotal = FacturaRecolector::query()
             ->where('estado_factura', 'pagado')
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
             ->sum('total');
         $ordenesPagadasCantidad = FacturaRecolector::query()
             ->where('estado_factura', 'pagado')
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
             ->count();
 
         // Panel: Gastos de la quincena
@@ -68,13 +68,13 @@ class AdminController extends Controller
             ->where('periodo', $periodoActual['periodo'])
             ->sum('monto');
 
-        // Panel: Ganancia = Órdenes Pagadas - Gastos
-        $ganancia = $ordenesPagadasTotal - $gastosQuincena;
+        // Total Neto = Órdenes Pagadas - Gastos
+        $totalNeto = $ordenesPagadasTotal - $gastosQuincena;
 
         // Panel: 30% de cada recolector (suma del 30% de sus facturas pagadas en la quincena)
         $recolectoresConFacturas = FacturaRecolector::query()
             ->where('estado_factura', 'pagado')
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
             ->with('recolector')
             ->get()
             ->groupBy('recolector_id')
@@ -91,8 +91,11 @@ class AdminController extends Controller
 
         $total30PorCiento = $recolectoresConFacturas->sum('pago30');
 
-        // Panel: Total neto = Ganancia - 30% recolectores
-        $totalNeto = $ganancia - $total30PorCiento;
+        // Pago Usuarios (Lavanderos)
+        $pagoUsuarios = $ingresosProduccionActiva;
+
+        // Panel: Ganancia = Total Neto - Pago Usuarios - Pago Recolectores
+        $ganancia = $totalNeto - $pagoUsuarios - $total30PorCiento;
 
         // ingresosTotales (para el panel de resumen de producción) = usuarios + recolectores activos
         $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
@@ -422,11 +425,15 @@ class AdminController extends Controller
 
         // Datos financieros para el resumen de impresión
         $gastosQuincena    = Gasto::where('periodo', Gasto::periodoDesdeFecha(now())['periodo'])->sum('monto');
-        $ordenesPagadas    = $facturasRecolector->where('estado_factura', 'pagado');
+        
+        // Buscamos las órdenes pagadas en esta quincena usando updated_at para incluir órdenes de quincenas pasadas que se pagaron ahora
+        $ordenesPagadas    = FacturaRecolector::where('estado_factura', 'pagado')
+                                ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])->get();
         $ordenesPagadasTotal = (float) $ordenesPagadas->sum('total');
-        $ganancia          = $ordenesPagadasTotal - (float) $gastosQuincena;
-        $resumen30Recolectores = $facturasRecolector
-            ->where('estado_factura', 'pagado')
+        
+        $totalNeto = $ordenesPagadasTotal - (float) $gastosQuincena;
+        
+        $resumen30Recolectores = $ordenesPagadas
             ->groupBy('recolector_id')
             ->map(function ($facturas) {
                 $rec = $facturas->first()->recolector;
@@ -437,8 +444,11 @@ class AdminController extends Controller
                     'pago30' => round($total * 0.30),
                 ];
             })->values();
+        
         $total30 = $resumen30Recolectores->sum('pago30');
-        $totalNeto = $ganancia - $total30;
+        $pagoUsuarios = $resumenUsuarios->sum('total');
+        
+        $ganancia = $totalNeto - $pagoUsuarios - $total30;
 
         if ($registroId) {
             $detalleUsuarios          = $detalleUsuarios->where('id', $registroId)->values();

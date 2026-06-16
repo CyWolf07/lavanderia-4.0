@@ -137,22 +137,65 @@ class ProduccionController extends Controller
 
         abort_if($registros->isEmpty(), 404);
 
-        $totalFacturasPeriodo = FacturaRecolector::query()
-            ->noCanceladas()
-            ->whereBetween('fecha_ingreso', [$inicioPeriodo, $finPeriodo])
-            ->sum('total');
+        $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
+            ->where(function ($q) use ($inicioPeriodo, $finPeriodo) {
+                $q->whereBetween('fecha_ingreso', [$inicioPeriodo, $finPeriodo]);
+            })
+            ->where(function ($q) {
+                $q->whereNull('estado_factura')
+                  ->orWhere('estado_factura', '!=', 'cancelado');
+            })
+            ->orderBy('fecha_ingreso')
+            ->orderBy('recolector_id')
+            ->orderBy('id')
+            ->get();
+
         $gastosPeriodo = Gasto::query()
             ->where('periodo', $periodo)
             ->sum('monto');
 
+        // Panel: Órdenes Pagadas
+        $ordenesPagadas = FacturaRecolector::where('estado_factura', 'pagado')
+            ->whereBetween('updated_at', [$inicioPeriodo, $finPeriodo])
+            ->get();
+        $ordenesPagadasTotal = (float) $ordenesPagadas->sum('total');
+
+        // Total Neto = Órdenes Pagadas - Gastos
+        $totalNeto = $ordenesPagadasTotal - (float) $gastosPeriodo;
+
+        // Panel 30%
+        $resumen30Recolectores = $ordenesPagadas
+            ->groupBy('recolector_id')
+            ->map(function ($facturas) {
+                $rec = $facturas->first()->recolector;
+                $total = (float) $facturas->sum('total');
+                return [
+                    'nombre' => $rec?->name ?? 'Sin nombre',
+                    'total'  => $total,
+                    'pago30' => round($total * 0.30),
+                ];
+            })->values();
+        $total30 = $resumen30Recolectores->sum('pago30');
+        
+        $pagoUsuarios = $registros->sum('total');
+        
+        // Ganancia = Total Neto - Pago Usuarios - Pago Recolectores
+        $ganancia = $totalNeto - $pagoUsuarios - $total30;
+
         return view('admin.reporte-periodo', [
             'periodo' => $periodo,
             'registrosPorUsuario' => $registros->groupBy('user_id'),
-            'totalGeneral' => $registros->sum('total'),
+            'totalGeneral' => $pagoUsuarios,
             'totalPrendas' => $registros->sum('cantidad'),
-            'totalFacturasPeriodo' => $totalFacturasPeriodo,
+            'facturasRecolector' => $facturasRecolector,
+            'totalFacturasPeriodo' => $facturasRecolector->sum('total'),
+            'totalPrendasFacturas' => $facturasRecolector->sum('total_prendas'),
             'gastosPeriodo' => $gastosPeriodo,
-            'reportePagoPeriodo' => $totalFacturasPeriodo - $gastosPeriodo,
+            'ordenesPagadasTotal' => $ordenesPagadasTotal,
+            'totalNeto' => $totalNeto,
+            'resumen30Recolectores' => $resumen30Recolectores,
+            'total30' => $total30,
+            'ganancia' => $ganancia,
             'autoPrint' => request()->boolean('imprimir'),
         ]);
     }
