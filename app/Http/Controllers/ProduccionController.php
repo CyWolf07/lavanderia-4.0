@@ -138,14 +138,9 @@ class ProduccionController extends Controller
         abort_if($registros->isEmpty(), 404);
 
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->where(function ($q) use ($inicioPeriodo, $finPeriodo) {
-                $q->whereBetween('fecha_ingreso', [$inicioPeriodo, $finPeriodo]);
-            })
-            ->where(function ($q) {
-                $q->whereNull('estado_factura')
-                  ->orWhere('estado_factura', '!=', 'cancelado');
-            })
-            ->orderBy('fecha_ingreso')
+            ->where('estado_factura', 'pagado')
+            ->whereBetween('updated_at', [$inicioPeriodo, $finPeriodo])
+            ->orderBy('updated_at')
             ->orderBy('recolector_id')
             ->orderBy('id')
             ->get();
@@ -155,9 +150,7 @@ class ProduccionController extends Controller
             ->sum('monto');
 
         // Panel: Órdenes Pagadas
-        $ordenesPagadas = FacturaRecolector::where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioPeriodo, $finPeriodo])
-            ->get();
+        $ordenesPagadas = $facturasRecolector;
         $ordenesPagadasTotal = (float) $ordenesPagadas->sum('total');
 
         // Total Neto = Órdenes Pagadas - Gastos

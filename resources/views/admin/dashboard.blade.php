@@ -218,39 +218,43 @@
         </div>
 	    </div>
 
-        {{-- ─── NUEVOS PANELES FINANCIEROS ─────────────────────────────── --}}
+        {{-- ─── NUEVOS PANELES FINANCIEROS (ORDEN SOLICITADO POR USUARIO) ─────────────────────────────── --}}
         <div class="grid min-w-0 gap-4 [grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))]">
-            {{-- Órdenes Pagadas --}}
+            {{-- 1. Órdenes Pagadas --}}
             <div class="min-w-0 rounded-[1.75rem] bg-blue-600 p-5 text-white shadow-xl sm:p-6">
                 <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">Órdenes Pagadas</p>
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($ordenesPagadasTotal, 0, ',', '.') }}</p>
-                <p class="mt-1 text-xs text-blue-200">{{ $ordenesPagadasCantidad }} órdenes — quincena</p>
+                <p class="mt-1 text-xs text-blue-200">{{ $ordenesPagadasCantidad }} órdenes cobradas</p>
             </div>
-            {{-- Gastos --}}
+            {{-- 2. Gastos --}}
             <div class="min-w-0 rounded-[1.75rem] bg-rose-600 p-5 text-white shadow-xl sm:p-6">
                 <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-rose-100">Gastos</p>
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
-                <p class="mt-1 text-xs text-rose-200">Gastos registrados en quincena</p>
+                <p class="mt-1 text-xs text-rose-200">Gastos de quincena</p>
             </div>
-            {{-- Ganancia = Órdenes Pagadas - Gastos --}}
-            <div class="min-w-0 rounded-[1.75rem] @if ($ganancia >= 0) bg-teal-600 @else bg-orange-600 @endif p-5 text-white shadow-xl sm:p-6">
-                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] opacity-80">Ganancia</p>
-                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($ganancia, 0, ',', '.') }}</p>
-                <p class="mt-1 text-xs opacity-75">Pagadas − Gastos</p>
-            </div>
-            {{-- 30% Recolectores --}}
-            <div class="min-w-0 rounded-[1.75rem] bg-amber-500 p-5 text-white shadow-xl sm:p-6">
-                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-amber-100">30% Recolectores</p>
-                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($total30PorCiento, 0, ',', '.') }}</p>
-                @foreach ($recolectoresConFacturas as $recInfo)
-                    <p class="mt-0.5 text-xs text-amber-100">{{ $recInfo['nombre'] }}: $ {{ number_format($recInfo['pago30'], 0, ',', '.') }}</p>
-                @endforeach
-            </div>
-            {{-- Total Neto = Ganancia - 30% --}}
+            {{-- 3. Total Neto = Órdenes Pagadas - Gastos --}}
             <div class="min-w-0 rounded-[1.75rem] @if ($totalNeto >= 0) bg-indigo-700 @else bg-red-700 @endif p-5 text-white shadow-xl sm:p-6">
                 <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] opacity-80">Total Neto</p>
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($totalNeto, 0, ',', '.') }}</p>
-                <p class="mt-1 text-xs opacity-75">Ganancia − 30% recolectores</p>
+                <p class="mt-1 text-xs opacity-75">Pagadas − Gastos</p>
+            </div>
+            {{-- 4. Pago Usuarios --}}
+            <div class="min-w-0 rounded-[1.75rem] bg-slate-700 p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Pago Usuarios</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($pagoUsuarios, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs text-slate-400">Total a lavanderos</p>
+            </div>
+            {{-- 5. Pago Recolectores (30%) --}}
+            <div class="min-w-0 rounded-[1.75rem] bg-amber-500 p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-amber-100">Pago Recolectores</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($total30PorCiento, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs text-amber-100">30% de órdenes pagadas</p>
+            </div>
+            {{-- 6. Total Ganancia = Total Neto - Pago Usuarios - Pago Recolectores --}}
+            <div class="min-w-0 rounded-[1.75rem] @if ($ganancia >= 0) bg-teal-600 @else bg-orange-600 @endif p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] opacity-80">Total Ganancia</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($ganancia, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs opacity-75">Neto − U. − R.</p>
             </div>
         </div>
 

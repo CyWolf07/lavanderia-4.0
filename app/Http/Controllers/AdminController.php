@@ -393,20 +393,11 @@ class AdminController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Facturas para el resumen: quincena actual + todas las no pagadas
+        // Facturas para el resumen: Solo facturas pagadas en la quincena actual
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
-                $q->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
-                  ->orWhere(function ($q2) {
-                      $q2->whereNull('estado_factura')
-                         ->orWhere('estado_factura', 'pendiente');
-                  });
-            })
-            ->where(function ($q) {
-                $q->whereNull('estado_factura')
-                  ->orWhere('estado_factura', '!=', 'cancelado');
-            })
-            ->orderBy('fecha_ingreso')
+            ->where('estado_factura', 'pagado')
+            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+            ->orderBy('updated_at')
             ->orderBy('recolector_id')
             ->orderBy('id')
             ->get();
@@ -427,8 +418,7 @@ class AdminController extends Controller
         $gastosQuincena    = Gasto::where('periodo', Gasto::periodoDesdeFecha(now())['periodo'])->sum('monto');
         
         // Buscamos las órdenes pagadas en esta quincena usando updated_at para incluir órdenes de quincenas pasadas que se pagaron ahora
-        $ordenesPagadas    = FacturaRecolector::where('estado_factura', 'pagado')
-                                ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])->get();
+        $ordenesPagadas = $facturasRecolector;
         $ordenesPagadasTotal = (float) $ordenesPagadas->sum('total');
         
         $totalNeto = $ordenesPagadasTotal - (float) $gastosQuincena;
