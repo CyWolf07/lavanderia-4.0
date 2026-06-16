@@ -145,7 +145,12 @@ class MapaClientesController extends Controller
 
         $zonas = self::ZONAS_PASTO;
 
-        return view('admin.mapa-clientes', compact('clientes', 'zonas'));
+        $recolectores = \App\Models\User::where('rol', 'recolector')
+            ->where('activo', true)
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.mapa-clientes', compact('clientes', 'zonas', 'recolectores'));
     }
 
     /**

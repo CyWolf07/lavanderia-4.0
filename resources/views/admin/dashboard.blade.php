@@ -182,6 +182,7 @@
                     <a href="{{ route('produccion.index') }}" class="rounded-[1.35rem] border border-sky-200 bg-sky-50 px-5 py-4 text-sm font-bold text-sky-700 shadow-sm hover:-translate-y-0.5 hover:bg-sky-100">Ingresar a produccion</a>
                     <a href="{{ route('prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gestionar prendas</a>
                     <a href="{{ route('clientes.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gestionar clientes</a>
+                    <a href="#delegacion-clientes" class="rounded-[1.35rem] border border-violet-200 bg-violet-50 px-5 py-4 text-sm font-bold text-violet-700 shadow-sm hover:-translate-y-0.5 hover:bg-violet-100">👥 Delegación de clientes</a>
                     <a href="{{ route('recolector-prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Prendas recolector</a>
                     {{-- F6: Botón mapa de clientes --}}
                     <a href="{{ route('admin.mapa-clientes') }}" class="rounded-[1.35rem] border border-violet-200 bg-violet-50 px-5 py-4 text-sm font-bold text-violet-700 shadow-sm hover:-translate-y-0.5 hover:bg-violet-100">🗺 Mapa de clientes</a>
@@ -209,12 +210,49 @@
             <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-sky-100 sm:text-sm sm:tracking-[0.22em]">Registros activos</p>
             <p class="mt-3 break-words text-4xl font-black">{{ $totalProducciones }}</p>
         </div>
-        {{-- Ingreso total acumulado en la quincena activa --}}
+        {{-- Ingreso activo = SOLO lo que ingresan los recolectores (ordenes no pagadas) --}}
         <div class="min-w-0 rounded-[1.75rem] bg-emerald-600 p-5 text-white shadow-xl sm:p-6">
             <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100 sm:text-sm sm:tracking-[0.22em]">Ingreso activo</p>
-            <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($ingresosTotales, 0, ',', '.') }}</p>
+            <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($ingresoRecolectoresActivo, 0, ',', '.') }}</p>
+            <p class="mt-1 text-xs text-emerald-200">Órdenes pendientes de pago</p>
         </div>
 	    </div>
+
+        {{-- ─── NUEVOS PANELES FINANCIEROS ─────────────────────────────── --}}
+        <div class="grid min-w-0 gap-4 [grid-template-columns:repeat(auto-fit,minmax(11rem,1fr))]">
+            {{-- Órdenes Pagadas --}}
+            <div class="min-w-0 rounded-[1.75rem] bg-blue-600 p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-blue-100">Órdenes Pagadas</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($ordenesPagadasTotal, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs text-blue-200">{{ $ordenesPagadasCantidad }} órdenes — quincena</p>
+            </div>
+            {{-- Gastos --}}
+            <div class="min-w-0 rounded-[1.75rem] bg-rose-600 p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-rose-100">Gastos</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs text-rose-200">Gastos registrados en quincena</p>
+            </div>
+            {{-- Ganancia = Órdenes Pagadas - Gastos --}}
+            <div class="min-w-0 rounded-[1.75rem] @if ($ganancia >= 0) bg-teal-600 @else bg-orange-600 @endif p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] opacity-80">Ganancia</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($ganancia, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs opacity-75">Pagadas − Gastos</p>
+            </div>
+            {{-- 30% Recolectores --}}
+            <div class="min-w-0 rounded-[1.75rem] bg-amber-500 p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-amber-100">30% Recolectores</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($total30PorCiento, 0, ',', '.') }}</p>
+                @foreach ($recolectoresConFacturas as $recInfo)
+                    <p class="mt-0.5 text-xs text-amber-100">{{ $recInfo['nombre'] }}: $ {{ number_format($recInfo['pago30'], 0, ',', '.') }}</p>
+                @endforeach
+            </div>
+            {{-- Total Neto = Ganancia - 30% --}}
+            <div class="min-w-0 rounded-[1.75rem] @if ($totalNeto >= 0) bg-indigo-700 @else bg-red-700 @endif p-5 text-white shadow-xl sm:p-6">
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] opacity-80">Total Neto</p>
+                <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($totalNeto, 0, ',', '.') }}</p>
+                <p class="mt-1 text-xs opacity-75">Ganancia − 30% recolectores</p>
+            </div>
+        </div>
 
         @php
             $maxFacturasDia = max(1, $ingresoFacturasPorDia->max('cantidad') ?? 1);
@@ -392,7 +430,7 @@
                                    placeholder="Contraseña"
                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-12 text-sm" required>
                             <button type="button" @click="showP = !showP" tabindex="-1"
-                                    class="absolute inset-y-0 right-3 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver contraseña">
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver contraseña">
                                 <svg x-show="!showP" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 <svg x-show="showP" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
                             </button>
@@ -402,7 +440,7 @@
                                    placeholder="Confirmar contraseña"
                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-12 text-sm" required>
                             <button type="button" @click="showPC = !showPC" tabindex="-1"
-                                    class="absolute inset-y-0 right-3 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver confirmación">
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver confirmación">
                                 <svg x-show="!showPC" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 <svg x-show="showPC" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
                             </button>
@@ -474,7 +512,7 @@
                                                    placeholder="Nueva contraseña opcional"
                                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-12 text-sm">
                                             <button type="button" @click="showEP = !showEP" tabindex="-1"
-                                                    class="absolute inset-y-0 right-3 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver contraseña">
+                                                    class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver contraseña">
                                                 <svg x-show="!showEP" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 <svg x-show="showEP" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
                                             </button>
@@ -484,7 +522,7 @@
                                                    placeholder="Confirmar nueva contraseña"
                                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 pr-12 text-sm">
                                             <button type="button" @click="showEPC = !showEPC" tabindex="-1"
-                                                    class="absolute inset-y-0 right-3 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver confirmación">
+                                                    class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center px-1 text-slate-400 hover:text-slate-700" aria-label="Ver confirmación">
                                                 <svg x-show="!showEPC" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 <svg x-show="showEPC" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
                                             </button>
@@ -517,7 +555,7 @@
             </div>
 
             {{-- ─── F1: DELEGACIÓN DE CLIENTES A RECOLECTORES ─────────────────── --}}
-            <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            <div id="delegacion-clientes" class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
                     <div class="flex items-center justify-between gap-4">
                         <div>

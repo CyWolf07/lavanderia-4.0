@@ -31,22 +31,80 @@ class AdminController extends Controller
         $totalUsuarios = User::count();
         $totalProduccionesActivas = Produccion::count();
         $ingresosProduccionActiva = Produccion::sum('total');
+
         $totalFacturasActivas = FacturaRecolector::query()
             ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->count();
         $totalProducciones = $totalProduccionesActivas + $totalFacturasActivas;
+
+        // Ingreso activo = SOLO lo que ingresan los recolectores (facturas no pagadas, todas las quincenas)
+        $ingresoRecolectoresActivo = FacturaRecolector::query()
+            ->noCanceladas()
+            ->where('estado_factura', '!=', 'pagado')
+            ->orWhereNull('estado_factura')
+            ->sum('total');
+
+        // Rewrite to fix the orWhereNull conflict
+        $ingresoRecolectoresActivo = FacturaRecolector::query()
+            ->where(function ($q) {
+                $q->whereNull('estado_factura')
+                  ->orWhere('estado_factura', 'pendiente');
+            })
+            ->sum('total');
+
+        // Panel: Órdenes Pagadas (pagadas en la quincena actual)
+        $ordenesPagadasTotal = FacturaRecolector::query()
+            ->where('estado_factura', 'pagado')
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->sum('total');
+        $ordenesPagadasCantidad = FacturaRecolector::query()
+            ->where('estado_factura', 'pagado')
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->count();
+
+        // Panel: Gastos de la quincena
+        $gastosQuincena = Gasto::query()
+            ->where('periodo', $periodoActual['periodo'])
+            ->sum('monto');
+
+        // Panel: Ganancia = Órdenes Pagadas - Gastos
+        $ganancia = $ordenesPagadasTotal - $gastosQuincena;
+
+        // Panel: 30% de cada recolector (suma del 30% de sus facturas pagadas en la quincena)
+        $recolectoresConFacturas = FacturaRecolector::query()
+            ->where('estado_factura', 'pagado')
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->with('recolector')
+            ->get()
+            ->groupBy('recolector_id')
+            ->map(function ($facturas) {
+                $recolector = $facturas->first()->recolector;
+                $totalRecolector = (float) $facturas->sum('total');
+                return [
+                    'nombre' => $recolector?->name ?? 'Sin nombre',
+                    'total'  => $totalRecolector,
+                    'pago30' => round($totalRecolector * 0.30),
+                ];
+            })
+            ->values();
+
+        $total30PorCiento = $recolectoresConFacturas->sum('pago30');
+
+        // Panel: Total neto = Ganancia - 30% recolectores
+        $totalNeto = $ganancia - $total30PorCiento;
+
+        // ingresosTotales (para el panel de resumen de producción) = usuarios + recolectores activos
         $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
             ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
+
         $totalFacturasQuincena = FacturaRecolector::query()
             ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
-        $gastosQuincena = Gasto::query()
-            ->where('periodo', $periodoActual['periodo'])
-            ->sum('monto');
+
         $reportePagoQuincena = $totalFacturasQuincena - $gastosQuincena;
         $gastosRecientes = Gasto::query()
             ->with('user')
@@ -62,14 +120,31 @@ class AdminController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente'])
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+        // Estatus Factura: TODAS las no pagadas de todos los recolectores + las de la quincena
+        $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
+            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
+                // No pagadas (de cualquier fecha) + todas de la quincena actual
+                $q->where('estado_factura', '!=', 'pagado')
+                  ->orWhereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena]);
+            })
+            ->where(function ($q) {
+                // Excluir canceladas
+                $q->whereNull('estado_factura')
+                  ->orWhere('estado_factura', '!=', 'cancelado');
+            })
             ->orderByDesc('fecha_ingreso')
             ->orderByDesc('id')
             ->get();
 
         $facturaStatusResumen = FacturaRecolector::query()
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
+                $q->where('estado_factura', '!=', 'pagado')
+                  ->orWhereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena]);
+            })
+            ->where(function ($q) {
+                $q->whereNull('estado_factura')
+                  ->orWhere('estado_factura', '!=', 'cancelado');
+            })
             ->selectRaw("COALESCE(estado_factura, 'pendiente') as estado, COUNT(*) as cantidad, SUM(total) as total")
             ->groupBy('estado')
             ->get()
@@ -142,6 +217,13 @@ class AdminController extends Controller
             'totalUsuarios',
             'totalProducciones',
             'ingresosTotales',
+            'ingresoRecolectoresActivo',
+            'ordenesPagadasTotal',
+            'ordenesPagadasCantidad',
+            'ganancia',
+            'recolectoresConFacturas',
+            'total30PorCiento',
+            'totalNeto',
             'totalFacturasQuincena',
             'gastosQuincena',
             'reportePagoQuincena',
@@ -308,50 +390,87 @@ class AdminController extends Controller
             ->orderBy('id')
             ->get();
 
+        // Facturas para el resumen: quincena actual + todas las no pagadas
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
+                $q->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('estado_factura')
+                         ->orWhere('estado_factura', 'pendiente');
+                  });
+            })
+            ->where(function ($q) {
+                $q->whereNull('estado_factura')
+                  ->orWhere('estado_factura', '!=', 'cancelado');
+            })
             ->orderBy('fecha_ingreso')
             ->orderBy('recolector_id')
             ->orderBy('id')
             ->get();
 
-        $resumenUsuarios = $this->resumenProduccionUsuarios($producciones);
+        $resumenUsuarios    = $this->resumenProduccionUsuarios($producciones);
         $resumenRecolectores = $this->resumenRecolectores($facturasRecolector);
 
         $tipoReporte = $request->input('tipo_reporte', 'detallado');
-        $grupo = $request->input('grupo', 'usuarios');
-        $registroId = $request->filled('registro_id') ? (int) $request->input('registro_id') : null;
+        $grupo       = $request->input('grupo', 'usuarios');
+        $registroId  = $request->filled('registro_id') ? (int) $request->input('registro_id') : null;
 
-        $detalleUsuarios = $this->detalleProduccionUsuarios($producciones);
-        $detalleRecolectores = $this->detalleFacturasRecolector($facturasRecolector);
-        $resumenDiarioUsuarios = $this->resumenDiarioProduccionUsuarios($producciones);
+        $detalleUsuarios          = $this->detalleProduccionUsuarios($producciones);
+        $detalleRecolectores      = $this->detalleFacturasRecolector($facturasRecolector);
+        $resumenDiarioUsuarios    = $this->resumenDiarioProduccionUsuarios($producciones);
         $resumenDiarioRecolectores = $this->resumenDiarioRecolectores($facturasRecolector);
 
+        // Datos financieros para el resumen de impresión
+        $gastosQuincena    = Gasto::where('periodo', Gasto::periodoDesdeFecha(now())['periodo'])->sum('monto');
+        $ordenesPagadas    = $facturasRecolector->where('estado_factura', 'pagado');
+        $ordenesPagadasTotal = (float) $ordenesPagadas->sum('total');
+        $ganancia          = $ordenesPagadasTotal - (float) $gastosQuincena;
+        $resumen30Recolectores = $facturasRecolector
+            ->where('estado_factura', 'pagado')
+            ->groupBy('recolector_id')
+            ->map(function ($facturas) {
+                $rec = $facturas->first()->recolector;
+                $total = (float) $facturas->sum('total');
+                return [
+                    'nombre' => $rec?->name ?? 'Sin nombre',
+                    'total'  => $total,
+                    'pago30' => round($total * 0.30),
+                ];
+            })->values();
+        $total30 = $resumen30Recolectores->sum('pago30');
+        $totalNeto = $ganancia - $total30;
+
         if ($registroId) {
-            $detalleUsuarios = $detalleUsuarios->where('id', $registroId)->values();
-            $detalleRecolectores = $detalleRecolectores->where('id', $registroId)->values();
-            $resumenDiarioUsuarios = $resumenDiarioUsuarios->where('id', $registroId)->values();
+            $detalleUsuarios          = $detalleUsuarios->where('id', $registroId)->values();
+            $detalleRecolectores      = $detalleRecolectores->where('id', $registroId)->values();
+            $resumenDiarioUsuarios    = $resumenDiarioUsuarios->where('id', $registroId)->values();
             $resumenDiarioRecolectores = $resumenDiarioRecolectores->where('id', $registroId)->values();
         }
 
         return view('admin.reportes-impresion', [
-            'tipoReporte' => $tipoReporte,
-            'grupo' => $grupo,
-            'registroId' => $registroId,
-            'tomadoHasta' => $tomadoHasta,
-            'inicioQuincena' => $inicioQuincena,
-            'finQuincena' => $finQuincena,
-            'resumenUsuarios' => $resumenUsuarios,
-            'resumenRecolectores' => $resumenRecolectores,
-            'detalleUsuarios' => $detalleUsuarios,
-            'detalleRecolectores' => $detalleRecolectores,
-            'resumenDiarioUsuarios' => $resumenDiarioUsuarios,
-            'resumenDiarioRecolectores' => $resumenDiarioRecolectores,
-            'totalGeneralUsuarios' => $resumenUsuarios->sum('total'),
+            'tipoReporte'              => $tipoReporte,
+            'grupo'                    => $grupo,
+            'registroId'               => $registroId,
+            'tomadoHasta'              => $tomadoHasta,
+            'inicioQuincena'           => $inicioQuincena,
+            'finQuincena'              => $finQuincena,
+            'resumenUsuarios'          => $resumenUsuarios,
+            'resumenRecolectores'      => $resumenRecolectores,
+            'detalleUsuarios'          => $detalleUsuarios,
+            'detalleRecolectores'      => $detalleRecolectores,
+            'resumenDiarioUsuarios'    => $resumenDiarioUsuarios,
+            'resumenDiarioRecolectores'=> $resumenDiarioRecolectores,
+            'totalGeneralUsuarios'     => $resumenUsuarios->sum('total'),
             'totalGeneralRecolectores' => $resumenRecolectores->sum('total'),
-            'totalPrendasUsuarios' => $resumenUsuarios->sum('cantidad'),
+            'totalPrendasUsuarios'     => $resumenUsuarios->sum('cantidad'),
             'totalPrendasRecolectores' => $resumenRecolectores->sum('cantidad'),
-            'autoPrint' => $request->boolean('imprimir'),
+            'gastosQuincena'           => $gastosQuincena,
+            'ordenesPagadasTotal'      => $ordenesPagadasTotal,
+            'ganancia'                 => $ganancia,
+            'resumen30Recolectores'    => $resumen30Recolectores,
+            'total30'                  => $total30,
+            'totalNeto'                => $totalNeto,
+            'autoPrint'                => $request->boolean('imprimir'),
         ]);
     }
 

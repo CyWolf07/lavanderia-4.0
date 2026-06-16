@@ -85,12 +85,13 @@
                         </p>
                     </div>
                     <div class="text-left sm:text-right">
-                        <p class="text-sm font-semibold text-slate-500">Valor total del cierre</p>
+                        <p class="text-sm font-semibold text-slate-500">Ingreso total registrado</p>
                         <p class="text-3xl font-black text-emerald-700">$ {{ number_format($totalCierreResumen, 0, ',', '.') }}</p>
                         <p class="mt-1 text-sm text-slate-500">{{ $totalPrendasResumen }} prendas registradas</p>
                     </div>
                 </div>
 
+                {{-- Paneles de resumen general --}}
                 <div class="mt-5 grid gap-3 sm:grid-cols-3">
                     <div class="rounded-xl border border-slate-200 p-4">
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Usuarios</p>
@@ -103,9 +104,38 @@
                         <p class="text-sm text-slate-500">{{ $totalPrendasRecolectores }} prendas</p>
                     </div>
                     <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total final</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total ingresado</p>
                         <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalCierreResumen, 0, ',', '.') }}</p>
-                        <p class="text-sm text-emerald-700">Hasta el momento de imprimir</p>
+                        <p class="text-sm text-emerald-700">Usuarios + Recolectores</p>
+                    </div>
+                </div>
+
+                {{-- Paneles financieros detallados --}}
+                <div class="mt-4 grid gap-3 sm:grid-cols-5">
+                    <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-700">Órdenes pagadas</p>
+                        <p class="mt-2 text-xl font-black text-blue-900">$ {{ number_format($ordenesPagadasTotal, 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-rose-700">Gastos</p>
+                        <p class="mt-2 text-xl font-black text-rose-900">$ {{ number_format($gastosQuincena, 0, ',', '.') }}</p>
+                    </div>
+                    <div class="rounded-xl border border-teal-200 bg-teal-50 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Ganancia</p>
+                        <p class="mt-2 text-xl font-black text-teal-900">$ {{ number_format($ganancia, 0, ',', '.') }}</p>
+                        <p class="text-xs text-teal-600">Pagadas − Gastos</p>
+                    </div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-amber-700">30% Recolectores</p>
+                        <p class="mt-2 text-xl font-black text-amber-900">$ {{ number_format($total30, 0, ',', '.') }}</p>
+                        @foreach ($resumen30Recolectores as $r30)
+                            <p class="text-xs text-amber-700">{{ $r30['nombre'] }}: ${{ number_format($r30['pago30'], 0, ',', '.') }}</p>
+                        @endforeach
+                    </div>
+                    <div class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-700">Total Neto</p>
+                        <p class="mt-2 text-xl font-black text-indigo-900">$ {{ number_format($totalNeto, 0, ',', '.') }}</p>
+                        <p class="text-xs text-indigo-600">Ganancia − 30%</p>
                     </div>
                 </div>
             </div>

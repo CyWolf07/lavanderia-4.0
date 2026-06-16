@@ -5,7 +5,7 @@
 @section('content')
 
 {{-- Leaflet CSS — usar cdnjs para máxima compatibilidad y evitar bloqueos --}}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9O8S1VKhH21XjBpewW4bHwXn3B32G5eZWeN1A1iVjsG7t9v1FzT8z8t1m+eO5OaL8Y0XkUjZ8y3mHq6z9A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
 
 <style>
     #mapa-leaflet { z-index: 0; }
@@ -77,6 +77,16 @@
                         <input type="text" x-model="filtroBarrio" @input="aplicarFiltros()"
                                placeholder="Nombre del barrio..."
                                class="w-full rounded-2xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-400">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-slate-300">Recolector</label>
+                        <select x-model="filtroRecolector" @change="aplicarFiltros()"
+                                class="w-full rounded-2xl border border-white/20 bg-slate-800 px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+                            <option value="">Todos los recolectores</option>
+                            @foreach ($recolectores as $rec)
+                                <option value="{{ $rec->name }}">{{ $rec->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <label class="flex cursor-pointer items-center gap-3">
                         <input type="checkbox" x-model="soloConUbicacion" @change="aplicarFiltros()"
@@ -184,8 +194,8 @@
 </div>
 </div>
 
-{{-- Leaflet JS — cdnjs --}}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-BwHqxNdZV0q+8oIoxZ48m0yVbE3oGjH12S2b1U1bXz4c2+kE3R8T9w7f8h5q1g5i6z1Q4p2c3g5p6r7l5e5g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+{{-- Leaflet JS — unpkg (sin SRI para evitar bloqueos) --}}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
 <script>
 const CLIENTES_DATA  = @json($clientes);
@@ -199,17 +209,22 @@ function mapaClientes() {
         todosClientes:      CLIENTES_DATA,
         clientesFiltrados:  CLIENTES_DATA,
         clienteSeleccionado: null,
-        filtroNombre:   '',
-        filtroZona:     '',
-        filtroBarrio:   '',
-        soloConUbicacion: false,
-        geocodificandoId: null,
-        mapa:           null,
-        marcadores:     {},
-        capaMarcadores: null,
+        filtroNombre:      '',
+        filtroZona:        '',
+        filtroBarrio:      '',
+        filtroRecolector:  '',
+        soloConUbicacion:  false,
+        geocodificandoId:  null,
+        mapa:              null,
+        marcadores:        {},
+        capaMarcadores:    null,
 
         init() {
-            this.$nextTick(() => this.inicializarMapa());
+            this.$nextTick(() => {
+                this.inicializarMapa();
+                // Invalidar tamaño tras render para que el mapa llene su contenedor
+                setTimeout(() => { if (this.mapa) this.mapa.invalidateSize(); }, 300);
+            });
         },
 
         inicializarMapa() {
@@ -268,20 +283,22 @@ function mapaClientes() {
 
         aplicarFiltros() {
             this.clientesFiltrados = this.todosClientes.filter(c => {
-                const n  = !this.filtroNombre  || c.nombre.toLowerCase().includes(this.filtroNombre.toLowerCase());
-                const z  = !this.filtroZona    || c.codigo_postal === this.filtroZona;
-                const b  = !this.filtroBarrio  || (c.barrio || '').toLowerCase().includes(this.filtroBarrio.toLowerCase());
+                const n  = !this.filtroNombre     || c.nombre.toLowerCase().includes(this.filtroNombre.toLowerCase());
+                const z  = !this.filtroZona       || c.codigo_postal === this.filtroZona;
+                const b  = !this.filtroBarrio     || (c.barrio || '').toLowerCase().includes(this.filtroBarrio.toLowerCase());
+                const r  = !this.filtroRecolector || c.recolector === this.filtroRecolector;
                 const u  = !this.soloConUbicacion || c.latitud !== null;
-                return n && z && b && u;
+                return n && z && b && r && u;
             });
             this.renderizarMarcadores(this.clientesFiltrados);
         },
 
         resetFiltros() {
-            this.filtroNombre = '';
-            this.filtroZona   = '';
-            this.filtroBarrio = '';
-            this.soloConUbicacion = false;
+            this.filtroNombre      = '';
+            this.filtroZona        = '';
+            this.filtroBarrio      = '';
+            this.filtroRecolector  = '';
+            this.soloConUbicacion  = false;
             this.clientesFiltrados = this.todosClientes;
             this.renderizarMarcadores(this.todosClientes);
         },
