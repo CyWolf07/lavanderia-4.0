@@ -32,6 +32,15 @@ class Cliente extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (Cliente $cliente) {
+            if (blank($cliente->numero_cliente)) {
+                $cliente->numero_cliente = self::siguienteNumero();
+            }
+        });
+    }
+
     /**
      * Siguiente número de cliente disponible.
      * Usa MAX + 1 para continuar desde el último número asignado.

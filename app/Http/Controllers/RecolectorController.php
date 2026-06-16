@@ -31,9 +31,9 @@ class RecolectorController extends Controller
         $periodoActual = Gasto::periodoDesdeFecha(now());
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
 
-        // F1: Solo mostrar clientes propios del recolector
+        // F1: Mostrar clientes propios y clientes aun sin asignar.
         $clientes = Cliente::activos()
-            ->deRecolector($user->id)
+            ->visiblesParaRecolector($user->id)
             ->orderBy('nombre')
             ->get();
 
@@ -145,9 +145,9 @@ class RecolectorController extends Controller
             ]);
         }
 
-        // F1: El cliente debe pertenecer a este recolector
+        // F1: El cliente debe estar asignado al recolector o aun sin asignar.
         $cliente = Cliente::activos()
-            ->deRecolector($recolector->id)
+            ->visiblesParaRecolector($recolector->id)
             ->find($data['cliente_id']);
 
         if (! $cliente) {

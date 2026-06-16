@@ -29,6 +29,7 @@ return new class extends Migration
 
         // 4. Eliminar nit_cedula de clientes
         Schema::table('clientes', function (Blueprint $table) {
+            $table->dropUnique(['nit_cedula']);
             $table->dropColumn('nit_cedula');
         });
 

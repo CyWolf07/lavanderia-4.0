@@ -89,7 +89,9 @@ it('shows active admin totals from production and collector invoices', function 
         ->assertSeeText('Registros activos')
         ->assertSeeText('2')
         ->assertSeeText('Ingreso activo')
-        ->assertSeeText('$ 50.000')
+        ->assertSeeText('$ 30.000')
+        ->assertSeeText('Pago Usuarios')
+        ->assertSeeText('$ 20.000')
         ->assertDontSeeText('$ 120.000');
 });
 

@@ -223,6 +223,7 @@ class AdminController extends Controller
             'ingresoRecolectoresActivo',
             'ordenesPagadasTotal',
             'ordenesPagadasCantidad',
+            'pagoUsuarios',
             'ganancia',
             'recolectoresConFacturas',
             'total30PorCiento',
