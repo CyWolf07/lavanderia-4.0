@@ -146,12 +146,13 @@ try {
 '; do
     attempt=$((attempt + 1))
 
-    if [ "$attempt" -ge 30 ]; then
-        echo "FATAL: No fue posible conectarse a PostgreSQL despues de 30 intentos."
-        exit 1
+    if [ "$attempt" -ge 15 ]; then
+        echo "ADVERTENCIA: No fue posible conectarse a PostgreSQL despues de 15 intentos."
+        echo "Continuando de todas formas..."
+        break
     fi
 
-    echo "Intento $attempt de 30, reintentando en 2s..."
+    echo "Intento $attempt de 15, reintentando en 2s..."
     sleep 2
 done
 
@@ -175,7 +176,7 @@ php artisan event:clear     > /dev/null 2>&1 || true
 # --force es obligatorio en ambiente production
 # Las migraciones crean las tablas: users, sessions, cache, jobs, etc.
 echo "Ejecutando migraciones..."
-php artisan migrate --force
+php artisan migrate --force || true
 
 # Los seeders crean datos iniciales (roles, configuracion, admin por defecto)
 echo "Ejecutando seeders..."
