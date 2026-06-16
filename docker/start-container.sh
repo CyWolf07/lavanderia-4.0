@@ -28,10 +28,13 @@ echo "========================================"
 echo " Verificando variables criticas"
 echo "========================================"
 
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
 if [ -z "${APP_KEY:-}" ]; then
-    echo "FATAL: APP_KEY no esta configurada."
-    echo "Configura APP_KEY en el hosting antes de desplegar. Puedes generarla con: php artisan key:generate --show"
-    exit 1
+    echo "ADVERTENCIA: APP_KEY no esta configurada en el entorno."
+    echo "Asegurate de que este en tu archivo .env o en las variables de entorno del hosting."
 fi
 
 echo "APP_ENV=${APP_ENV:-production}"
