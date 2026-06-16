@@ -29,7 +29,9 @@ echo " Verificando variables criticas"
 echo "========================================"
 
 if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+    set -a
+    . .env
+    set +a
 fi
 
 if [ -z "${APP_KEY:-}" ]; then
