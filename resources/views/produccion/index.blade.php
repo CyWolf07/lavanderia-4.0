@@ -5,9 +5,6 @@
 @section('content')
 @php
     $esUsuario = $user->tieneRol('usuario');
-    $totalPendienteOrdenes = $esUsuario
-        ? $ordenesPendientes->sum(fn ($orden) => $orden->detalles->sum('subtotal'))
-        : 0;
     $totalPrendasPendientes = $esUsuario
         ? $ordenesPendientes->sum(fn ($orden) => $orden->detalles->sum('cantidad'))
         : 0;
@@ -66,7 +63,6 @@
             @forelse ($ordenesPendientes as $orden)
                 @php
                     $numeroOrden = str_pad((string) ($orden->numero_orden ?? $orden->id), 6, '0', STR_PAD_LEFT);
-                    $totalOrdenPendiente = $orden->detalles->sum('subtotal');
                     $prendasOrdenPendientes = $orden->detalles->sum('cantidad');
                 @endphp
 
@@ -77,13 +73,11 @@
                                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Orden de pedido</p>
                                 <h2 class="mt-1 text-2xl font-black text-slate-900">#{{ $numeroOrden }}</h2>
                                 <p class="mt-1 text-sm text-slate-500">
-                                    Cliente: {{ $orden->cliente->nombre ?? 'Sin cliente' }} |
                                     Recolector: {{ $orden->recolector->name ?? 'Sin recolector' }}
                                 </p>
                             </div>
                             <div class="text-left lg:text-right">
                                 <p class="text-sm font-semibold text-slate-500">{{ $prendasOrdenPendientes }} prendas pendientes</p>
-                                <p class="text-xl font-black text-emerald-700">$ {{ number_format($totalOrdenPendiente, 0, ',', '.') }}</p>
                             </div>
                         </div>
                     </div>
@@ -100,7 +94,6 @@
                                         <th class="px-6 py-4 font-semibold"># prendas</th>
                                         <th class="px-6 py-4 font-semibold">Tipo de prenda</th>
                                         <th class="px-6 py-4 font-semibold">Color</th>
-                                        <th class="px-6 py-4 font-semibold">Valor</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -117,7 +110,6 @@
                                             <td class="px-6 py-4 font-semibold text-slate-900">{{ $detalle->cantidad }}</td>
                                             <td class="px-6 py-4 text-slate-700">{{ $detalle->prenda_nombre }}</td>
                                             <td class="px-6 py-4 text-slate-500">{{ $detalle->color_prenda ?: 'Sin color' }}</td>
-                                            <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($detalle->subtotal, 0, ',', '.') }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>

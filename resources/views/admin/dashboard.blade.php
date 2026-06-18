@@ -1,7 +1,7 @@
 {{-- ====================================================
      Vista: Panel Administrativo
      Dashboard principal para roles admin y programador.
-     Muestra estadísticas, gestión de usuarios, últimos
+     Muestra estadísticas, gestión de lavanderos, últimos
      registros de producción y quincenas cerradas.
      ====================================================  --}}
 @extends('layouts.app')
@@ -62,7 +62,7 @@
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Panel administrativo</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Gestión general del sistema</h1>
             <p class="mt-2 text-sm text-slate-500">
-                Administra usuarios, revisa la producción mensual, cierra quincenas y genera el informe de cada empleado con un clic.
+                Administra lavanderos, revisa la producción mensual, cierra quincenas y genera el informe de cada empleado con un clic.
             </p>
         </div>
 
@@ -200,9 +200,9 @@
 
         <section class="min-w-0 space-y-8">
 	    <div class="grid min-w-0 gap-5 [grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))]">
-        {{-- Total de usuarios registrados en el sistema --}}
+        {{-- Total de lavanderos registrados en el sistema --}}
         <div class="min-w-0 rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl sm:p-6">
-            <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-slate-300 sm:text-sm sm:tracking-[0.22em]">Usuarios registrados</p>
+            <p class="break-words text-xs font-semibold uppercase tracking-[0.18em] text-slate-300 sm:text-sm sm:tracking-[0.22em]">Lavanderos registrados</p>
             <p class="mt-3 break-words text-4xl font-black">{{ $totalUsuarios }}</p>
         </div>
         {{-- Registros de producción activos (quincena actual) --}}
@@ -238,9 +238,9 @@
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($totalNeto, 0, ',', '.') }}</p>
                 <p class="mt-1 text-xs opacity-75">Pagadas − Gastos</p>
             </div>
-            {{-- 4. Pago Usuarios --}}
+            {{-- 4. Pago Lavanderos --}}
             <div class="min-w-0 rounded-[1.75rem] bg-slate-700 p-5 text-white shadow-xl sm:p-6">
-                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Pago Usuarios</p>
+                <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">Pago Lavanderos</p>
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($pagoUsuarios, 0, ',', '.') }}</p>
                 <p class="mt-1 text-xs text-slate-400">Total a lavanderos</p>
             </div>
@@ -250,7 +250,7 @@
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($total30PorCiento, 0, ',', '.') }}</p>
                 <p class="mt-1 text-xs text-amber-100">30% de órdenes pagadas</p>
             </div>
-            {{-- 6. Total Ganancia = Total Neto - Pago Usuarios - Pago Recolectores --}}
+            {{-- 6. Total Ganancia = Total Neto - Pago Lavanderos - Pago Recolectores --}}
             <div class="min-w-0 rounded-[1.75rem] @if ($ganancia >= 0) bg-teal-600 @else bg-orange-600 @endif p-5 text-white shadow-xl sm:p-6">
                 <p class="break-words text-xs font-semibold uppercase tracking-[0.16em] opacity-80">Total Ganancia</p>
                 <p class="mt-2 break-words text-2xl font-black sm:text-3xl">$ {{ number_format($ganancia, 0, ',', '.') }}</p>
@@ -292,7 +292,7 @@
             <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Sistema de usuarios</h2>
+                        <h2 class="text-lg font-bold text-slate-900">Sistema de lavanderos</h2>
                         <p class="mt-1 text-sm text-slate-500">Prendas ingresadas por dia en la quincena.</p>
                     </div>
                     <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-700 ring-1 ring-emerald-100">{{ $totalProducciones }} registros</span>
@@ -347,7 +347,7 @@
                     <div class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
                         <div>
                             <p class="font-semibold text-slate-900">{{ $gasto->concepto }}</p>
-                            <p class="text-slate-500">{{ $gasto->user->name ?? 'Usuario eliminado' }} | {{ optional($gasto->fecha)->format('d/m/Y') }}</p>
+                            <p class="text-slate-500">{{ $gasto->user->name ?? 'Lavandero eliminado' }} | {{ optional($gasto->fecha)->format('d/m/Y') }}</p>
                         </div>
                         <p class="font-semibold text-rose-700">$ {{ number_format($gasto->monto, 0, ',', '.') }}</p>
                     </div>
@@ -369,7 +369,7 @@
                     <div class="px-6 py-4">
                         <p class="text-sm font-semibold text-rose-700">{{ $notificacion->data['titulo'] ?? 'Incongruencia detectada' }}</p>
                         <p class="mt-1 text-sm text-slate-700">{{ $notificacion->data['detalle'] ?? '' }}</p>
-                        <p class="mt-1 text-xs text-slate-500">Usuario: {{ $notificacion->data['recolector'] ?? 'No disponible' }}</p>
+                        <p class="mt-1 text-xs text-slate-500">Lavandero: {{ $notificacion->data['recolector'] ?? 'No disponible' }}</p>
                         <form action="{{ route('admin.notificaciones.read', $notificacion->id) }}" method="POST" class="mt-2">
                             @csrf
                             @method('PATCH')
@@ -387,7 +387,7 @@
         <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
             <div class="border-b border-slate-200 px-6 py-5">
                 <h2 class="text-lg font-bold text-slate-900">Incongruencias pendientes</h2>
-                <p class="mt-1 text-sm text-slate-500">Nombre del usuario, título del error y detalle para corrección rápida.</p>
+                <p class="mt-1 text-sm text-slate-500">Nombre del lavandero, título del error y detalle para corrección rápida.</p>
             </div>
             <div class="divide-y divide-slate-100">
                 @forelse ($incongruenciasPendientes as $item)
@@ -406,22 +406,22 @@
     <div class="grid min-w-0 gap-8 2xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
         <div class="min-w-0 space-y-8">
 
-            {{-- Formulario: Crear nuevo usuario --}}
+            {{-- Formulario: Crear nuevo lavandero --}}
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
-                <h2 class="text-lg font-bold text-slate-900">Crear usuario</h2>
+                <h2 class="text-lg font-bold text-slate-900">Crear lavandero</h2>
                 <p class="mt-1 text-sm text-slate-500">Desde aquí defines rol, cédula, contacto y contraseña.</p>
 
                 <form action="{{ route('admin.usuarios.store') }}" method="POST" class="mt-6 space-y-4">
                     @csrf
-                    {{-- Datos personales del nuevo usuario --}}
+                    {{-- Datos personales del nuevo lavandero --}}
                     <input name="name" type="text" placeholder="Nombre completo" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     <input name="email" type="email" placeholder="Correo" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     <input name="cedula" type="text" placeholder="Cédula" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                     <input name="contacto" type="text" placeholder="Contacto" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
 
-                    {{-- Rol del usuario: determina qué módulos puede ver --}}
+                    {{-- Rol del lavandero: determina qué módulos puede ver --}}
                     <select name="rol" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                        <option value="usuario">Usuario</option>
+                        <option value="usuario">Lavandero</option>
                         <option value="recolector">Recolector</option>
                         <option value="admin">Administrador</option>
                         <option value="programador">Programador</option>
@@ -460,7 +460,7 @@
                     </div>
 
                     <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
-                        Guardar usuario
+                        Guardar lavandero
                     </button>
                 </form>
             </div>
@@ -491,10 +491,10 @@
 
         <div class="space-y-8">
 
-            {{-- Tabla de usuarios con opción de editar datos y rol --}}
+            {{-- Tabla de lavanderos con opción de editar datos y rol --}}
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Usuarios registrados</h2>
+                    <h2 class="text-lg font-bold text-slate-900">Lavanderos registrados</h2>
                     <p class="mt-1 text-sm text-slate-500">Nombre, cédula, contacto y rol con opción de editar o borrar.</p>
                 </div>
                 <div class="space-y-4 p-6">
@@ -512,7 +512,7 @@
                                     <input name="contacto" type="text" value="{{ $usuario->contacto }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                                     {{-- Selector de rol con el rol actual preseleccionado --}}
                                     <select name="rol" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                                        <option value="usuario" @selected($usuario->obtenerRol() === 'usuario')>Usuario</option>
+                                        <option value="usuario" @selected($usuario->obtenerRol() === 'usuario')>Lavandero</option>
                                         <option value="recolector" @selected($usuario->obtenerRol() === 'recolector')>Recolector</option>
                                         <option value="admin" @selected($usuario->obtenerRol() === 'admin')>Administrador</option>
                                         <option value="programador" @selected($usuario->obtenerRol() === 'programador')>Programador</option>
@@ -521,7 +521,7 @@
                                         <input type="hidden" name="activo" value="0">
                                         <label class="flex items-center gap-3">
                                             <input type="checkbox" name="activo" value="1" @checked($usuario->activo) class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                                            <span>Usuario habilitado</span>
+                                            <span>Lavandero habilitado</span>
                                         </label>
                                     </div>
                                     <div class="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 md:col-span-2">
@@ -580,7 +580,7 @@
                                 <form action="{{ route('admin.usuarios.toggle-status', $usuario) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <button onclick="return confirm('¿Cambiar el estado de este usuario?')" class="rounded-full border px-4 py-2 text-sm font-semibold {{ $usuario->activo ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' }}">
+                                    <button onclick="return confirm('¿Cambiar el estado de este lavandero?')" class="rounded-full border px-4 py-2 text-sm font-semibold {{ $usuario->activo ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' }}">
                                         {{ $usuario->activo ? 'Inhabilitar' : 'Habilitar' }}
                                     </button>
                                 </form>
@@ -599,13 +599,13 @@
                             <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST" class="mt-3">
                                 @csrf
                                 @method('DELETE')
-                                <button onclick="return confirm('¿Eliminar este usuario?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                                <button onclick="return confirm('¿Eliminar este lavandero?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                     Eliminar
                                 </button>
                             </form>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-500">No hay usuarios registrados.</p>
+                        <p class="text-sm text-slate-500">No hay lavanderos registrados.</p>
                     @endforelse
                 </div>
             </div>
@@ -679,7 +679,7 @@
                 </form>
                 <div class="flex flex-col gap-4 border-b border-slate-200 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Registros activos de usuarios</h2>
+                        <h2 class="text-lg font-bold text-slate-900">Registros activos de lavanderos</h2>
                         <p class="mt-1 text-sm text-slate-500">Produccion pendiente de cierre con opcion de borrar si hubo error.</p>
                     </div>
                     @if ($ultimasProducciones->isNotEmpty())
@@ -704,10 +704,10 @@
                                         class="h-4 w-4 rounded border-slate-300 text-rose-600"
                                         x-bind:checked="allProduccionesSelected(@js($produccionIds))"
                                         @change="toggleAllProducciones(@js($produccionIds), $event.target.checked)"
-                                        aria-label="Seleccionar todos los registros activos de usuarios"
+                                        aria-label="Seleccionar todos los registros activos de lavanderos"
                                     >
                                 </th>
-                                <th class="min-w-36 px-4 py-4 font-semibold">Usuario</th>
+                                <th class="min-w-36 px-4 py-4 font-semibold">Lavandero</th>
                                 <th class="min-w-36 px-4 py-4 font-semibold">Prenda</th>
                                 <th class="w-24 px-4 py-4 text-center font-semibold">Cantidad</th>
                                 <th class="w-28 px-4 py-4 font-semibold">Total</th>
@@ -728,7 +728,7 @@
                                             aria-label="Seleccionar registro de produccion {{ $item->id }}"
                                         >
                                     </td>
-                                    <td class="px-4 py-4 font-medium leading-tight text-slate-900">{{ $item->user->name ?? 'Sin usuario' }}</td>
+                                    <td class="px-4 py-4 font-medium leading-tight text-slate-900">{{ $item->user->name ?? 'Sin lavandero' }}</td>
                                     <td class="px-4 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
                                     <td class="px-4 py-4 text-center text-slate-600">{{ $item->cantidad }}</td>
                                     <td class="whitespace-nowrap px-4 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>

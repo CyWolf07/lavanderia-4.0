@@ -23,7 +23,7 @@
     <div class="no-print flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Informes imprimibles</p>
-            <h1 class="mt-2 text-3xl font-black text-slate-900">Usuarios y recolectores</h1>
+            <h1 class="mt-2 text-3xl font-black text-slate-900">Lavanderos y recolectores</h1>
             <p class="mt-2 text-sm text-slate-500">Selecciona si deseas un informe detallado o general y, si aplica, filtra por una persona concreta.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
@@ -45,7 +45,7 @@
             <div>
                 <label for="grupo" class="mb-2 block text-sm font-semibold text-slate-700">Ver registros de</label>
                 <select id="grupo" name="grupo" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
-                    <option value="usuarios" @selected($grupo === 'usuarios')>Usuarios</option>
+                    <option value="usuarios" @selected($grupo === 'usuarios')>Lavanderos</option>
                     <option value="recolectores" @selected($grupo === 'recolectores')>Recolectores</option>
                 </select>
             </div>
@@ -94,7 +94,7 @@
                 {{-- Paneles de resumen general --}}
                 <div class="mt-5 grid gap-3 sm:grid-cols-3">
                     <div class="rounded-xl border border-slate-200 p-4">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Usuarios</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Lavanderos</p>
                         <p class="mt-2 text-2xl font-black text-slate-900">$ {{ number_format($totalGeneralUsuarios, 0, ',', '.') }}</p>
                         <p class="text-sm text-slate-500">{{ $totalPrendasUsuarios }} prendas</p>
                     </div>
@@ -106,7 +106,7 @@
                     <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total ingresado</p>
                         <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalCierreResumen, 0, ',', '.') }}</p>
-                        <p class="text-sm text-emerald-700">Recolectores - Usuarios</p>
+                        <p class="text-sm text-emerald-700">Recolectores - Lavanderos</p>
                     </div>
                 </div>
 
@@ -126,7 +126,7 @@
                         <p class="text-xs text-indigo-600">Pagadas − Gastos</p>
                     </div>
                     <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-700">Pago Usuarios</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-700">Pago Lavanderos</p>
                         <p class="mt-2 text-xl font-black text-slate-900">$ {{ number_format($totalGeneralUsuarios, 0, ',', '.') }}</p>
                     </div>
                     <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
@@ -143,7 +143,7 @@
 
             <div class="grid gap-6 xl:grid-cols-2">
                 <div class="print-card rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
-                    <h2 class="text-xl font-black text-slate-950">Usuarios</h2>
+                    <h2 class="text-xl font-black text-slate-950">Lavanderos</h2>
                     <div class="mt-4 space-y-5">
                         @forelse ($resumenDiarioUsuarios as $persona)
                             <div class="break-inside-avoid rounded-xl border border-slate-200 p-4">
@@ -196,7 +196,7 @@
                                 </table>
                             </div>
                         @empty
-                            <p class="text-sm text-slate-500">No hay registros activos de usuarios.</p>
+                            <p class="text-sm text-slate-500">No hay registros activos de lavanderos.</p>
                         @endforelse
                     </div>
                 </div>
@@ -269,7 +269,7 @@
     @elseif ($tipoReporte === 'general')
         <div class="grid gap-4 md:grid-cols-2">
             <div class="rounded-[1.75rem] bg-emerald-600 p-6 text-white shadow-xl">
-                <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Total usuarios</p>
+                <p class="text-sm uppercase tracking-[0.25em] text-emerald-100">Total lavanderos</p>
                 <p class="mt-3 text-4xl font-black">$ {{ number_format($totalGeneralUsuarios, 0, ',', '.') }}</p>
                 <p class="mt-2 text-sm text-emerald-50">{{ $totalPrendasUsuarios }} prendas registradas</p>
             </div>
@@ -283,14 +283,14 @@
         <div class="grid gap-8 xl:grid-cols-2">
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Informe general de usuarios</h2>
-                    <p class="mt-1 text-sm text-slate-500">Muestra solo el valor total y la cantidad total de cada usuario.</p>
+                    <h2 class="text-lg font-bold text-slate-900">Informe general de lavanderos</h2>
+                    <p class="mt-1 text-sm text-slate-500">Muestra solo el valor total y la cantidad total de cada lavandero.</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-left text-slate-500">
                             <tr>
-                                <th class="px-6 py-4 font-semibold">Usuario</th>
+                                <th class="px-6 py-4 font-semibold">Lavandero</th>
                                 <th class="px-6 py-4 font-semibold">Rol</th>
                                 <th class="px-6 py-4 font-semibold">Prendas</th>
                                 <th class="px-6 py-4 font-semibold">Total</th>
@@ -306,7 +306,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay registros activos de usuarios.</td>
+                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay registros activos de lavanderos.</td>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -88,7 +88,12 @@ it('lets standard users mark order garments as washed and hides completed orders
         ->get(route('produccion.index'))
         ->assertOk()
         ->assertSee('#000123')
-        ->assertSee('Camisa');
+        ->assertSee('Camisa')
+        ->assertDontSee('Cliente Lavado')
+        ->assertDontSee('Calle 12')
+        ->assertDontSee('Valor')
+        ->assertDontSee('$ 20.000')
+        ->assertDontSee('$ 10.000');
 
     $this->actingAs($usuario)
         ->patch(route('produccion.ordenes.lavado', $factura), [

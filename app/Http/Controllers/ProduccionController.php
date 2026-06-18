@@ -23,7 +23,6 @@ class ProduccionController extends Controller
         if ($user->tieneRol('usuario')) {
             $ordenesPendientes = FacturaRecolector::query()
                 ->with([
-                    'cliente',
                     'recolector',
                     'detalles' => fn ($query) => $query
                         ->whereNull('lavado_en')

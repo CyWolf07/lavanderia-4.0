@@ -84,13 +84,13 @@ it('shows active admin totals from production and collector invoices', function 
     $this->actingAs($admin)
         ->get(route('admin.dashboard'))
         ->assertOk()
-        ->assertSeeText('Usuarios registrados')
+        ->assertSeeText('Lavanderos registrados')
         ->assertSeeText('3')
         ->assertSeeText('Registros activos')
         ->assertSeeText('2')
         ->assertSeeText('Ingreso activo')
         ->assertSeeText('$ 30.000')
-        ->assertSeeText('Pago Usuarios')
+        ->assertSeeText('Pago Lavanderos')
         ->assertSeeText('$ 20.000')
         ->assertDontSeeText('$ 120.000');
 });

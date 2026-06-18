@@ -23,7 +23,7 @@
     {{-- Paneles de resumen general --}}
     <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Usuarios</p>
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Lavanderos</p>
             <p class="mt-2 text-2xl font-black text-slate-900">$ {{ number_format($totalGeneral, 0, ',', '.') }}</p>
             <p class="text-sm text-slate-500">{{ $totalPrendas }} prendas</p>
         </div>
@@ -35,7 +35,7 @@
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total ingresado</p>
             <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalFacturasPeriodo - $totalGeneral, 0, ',', '.') }}</p>
-            <p class="text-sm text-emerald-700">Recolectores - Usuarios</p>
+            <p class="text-sm text-emerald-700">Recolectores - Lavanderos</p>
         </div>
     </div>
 
@@ -55,7 +55,7 @@
             <p class="text-xs text-indigo-600">Pagadas − Gastos</p>
         </div>
         <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-700">Pago Usuarios</p>
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-700">Pago Lavanderos</p>
             <p class="mt-2 text-xl font-black text-slate-900">$ {{ number_format($totalGeneral, 0, ',', '.') }}</p>
         </div>
         <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
@@ -77,8 +77,8 @@
             <div class="border-b border-slate-200 px-6 py-5">
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Usuario (Lavandero)</p>
-                        <h2 class="text-xl font-bold text-slate-900">{{ $usuario->name ?? 'Usuario eliminado' }}</h2>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Lavandero</p>
+                        <h2 class="text-xl font-bold text-slate-900">{{ $usuario->name ?? 'Lavandero eliminado' }}</h2>
                         <p class="text-sm text-slate-500">
                             Cédula: {{ $usuario->cedula ?? 'No registrada' }} | Contacto: {{ $usuario->contacto ?? 'No registrado' }}
                         </p>

@@ -29,7 +29,7 @@
 
             {{-- Usuario --}}
             <div>
-                <label for="user_id" class="mb-2 block text-sm font-semibold text-slate-700">Usuario</label>
+                <label for="user_id" class="mb-2 block text-sm font-semibold text-slate-700">Lavandero</label>
                 <select id="user_id" name="user_id" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                     @foreach ($usuarios as $usuario)
                         <option value="{{ $usuario->id }}" @selected(old('user_id', $produccion->user_id) == $usuario->id)>

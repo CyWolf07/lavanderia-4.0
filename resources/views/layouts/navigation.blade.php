@@ -7,7 +7,7 @@
                 </span>
                 <div class="hidden sm:block">
                     <p class="font-display text-sm text-slate-900">Lavandería Registro</p>
-                    <p class="text-[11px] uppercase tracking-[0.25em] text-sky-700">Control de usuarios y quincenas</p>
+                    <p class="text-[11px] uppercase tracking-[0.25em] text-sky-700">Control de lavanderos y quincenas</p>
                 </div>
             </a>
 

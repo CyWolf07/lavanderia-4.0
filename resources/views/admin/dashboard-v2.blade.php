@@ -9,7 +9,7 @@
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Panel administrativo</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Gesti?n general del sistema</h1>
             <p class="mt-2 text-sm text-slate-500">
-                Administra usuarios, permisos de precios para recolectores, estados habilitado o inhabilitado y reportes imprimibles.
+                Administra lavanderos, permisos de precios para recolectores, estados habilitado o inhabilitado y reportes imprimibles.
             </p>
         </div>
 
@@ -52,7 +52,7 @@
 
     <div class="grid gap-5 md:grid-cols-3">
         <div class="rounded-[1.75rem] bg-slate-900 p-6 text-white shadow-xl">
-            <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Usuarios registrados</p>
+            <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Lavanderos registrados</p>
             <p class="mt-3 text-4xl font-black">{{ $totalUsuarios }}</p>
         </div>
         <div class="rounded-[1.75rem] bg-sky-600 p-6 text-white shadow-xl">
@@ -68,7 +68,7 @@
     <div class="grid gap-8 xl:grid-cols-[420px_1fr]">
         <div class="space-y-8">
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
-                <h2 class="text-lg font-bold text-slate-900">Crear usuario</h2>
+                <h2 class="text-lg font-bold text-slate-900">Crear lavandero</h2>
                 <p class="mt-1 text-sm text-slate-500">Define rol, estado y si un recolector puede editar precios.</p>
 
                 <form action="{{ route('admin.usuarios.store') }}" method="POST" class="mt-6 space-y-4">
@@ -80,7 +80,7 @@
                     <input name="contacto" type="text" placeholder="Contacto" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
 
                     <select name="rol" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                        <option value="usuario">Usuario</option>
+                        <option value="usuario">Lavandero</option>
                         <option value="recolector">Recolector</option>
                         <option value="admin">Administrador</option>
                         <option value="programador">Programador</option>
@@ -90,7 +90,7 @@
                         <label class="flex items-center gap-3 text-sm text-slate-700">
                             <input type="hidden" name="activo" value="0">
                             <input type="checkbox" name="activo" value="1" checked class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                            <span>Crear usuario habilitado</span>
+                            <span>Crear lavandero habilitado</span>
                         </label>
                         <label class="mt-3 flex items-center gap-3 text-sm text-slate-700">
                             <input type="hidden" name="puede_editar_precios" value="0">
@@ -103,7 +103,7 @@
                     <input name="password_confirmation" type="password" placeholder="Confirmar contrase?a" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
 
                     <button class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
-                        Guardar usuario
+                        Guardar lavandero
                     </button>
                 </form>
             </div>
@@ -133,7 +133,7 @@
         <div class="space-y-8">
             <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
                 <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Usuarios registrados</h2>
+                    <h2 class="text-lg font-bold text-slate-900">Lavanderos registrados</h2>
                     <p class="mt-1 text-sm text-slate-500">Edita rol, estado y permiso de precios, o usa los botones de habilitar e inhabilitar.</p>
                 </div>
                 <div class="space-y-4 p-6">
@@ -148,7 +148,7 @@
                                     <input name="cedula" type="text" value="{{ $usuario->cedula }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                                     <input name="contacto" type="text" value="{{ $usuario->contacto }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                                     <select name="rol" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                                        <option value="usuario" @selected($usuario->obtenerRol() === 'usuario')>Usuario</option>
+                                        <option value="usuario" @selected($usuario->obtenerRol() === 'usuario')>Lavandero</option>
                                         <option value="recolector" @selected($usuario->obtenerRol() === 'recolector')>Recolector</option>
                                         <option value="admin" @selected($usuario->obtenerRol() === 'admin')>Administrador</option>
                                         <option value="programador" @selected($usuario->obtenerRol() === 'programador')>Programador</option>
@@ -158,7 +158,7 @@
                                         <input type="hidden" name="activo" value="0">
                                         <label class="flex items-center gap-3">
                                             <input type="checkbox" name="activo" value="1" @checked($usuario->activo) class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
-                                            <span>Usuario habilitado</span>
+                                            <span>Lavandero habilitado</span>
                                         </label>
                                     </div>
                                     <div class="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 md:col-span-2">
@@ -192,7 +192,7 @@
                                 <form action="{{ route('admin.usuarios.toggle-status', $usuario) }}" method="POST">
                                     @csrf
                                     @method('PATCH')
-                                    <button onclick="return confirm('Ã‚Â¿Cambiar el estado de este usuario?')" class="rounded-full border px-4 py-2 text-sm font-semibold {{ $usuario->activo ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' }}">
+                                    <button onclick="return confirm('Ã‚Â¿Cambiar el estado de este lavandero?')" class="rounded-full border px-4 py-2 text-sm font-semibold {{ $usuario->activo ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' }}">
                                         {{ $usuario->activo ? 'Inhabilitar' : 'Habilitar' }}
                                     </button>
                                 </form>
@@ -210,14 +210,14 @@
                                 <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <button onclick="return confirm('Ã‚Â¿Eliminar este usuario?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                                    <button onclick="return confirm('Ã‚Â¿Eliminar este lavandero?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                         Eliminar
                                     </button>
                                 </form>
                             </div>
                         </div>
                     @empty
-                        <p class="text-sm text-slate-500">No hay usuarios registrados.</p>
+                        <p class="text-sm text-slate-500">No hay lavanderos registrados.</p>
                     @endforelse
                 </div>
             </div>
@@ -230,7 +230,7 @@
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-left text-slate-500">
                             <tr>
-                                <th class="px-6 py-4 font-semibold">Usuario</th>
+                                <th class="px-6 py-4 font-semibold">Lavandero</th>
                                 <th class="px-6 py-4 font-semibold">Prenda</th>
                                 <th class="px-6 py-4 font-semibold">Cantidad</th>
                                 <th class="px-6 py-4 font-semibold">Total</th>
@@ -239,7 +239,7 @@
                         <tbody class="divide-y divide-slate-100">
                             @forelse ($ultimasProducciones as $item)
                                 <tr>
-                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $item->user->name ? 'Sin usuario' }}</td>
+                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $item->user->name ? 'Sin lavandero' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $item->prenda->nombre ? 'Sin prenda' }}</td>
                                     <td class="px-6 py-4 text-slate-600">{{ $item->cantidad }}</td>
                                     <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
