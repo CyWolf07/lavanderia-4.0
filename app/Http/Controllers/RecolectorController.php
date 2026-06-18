@@ -96,6 +96,8 @@ class RecolectorController extends Controller
             'items.*.cantidad'              => ['nullable', 'integer', 'min:0'],
             'items.*.precio_unitario'       => ['nullable', 'numeric', 'min:0'],
             'items.*.color_prenda'          => ['nullable', 'string', 'max:50'],
+            'items.*.colores'               => ['nullable', 'array'],
+            'items.*.colores.*'             => ['string', 'max:30'],
         ]);
 
         $recolector = $request->user();
@@ -118,15 +120,23 @@ class RecolectorController extends Controller
 
         $itemsSeleccionados = $itemsSeleccionados
             ->map(function ($item) {
+                $colores = $this->normalizarColoresPrenda($item);
+
                 return [
                     'prenda_id'       => (int) ($item['prenda_id'] ?? 0),
                     'cantidad'        => (int) ($item['cantidad'] ?? 0),
                     'precio_unitario' => isset($item['precio_unitario']) ? (float) $item['precio_unitario'] : null,
-                    'color_prenda'    => isset($item['color_prenda']) && $item['color_prenda'] !== '' ? $item['color_prenda'] : null,
+                    'color_prenda'    => $colores !== [] ? implode(', ', $colores) : null,
                 ];
             })
             ->filter(fn (array $item) => $item['prenda_id'] > 0 && $item['cantidad'] > 0)
             ->values();
+
+        if ($itemsSeleccionados->contains(fn (array $item) => blank($item['color_prenda']))) {
+            throw ValidationException::withMessages([
+                'items' => 'Cada prenda debe tener al menos un color seleccionado.',
+            ]);
+        }
 
         if ($itemsSeleccionados->pluck('prenda_id')->duplicates()->isNotEmpty()) {
             throw ValidationException::withMessages([
@@ -264,6 +274,44 @@ class RecolectorController extends Controller
 
         return filter_var($item['selected'] ?? false, FILTER_VALIDATE_BOOLEAN)
             || in_array(($item['selected'] ?? null), ['1', 1, true, 'true', 'on'], true);
+    }
+
+    private function normalizarColoresPrenda(array $item): array
+    {
+        $coloresPermitidos = [
+            'Blanco',
+            'Negro',
+            'Azul',
+            'Rojo',
+            'Verde',
+            'Amarillo',
+            'Gris',
+            'Rosa',
+            'Cafe',
+            'Morado',
+            'Naranja',
+            'Beige',
+            'Violeta',
+            'Multicolor',
+            'Otro',
+        ];
+
+        $colores = $item['colores'] ?? [];
+
+        if (! is_array($colores)) {
+            $colores = [];
+        }
+
+        if ($colores === [] && ! blank($item['color_prenda'] ?? null)) {
+            $colores = explode(',', (string) $item['color_prenda']);
+        }
+
+        return collect($colores)
+            ->map(fn ($color) => trim((string) $color))
+            ->filter(fn ($color) => in_array($color, $coloresPermitidos, true))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function rangoQuincenaActual(): array

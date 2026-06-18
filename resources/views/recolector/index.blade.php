@@ -320,15 +320,17 @@
                                                 required
                                             >
                                         </div>
-                                        {{-- F7: Selector de color --}}
+                                        {{-- F7: Selector de colores --}}
                                         <div>
-                                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Color</label>
+                                            <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Colores</label>
                                             <select
-                                                x-model="item.color_prenda"
-                                                :name="'items[' + index + '][color_prenda]'"
-                                                class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                                                x-model="item.colores"
+                                                :name="'items[' + index + '][colores][]'"
+                                                class="h-40 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                                                multiple
+                                                required
                                             >
-                                                <option value="">Sin color</option>
+                                                <option value="" disabled>Selecciona al menos un color</option>
                                                 <option>Blanco</option>
                                                 <option>Negro</option>
                                                 <option>Azul</option>
@@ -337,12 +339,18 @@
                                                 <option>Amarillo</option>
                                                 <option>Gris</option>
                                                 <option>Rosa</option>
-                                                <option>Café</option>
+                                                <option value="Cafe">Cafe</option>
                                                 <option>Morado</option>
                                                 <option>Naranja</option>
+                                                <option>Beige</option>
+                                                <option>Violeta</option>
                                                 <option>Multicolor</option>
                                                 <option>Otro</option>
                                             </select>
+                                            <p class="mt-2 text-xs text-slate-500">Puedes seleccionar uno o varios colores.</p>
+                                            <p class="mt-1 text-xs font-semibold text-rose-600" x-show="item.colores.length === 0" x-cloak>
+                                                Selecciona al menos un color.
+                                            </p>
                                         </div>
                                         <div>
                                             <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -856,6 +864,7 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         selectedPrendaId: '',
         items: [],
         nextItemKey: 0,
+        coloresDisponibles: ['Blanco', 'Negro', 'Azul', 'Rojo', 'Verde', 'Amarillo', 'Gris', 'Rosa', 'Cafe', 'Morado', 'Naranja', 'Beige', 'Violeta', 'Multicolor', 'Otro'],
         paymentOpen: false,
         selectedOrder: '',
         paymentAction: '',
@@ -877,7 +886,7 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
                     precio_unitario: item.precio_unitario !== undefined && item.precio_unitario !== null && item.precio_unitario !== ''
                         ? Number(item.precio_unitario || 0)
                         : undefined,
-                    color_prenda: item.color_prenda || '',
+                    colores: this.normalizarColores(item.colores || item.color_prenda || []),
                 });
             });
 
@@ -930,7 +939,7 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
                 precio_unitario: valores.precio_unitario !== undefined
                     ? Math.max(0, Number(valores.precio_unitario || 0))
                     : Number(prenda.precio || 0),
-                color_prenda: valores.color_prenda || '',
+                colores: this.normalizarColores(valores.colores || valores.color_prenda || []),
             });
 
             this.selectedPrendaId = '';
@@ -967,11 +976,11 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
                 nombre: this.nombrePrenda(item.prenda_id),
                 cantidad: Math.max(0, Number(item.cantidad || 0)),
                 subtotal: this.subtotalItem(item),
-                color: item.color_prenda || '',
+                color: item.colores.join(', '),
             }));
         },
         get puedeGuardarFactura() {
-            return Boolean(this.clienteId) && this.items.length > 0;
+            return Boolean(this.clienteId) && this.items.length > 0 && this.items.every((item) => item.colores.length > 0);
         },
         get deviceLabel() {
             if (this.isTouchDevice && this.isMobileViewport) return 'Celular o pantalla táctil';
@@ -990,6 +999,10 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         },
         formatInvoiceNumber(value) {
             return String(value || 1).padStart(6, '0');
+        },
+        normalizarColores(value) {
+            const valores = Array.isArray(value) ? value : String(value || '').split(',');
+            return [...new Set(valores.map((color) => String(color).trim()).filter((color) => this.coloresDisponibles.includes(color)))];
         },
     };
 }
