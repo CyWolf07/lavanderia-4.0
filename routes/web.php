@@ -127,6 +127,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::middleware('rol:admin,programador,usuario')->prefix('produccion')->group(function () {
         Route::get('/', [ProduccionController::class, 'index'])->name('produccion.index'); // Ver registros propios + formulario
         Route::post('/', [ProduccionController::class, 'store'])->name('produccion.store'); // Guardar nuevo registro
+        Route::patch('/ordenes/{facturaRecolector}/lavado', [ProduccionController::class, 'guardarLavado'])->name('produccion.ordenes.lavado');
     });
 
     // ── MÓDULO RECOLECTOR ──────────────────────────────────────────────────────

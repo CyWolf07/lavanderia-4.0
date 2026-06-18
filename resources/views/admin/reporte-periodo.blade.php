@@ -34,8 +34,8 @@
         </div>
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
             <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total ingresado</p>
-            <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalGeneral - $totalFacturasPeriodo, 0, ',', '.') }}</p>
-            <p class="text-sm text-emerald-700">Usuarios − Recolectores</p>
+            <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalFacturasPeriodo - $totalGeneral, 0, ',', '.') }}</p>
+            <p class="text-sm text-emerald-700">Recolectores - Usuarios</p>
         </div>
     </div>
 

@@ -19,6 +19,9 @@ class FacturaRecolectorDetalle extends Model
         'cantidad',
         'color_prenda',
         'subtotal',
+        'lavado_por',
+        'lavado_en',
+        'produccion_id',
     ];
 
     protected function casts(): array
@@ -26,6 +29,7 @@ class FacturaRecolectorDetalle extends Model
         return [
             'valor_unitario' => 'decimal:2',
             'subtotal'       => 'decimal:2',
+            'lavado_en'      => 'datetime',
         ];
     }
 
@@ -37,5 +41,20 @@ class FacturaRecolectorDetalle extends Model
     public function prenda()
     {
         return $this->belongsTo(RecolectorPrenda::class, 'recolector_prenda_id');
+    }
+
+    public function lavandero()
+    {
+        return $this->belongsTo(User::class, 'lavado_por');
+    }
+
+    public function produccion()
+    {
+        return $this->belongsTo(Produccion::class);
+    }
+
+    public function estaLavada(): bool
+    {
+        return $this->lavado_en !== null;
     }
 }

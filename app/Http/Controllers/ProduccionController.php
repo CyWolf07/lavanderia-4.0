@@ -18,6 +18,24 @@ class ProduccionController extends Controller
     {
         $user = Auth::user();
 
+        $ordenesPendientes = collect();
+
+        if ($user->tieneRol('usuario')) {
+            $ordenesPendientes = FacturaRecolector::query()
+                ->with([
+                    'cliente',
+                    'recolector',
+                    'detalles' => fn ($query) => $query
+                        ->whereNull('lavado_en')
+                        ->orderBy('id'),
+                ])
+                ->whereHas('detalles', fn ($query) => $query->whereNull('lavado_en'))
+                ->noCanceladas()
+                ->orderBy('numero_orden')
+                ->orderBy('id')
+                ->get();
+        }
+
         $producciones = Produccion::with('prenda')
             ->where('user_id', $user->id)
             ->orderByDesc('fecha')
@@ -52,12 +70,19 @@ class ProduccionController extends Controller
             'porDia',
             'totalQuincena',
             'historialQuincenas',
-            'user'
+            'user',
+            'ordenesPendientes'
         ));
     }
 
     public function store(Request $request)
     {
+        if ($request->user()->tieneRol('usuario')) {
+            return redirect()
+                ->route('produccion.index')
+                ->with('error', 'Debes registrar la produccion desde las ordenes de pedido asignadas.');
+        }
+
         $request->validate([
             'prenda_id' => ['required', 'exists:prendas,id'],
             'cantidad' => ['required', 'integer', 'min:1'],
@@ -82,8 +107,57 @@ class ProduccionController extends Controller
         return redirect()->route('produccion.index')->with('success', 'Producción registrada correctamente.');
     }
 
+    public function guardarLavado(Request $request, FacturaRecolector $facturaRecolector)
+    {
+        abort_unless($request->user()->tieneRol('usuario'), 403);
+        abort_if($facturaRecolector->estaCancelada(), 404);
+
+        $data = $request->validate([
+            'detalles' => ['required', 'array', 'min:1'],
+            'detalles.*' => ['integer'],
+        ]);
+
+        $detalles = $facturaRecolector->detalles()
+            ->with('prenda')
+            ->whereNull('lavado_en')
+            ->whereIn('id', $data['detalles'])
+            ->get();
+
+        if ($detalles->isEmpty()) {
+            return redirect()
+                ->route('produccion.index')
+                ->with('error', 'Selecciona al menos una prenda pendiente de esta orden.');
+        }
+
+        DB::transaction(function () use ($detalles, $request) {
+            foreach ($detalles as $detalle) {
+                $prenda = $this->resolverPrendaProduccion($detalle);
+
+                $produccion = Produccion::create([
+                    'user_id' => $request->user()->id,
+                    'prenda_id' => $prenda->id,
+                    'cantidad' => $detalle->cantidad,
+                    'total' => (float) $prenda->precio * (int) $detalle->cantidad,
+                    'fecha' => now()->toDateString(),
+                ]);
+
+                $detalle->update([
+                    'lavado_por' => $request->user()->id,
+                    'lavado_en' => now(),
+                    'produccion_id' => $produccion->id,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('produccion.index')
+            ->with('success', 'Prendas marcadas como lavadas correctamente.');
+    }
+
     public function cerrar()
     {
+        abort_unless(Auth::user()?->tieneRol('admin', 'programador'), 403);
+
         $producciones = Produccion::with(['user', 'prenda'])
             ->orderBy('user_id')
             ->orderBy('fecha')
@@ -220,5 +294,25 @@ class ProduccionController extends Controller
             $base->copy()->day(16)->startOfDay(),
             $base->copy()->endOfMonth()->endOfDay(),
         ];
+    }
+
+    private function resolverPrendaProduccion($detalle): Prenda
+    {
+        $nombre = trim((string) $detalle->prenda_nombre);
+
+        $prenda = Prenda::query()
+            ->whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
+            ->first();
+
+        if ($prenda) {
+            return $prenda;
+        }
+
+        return Prenda::create([
+            'nombre' => $nombre !== '' ? $nombre : 'Prenda sin nombre',
+            'tipo' => $detalle->prenda?->tipo ?? 'Orden recolector',
+            'precio' => $detalle->prenda?->precio ?? 0,
+            'activo' => true,
+        ]);
     }
 }
