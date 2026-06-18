@@ -134,6 +134,31 @@ it('allows programmers to delete paid collector invoices from the status table',
     ]);
 });
 
+it('allows admins to toggle collector price editing permission', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+        'puede_editar_precios' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.usuarios.toggle-precios', $collector))
+        ->assertRedirect();
+
+    expect($collector->fresh()->puede_editar_precios)->toBeTrue();
+
+    $this->actingAs($admin)
+        ->patch(route('admin.usuarios.toggle-precios', $collector))
+        ->assertRedirect();
+
+    expect($collector->fresh()->puede_editar_precios)->toBeFalse();
+});
+
 it('allows privileged users to delete selected active production records in bulk', function (string $role) {
     $user = User::factory()->create([
         'rol' => $role,

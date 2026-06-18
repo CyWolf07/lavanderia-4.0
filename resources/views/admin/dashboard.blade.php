@@ -427,6 +427,14 @@
                         <option value="programador">Programador</option>
                     </select>
 
+                    <div class="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 md:col-span-2">
+                        <input type="hidden" name="puede_editar_precios" value="0">
+                        <label class="flex items-center gap-3">
+                            <input type="checkbox" name="puede_editar_precios" value="1" class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                            <span>Permitir que este recolector edite precios de prendas en pedidos</span>
+                        </label>
+                    </div>
+
                     {{-- Contraseña con botón ojo --}}
                     <div x-data="{ showP: false, showPC: false }" class="space-y-3">
                         <div class="relative">
@@ -509,6 +517,20 @@
                                         <option value="admin" @selected($usuario->obtenerRol() === 'admin')>Administrador</option>
                                         <option value="programador" @selected($usuario->obtenerRol() === 'programador')>Programador</option>
                                     </select>
+                                    <div class="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700">
+                                        <input type="hidden" name="activo" value="0">
+                                        <label class="flex items-center gap-3">
+                                            <input type="checkbox" name="activo" value="1" @checked($usuario->activo) class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                                            <span>Usuario habilitado</span>
+                                        </label>
+                                    </div>
+                                    <div class="rounded-2xl border border-slate-200 p-4 text-sm text-slate-700 md:col-span-2">
+                                        <input type="hidden" name="puede_editar_precios" value="0">
+                                        <label class="flex items-center gap-3">
+                                            <input type="checkbox" name="puede_editar_precios" value="1" @checked($usuario->puede_editar_precios) class="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                                            <span>Permitir edición de precios cuando el rol sea recolector</span>
+                                        </label>
+                                    </div>
                                     {{-- Campo opcional para cambiar la contraseña --}}
                                     <div x-data="{ showEP: false, showEPC: false }" class="contents">
                                         <div class="relative">
@@ -537,6 +559,16 @@
                                     <div class="text-sm text-slate-500">
                                         {{ $usuario->name }} | {{ $usuario->cedula ?: 'Sin cédula' }} | {{ $usuario->contacto ?: 'Sin contacto' }}
                                     </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $usuario->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
+                                            {{ $usuario->activo ? 'Habilitado' : 'Inhabilitado' }}
+                                        </span>
+                                        @if ($usuario->esRecolector())
+                                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $usuario->puede_editar_precios ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600' }}">
+                                                {{ $usuario->puede_editar_precios ? 'Puede editar precios' : 'Precio fijo' }}
+                                            </span>
+                                        @endif
+                                    </div>
                                     <button class="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
                                         Guardar cambios
                                     </button>
@@ -544,6 +576,26 @@
                             </form>
 
                             {{-- Formulario de eliminación del usuario --}}
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <form action="{{ route('admin.usuarios.toggle-status', $usuario) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button onclick="return confirm('¿Cambiar el estado de este usuario?')" class="rounded-full border px-4 py-2 text-sm font-semibold {{ $usuario->activo ? 'border-amber-200 text-amber-700 hover:bg-amber-50' : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50' }}">
+                                        {{ $usuario->activo ? 'Inhabilitar' : 'Habilitar' }}
+                                    </button>
+                                </form>
+
+                                @if ($usuario->esRecolector())
+                                    <form action="{{ route('admin.usuarios.toggle-precios', $usuario) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="rounded-full border border-sky-200 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50">
+                                            {{ $usuario->puede_editar_precios ? 'Bloquear precios' : 'Habilitar precios' }}
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+
                             <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST" class="mt-3">
                                 @csrf
                                 @method('DELETE')
@@ -1000,4 +1052,3 @@
 @endpush
 
 @endsection
-
