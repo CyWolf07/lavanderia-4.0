@@ -138,6 +138,12 @@ class RecolectorController extends Controller
             ]);
         }
 
+        if ($itemsSeleccionados->contains(fn (array $item) => count(explode(', ', $item['color_prenda'])) < $item['cantidad'])) {
+            throw ValidationException::withMessages([
+                'items' => 'Debes seleccionar un color por cada prenda ingresada.',
+            ]);
+        }
+
         if ($itemsSeleccionados->pluck('prenda_id')->duplicates()->isNotEmpty()) {
             throw ValidationException::withMessages([
                 'items' => 'No puedes registrar la misma prenda dos veces en una factura.',
@@ -309,7 +315,6 @@ class RecolectorController extends Controller
         return collect($colores)
             ->map(fn ($color) => trim((string) $color))
             ->filter(fn ($color) => in_array($color, $coloresPermitidos, true))
-            ->unique()
             ->values()
             ->all();
     }

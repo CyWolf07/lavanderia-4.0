@@ -315,6 +315,7 @@
                                                 type="number"
                                                 min="1"
                                                 x-model.number="item.cantidad"
+                                                @input="ajustarColores(item)"
                                                 :name="'items[' + index + '][cantidad]'"
                                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
                                                 required
@@ -323,33 +324,27 @@
                                         {{-- F7: Selector de colores --}}
                                         <div>
                                             <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Colores</label>
-                                            <select
-                                                x-model="item.colores"
-                                                :name="'items[' + index + '][colores][]'"
-                                                class="h-40 w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
-                                                multiple
-                                                required
-                                            >
-                                                <option value="" disabled>Selecciona al menos un color</option>
-                                                <option>Blanco</option>
-                                                <option>Negro</option>
-                                                <option>Azul</option>
-                                                <option>Rojo</option>
-                                                <option>Verde</option>
-                                                <option>Amarillo</option>
-                                                <option>Gris</option>
-                                                <option>Rosa</option>
-                                                <option value="Cafe">Cafe</option>
-                                                <option>Morado</option>
-                                                <option>Naranja</option>
-                                                <option>Beige</option>
-                                                <option>Violeta</option>
-                                                <option>Multicolor</option>
-                                                <option>Otro</option>
-                                            </select>
-                                            <p class="mt-2 text-xs text-slate-500">Puedes seleccionar uno o varios colores.</p>
-                                            <p class="mt-1 text-xs font-semibold text-rose-600" x-show="item.colores.length === 0" x-cloak>
-                                                Selecciona al menos un color.
+                                            <div class="space-y-2">
+                                                <template x-for="colorIndex in indicesPorCantidad(item)" :key="colorIndex">
+                                                    <div>
+                                                        <label class="mb-1 block text-xs font-semibold text-slate-500" x-text="'Color prenda ' + (colorIndex + 1)"></label>
+                                                        <select
+                                                            x-model="item.colores[colorIndex]"
+                                                            :name="'items[' + index + '][colores][]'"
+                                                            class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
+                                                            required
+                                                        >
+                                                            <option value="">Selecciona un color</option>
+                                                            <template x-for="color in coloresDisponibles" :key="color">
+                                                                <option :value="color" x-text="color"></option>
+                                                            </template>
+                                                        </select>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <p class="mt-2 text-xs text-slate-500">Se pide un color por cada prenda de la cantidad ingresada.</p>
+                                            <p class="mt-1 text-xs font-semibold text-rose-600" x-show="!coloresCompletos(item)" x-cloak>
+                                                Completa el color de cada prenda.
                                             </p>
                                         </div>
                                         <div>
@@ -931,15 +926,18 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
 
             const prenda = this.datosPrenda(id);
             if (!prenda) return;
+            const cantidad = Math.max(1, Number(valores.cantidad || 1));
+            const colores = this.normalizarColores(valores.colores || valores.color_prenda || []);
+            while (colores.length < cantidad) colores.push('');
 
             this.items.push({
                 key: this.nextItemKey++,
                 prenda_id: id,
-                cantidad: Math.max(1, Number(valores.cantidad || 1)),
+                cantidad,
                 precio_unitario: valores.precio_unitario !== undefined
                     ? Math.max(0, Number(valores.precio_unitario || 0))
                     : Number(prenda.precio || 0),
-                colores: this.normalizarColores(valores.colores || valores.color_prenda || []),
+                colores: colores.slice(0, cantidad),
             });
 
             this.selectedPrendaId = '';
@@ -959,6 +957,23 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         subtotalItem(item) {
             return Math.max(0, Number(item.cantidad || 0)) * this.precioUnitario(item);
         },
+        ajustarColores(item) {
+            const cantidad = Math.max(1, Number(item.cantidad || 1));
+            item.cantidad = cantidad;
+            item.colores = Array.isArray(item.colores) ? item.colores : [];
+            while (item.colores.length < cantidad) item.colores.push('');
+            if (item.colores.length > cantidad) item.colores = item.colores.slice(0, cantidad);
+        },
+        indicesPorCantidad(item) {
+            this.ajustarColores(item);
+            return Array.from({ length: Math.max(1, Number(item.cantidad || 1)) }, (_, index) => index);
+        },
+        coloresCompletos(item) {
+            const cantidad = Math.max(1, Number(item.cantidad || 1));
+            return Array.isArray(item.colores)
+                && item.colores.length >= cantidad
+                && item.colores.slice(0, cantidad).every((color) => this.coloresDisponibles.includes(String(color || '').trim()));
+        },
 
         get prendasDisponibles() {
             const idsSeleccionados = this.items.map((item) => Number(item.prenda_id));
@@ -976,11 +991,11 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
                 nombre: this.nombrePrenda(item.prenda_id),
                 cantidad: Math.max(0, Number(item.cantidad || 0)),
                 subtotal: this.subtotalItem(item),
-                color: item.colores.join(', '),
+                color: item.colores.filter(Boolean).join(', '),
             }));
         },
         get puedeGuardarFactura() {
-            return Boolean(this.clienteId) && this.items.length > 0 && this.items.every((item) => item.colores.length > 0);
+            return Boolean(this.clienteId) && this.items.length > 0 && this.items.every((item) => this.coloresCompletos(item));
         },
         get deviceLabel() {
             if (this.isTouchDevice && this.isMobileViewport) return 'Celular o pantalla táctil';
@@ -1002,7 +1017,7 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         },
         normalizarColores(value) {
             const valores = Array.isArray(value) ? value : String(value || '').split(',');
-            return [...new Set(valores.map((color) => String(color).trim()).filter((color) => this.coloresDisponibles.includes(color)))];
+            return valores.map((color) => String(color).trim()).filter((color) => this.coloresDisponibles.includes(color));
         },
     };
 }

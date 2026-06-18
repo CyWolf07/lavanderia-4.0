@@ -159,7 +159,7 @@ it('uses fixed garment price when collector is not allowed to edit prices', func
                     'prenda_id' => $prenda->id,
                     'cantidad' => 2,
                     'precio_unitario' => 10000,
-                    'colores' => ['Negro'],
+                    'colores' => ['Negro', 'Negro'],
                 ],
             ],
         ])
@@ -202,7 +202,7 @@ it('uses custom garment price when admin allows collector price editing', functi
                     'prenda_id' => $prenda->id,
                     'cantidad' => 2,
                     'precio_unitario' => 25000,
-                    'colores' => ['Rojo'],
+                    'colores' => ['Rojo', 'Rojo'],
                 ],
             ],
         ])
@@ -257,7 +257,23 @@ it('requires at least one garment color and stores multiple colors per item', fu
                 [
                     'selected' => '1',
                     'prenda_id' => $prenda->id,
-                    'cantidad' => 1,
+                    'cantidad' => 2,
+                    'precio_unitario' => 12000,
+                    'colores' => ['Blanco'],
+                ],
+            ],
+        ])
+        ->assertSessionHasErrors('items');
+
+    $this->actingAs($recolector)
+        ->post(route('recolector.facturas.store'), [
+            'cliente_id' => $cliente->id,
+            'fecha_entrega' => now()->addDay()->toDateString(),
+            'items' => [
+                [
+                    'selected' => '1',
+                    'prenda_id' => $prenda->id,
+                    'cantidad' => 2,
                     'precio_unitario' => 12000,
                     'colores' => ['Blanco', 'Azul'],
                 ],
