@@ -121,3 +121,64 @@ it('lets standard users mark order garments as washed and hides completed orders
         ->assertOk()
         ->assertDontSee('#000123');
 });
+
+it('does not use collector garment prices for washer production', function () {
+    $usuario = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $recolector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente Sin Precio',
+        'celular' => '3001234567',
+        'direccion' => 'Calle 99',
+        'activo' => true,
+    ]);
+
+    $prendaRecolector = RecolectorPrenda::create([
+        'nombre' => 'Chaqueta especial',
+        'tipo' => 'Unidad',
+        'precio' => 25000,
+        'activo' => true,
+    ]);
+
+    $factura = FacturaRecolector::create([
+        'numero_orden' => 456,
+        'recolector_id' => $recolector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => now(),
+        'fecha_entrega' => now()->addDay()->toDateString(),
+        'total_prendas' => 1,
+        'total' => 25000,
+        'estado_factura' => 'pendiente',
+    ]);
+
+    $detalle = FacturaRecolectorDetalle::create([
+        'factura_recolector_id' => $factura->id,
+        'recolector_prenda_id' => $prendaRecolector->id,
+        'prenda_nombre' => 'Chaqueta especial',
+        'valor_unitario' => 25000,
+        'cantidad' => 1,
+        'subtotal' => 25000,
+    ]);
+
+    $this->actingAs($usuario)
+        ->patch(route('produccion.ordenes.lavado', $factura), [
+            'detalles' => [$detalle->id],
+        ])
+        ->assertRedirect(route('produccion.index'))
+        ->assertSessionHas('error');
+
+    expect(Produccion::count())->toBe(0);
+
+    $detalle->refresh();
+
+    expect($detalle->lavado_por)->toBeNull()
+        ->and($detalle->lavado_en)->toBeNull()
+        ->and($detalle->produccion_id)->toBeNull();
+});

@@ -117,7 +117,6 @@ class ProduccionController extends Controller
         ]);
 
         $detalles = $facturaRecolector->detalles()
-            ->with('prenda')
             ->whereNull('lavado_en')
             ->whereIn('id', $data['detalles'])
             ->get();
@@ -128,9 +127,29 @@ class ProduccionController extends Controller
                 ->with('error', 'Selecciona al menos una prenda pendiente de esta orden.');
         }
 
-        DB::transaction(function () use ($detalles, $request) {
+        $prendasPorDetalle = collect();
+        $prendasFaltantes = collect();
+
+        foreach ($detalles as $detalle) {
+            $prenda = $this->resolverPrendaProduccion($detalle);
+
+            if (! $prenda) {
+                $prendasFaltantes->push($detalle->prenda_nombre ?: 'Prenda sin nombre');
+                continue;
+            }
+
+            $prendasPorDetalle->put($detalle->id, $prenda);
+        }
+
+        if ($prendasFaltantes->isNotEmpty()) {
+            return redirect()
+                ->route('produccion.index')
+                ->with('error', 'Estas prendas no tienen precio configurado en la tabla prendas: '.$prendasFaltantes->unique()->join(', '));
+        }
+
+        DB::transaction(function () use ($detalles, $request, $prendasPorDetalle) {
             foreach ($detalles as $detalle) {
-                $prenda = $this->resolverPrendaProduccion($detalle);
+                $prenda = $prendasPorDetalle->get($detalle->id);
 
                 $produccion = Produccion::create([
                     'user_id' => $request->user()->id,
@@ -295,23 +314,12 @@ class ProduccionController extends Controller
         ];
     }
 
-    private function resolverPrendaProduccion($detalle): Prenda
+    private function resolverPrendaProduccion($detalle): ?Prenda
     {
         $nombre = trim((string) $detalle->prenda_nombre);
 
-        $prenda = Prenda::query()
+        return Prenda::query()
             ->whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
             ->first();
-
-        if ($prenda) {
-            return $prenda;
-        }
-
-        return Prenda::create([
-            'nombre' => $nombre !== '' ? $nombre : 'Prenda sin nombre',
-            'tipo' => $detalle->prenda?->tipo ?? 'Orden recolector',
-            'precio' => $detalle->prenda?->precio ?? 0,
-            'activo' => true,
-        ]);
     }
 }
