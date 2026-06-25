@@ -258,6 +258,129 @@
             </div>
         </div>
 
+        {{-- ─── PANEL: COMISIONES 30% RECOLECTORES ─────────────────────────────────
+             Muestra el resumen de la comisión calculada (30%) para cada recolector
+             en la quincena activa, y el historial de quincenas anteriores.
+             Los datos provienen de la tabla pagos_recolector (persistida).
+        ──────────────────────────────────────────────────────────────────────────── --}}
+        <div id="panel-comisiones-recolectores" class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">💰 Comisiones recolectores (30%)</h2>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Al pagar una factura, el sistema calcula el 30% sobre el total cobrado por recolector en la quincena activa.
+                        Si la factura pertenece a una quincena cerrada, el pago se reasigna automáticamente a la quincena actual.
+                    </p>
+                    <p class="mt-2 text-xs font-bold uppercase tracking-[0.22em] text-amber-600">Quincena activa: {{ $periodoActual }}</p>
+                </div>
+                <div class="shrink-0 rounded-2xl bg-amber-50 px-5 py-4 text-right ring-1 ring-amber-200">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Total comisión</p>
+                    <p class="mt-1 text-3xl font-black text-amber-700">$ {{ number_format($total30PorCiento, 0, ',', '.') }}</p>
+                    <p class="mt-1 text-xs text-amber-500">30% de $ {{ number_format($recolectoresConFacturas->sum('total'), 0, ',', '.') }} cobrados</p>
+                </div>
+            </div>
+
+            {{-- Desglose por recolector en la quincena actual --}}
+            @if ($recolectoresConFacturas->isNotEmpty())
+                <div class="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-slate-50 text-left text-slate-500">
+                            <tr>
+                                <th class="px-5 py-3 font-semibold">Recolector</th>
+                                <th class="px-5 py-3 text-right font-semibold">Facturas</th>
+                                <th class="px-5 py-3 text-right font-semibold">Total cobrado</th>
+                                <th class="px-5 py-3 text-right font-semibold">Comisión (30%)</th>
+                                <th class="px-5 py-3 text-center font-semibold">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach ($recolectoresConFacturas as $item)
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-5 py-3 font-semibold text-slate-900">{{ $item['nombre'] }}</td>
+                                    <td class="px-5 py-3 text-right text-slate-600">{{ $item['cantidad'] ?? '—' }}</td>
+                                    <td class="px-5 py-3 text-right font-semibold text-slate-900">$ {{ number_format($item['total'], 0, ',', '.') }}</td>
+                                    <td class="px-5 py-3 text-right font-black text-amber-700">$ {{ number_format($item['pago30'], 0, ',', '.') }}</td>
+                                    <td class="px-5 py-3 text-center">
+                                        @if (!empty($item['pagado']))
+                                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                                                Pagado {{ optional($item['pagado_en'])->format('d/m/Y') }}
+                                            </span>
+                                        @else
+                                            <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                                                Pendiente
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                        <tfoot class="border-t-2 border-slate-300 bg-amber-50">
+                            <tr>
+                                <td class="px-5 py-3 font-black text-slate-900" colspan="2">Total quincena</td>
+                                <td class="px-5 py-3 text-right font-black text-slate-900">$ {{ number_format($recolectoresConFacturas->sum('total'), 0, ',', '.') }}</td>
+                                <td class="px-5 py-3 text-right font-black text-amber-700">$ {{ number_format($total30PorCiento, 0, ',', '.') }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            @else
+                <div class="mt-5 rounded-2xl bg-slate-50 px-5 py-6 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+                    Aún no hay facturas pagadas en la quincena activa. Las comisiones se calcularán automáticamente al procesar los pagos.
+                </div>
+            @endif
+
+            {{-- Historial de comisiones por quincena --}}
+            @if ($historialPagosRecolectores->isNotEmpty())
+                <div class="mt-6">
+                    <h3 class="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Historial de quincenas anteriores</h3>
+                    @php
+                        $historialAgrupado = $historialPagosRecolectores->groupBy('quincena');
+                    @endphp
+                    <div class="space-y-3">
+                        @foreach ($historialAgrupado as $quincena => $pagos)
+                            <details class="rounded-2xl border border-slate-200 bg-slate-50">
+                                <summary class="flex cursor-pointer items-center justify-between gap-4 px-5 py-3">
+                                    <div class="flex items-center gap-3">
+                                        <span class="rounded-full bg-slate-200 px-3 py-1 font-mono text-xs font-bold text-slate-700">{{ $quincena }}</span>
+                                        <span class="text-sm text-slate-600">{{ $pagos->count() }} recolector(es)</span>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm font-bold text-slate-900">Total cobrado: $ {{ number_format($pagos->sum('total_facturas'), 0, ',', '.') }}</span>
+                                        <span class="text-sm font-black text-amber-700">Comisión: $ {{ number_format($pagos->sum('monto_comision'), 0, ',', '.') }}</span>
+                                    </div>
+                                </summary>
+                                <div class="border-t border-slate-200 px-5 py-3">
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full text-xs">
+                                            <thead class="text-left text-slate-500">
+                                                <tr>
+                                                    <th class="py-2 pr-4 font-semibold">Recolector</th>
+                                                    <th class="py-2 pr-4 text-right font-semibold">Facturas</th>
+                                                    <th class="py-2 pr-4 text-right font-semibold">Total</th>
+                                                    <th class="py-2 pr-4 text-right font-semibold">30%</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-slate-100">
+                                                @foreach ($pagos as $pago)
+                                                    <tr>
+                                                        <td class="py-2 pr-4 font-semibold text-slate-900">{{ $pago->recolector?->name ?? 'Eliminado' }}</td>
+                                                        <td class="py-2 pr-4 text-right text-slate-600">{{ $pago->cantidad_facturas }}</td>
+                                                        <td class="py-2 pr-4 text-right text-slate-900">$ {{ number_format($pago->total_facturas, 0, ',', '.') }}</td>
+                                                        <td class="py-2 pr-4 text-right font-bold text-amber-700">$ {{ number_format($pago->monto_comision, 0, ',', '.') }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </details>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
+
         @php
             $maxFacturasDia = max(1, $ingresoFacturasPorDia->max('cantidad') ?? 1);
             $maxProduccionDia = max(1, $produccionUsuariosPorDia->max('cantidad') ?? 1);
@@ -267,6 +390,7 @@
                 'cancelado' => 'bg-rose-100 text-rose-700 ring-rose-200',
             ];
         @endphp
+
 
         <div class="grid min-w-0 gap-5 2xl:grid-cols-2">
             <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">

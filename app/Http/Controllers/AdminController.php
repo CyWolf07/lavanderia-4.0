@@ -7,6 +7,7 @@ use App\Models\FacturaRecolector;
 use App\Models\Gasto;
 use App\Models\HistorialProduccion;
 use App\Models\IncongruenciaRecolector;
+use App\Models\PagoRecolector;
 use App\Models\Prenda;
 use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
@@ -71,23 +72,52 @@ class AdminController extends Controller
         // Total Neto = Órdenes Pagadas - Gastos
         $totalNeto = $ordenesPagadasTotal - $gastosQuincena;
 
-        // Panel: 30% de cada recolector (suma del 30% de sus facturas pagadas en la quincena)
-        $recolectoresConFacturas = FacturaRecolector::query()
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+        // Panel: 30% por recolector — fuente primaria: tabla pagos_recolector (persistida).
+        // Se enriquece con la lectura directa de facturas para mantener consistencia en tiempo real.
+        $periodoKey = Gasto::periodoDesdeFecha(now())['periodo'];
+
+        $pagosRecolectorQuincena = PagoRecolector::query()
+            ->deQuincena($periodoKey)
             ->with('recolector')
-            ->get()
-            ->groupBy('recolector_id')
-            ->map(function ($facturas) {
-                $recolector = $facturas->first()->recolector;
-                $totalRecolector = (float) $facturas->sum('total');
-                return [
-                    'nombre' => $recolector?->name ?? 'Sin nombre',
-                    'total'  => $totalRecolector,
-                    'pago30' => round($totalRecolector * 0.30),
-                ];
-            })
-            ->values();
+            ->get();
+
+        // Construir la colección que se pasa a la vista (compatible con la vista existente)
+        $recolectoresConFacturas = $pagosRecolectorQuincena->map(function (PagoRecolector $pago) {
+            return [
+                'nombre'          => $pago->recolector?->name ?? 'Sin nombre',
+                'total'           => (float) $pago->total_facturas,
+                'pago30'          => (int) $pago->monto_comision,
+                'cantidad'        => $pago->cantidad_facturas,
+                'pagado'          => $pago->pagado_al_recolector,
+                'pagado_en'       => $pago->pagado_en,
+                'recolector_id'   => $pago->recolector_id,
+            ];
+        })->values();
+
+        // Fallback: si aún no hay registros en pagos_recolector (antes de la primera migración),
+        // calcular en tiempo real como antes para no romper el panel.
+        if ($recolectoresConFacturas->isEmpty()) {
+            $recolectoresConFacturas = FacturaRecolector::query()
+                ->where('estado_factura', 'pagado')
+                ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+                ->with('recolector')
+                ->get()
+                ->groupBy('recolector_id')
+                ->map(function ($facturas) {
+                    $recolector = $facturas->first()->recolector;
+                    $totalRecolector = (float) $facturas->sum('total');
+                    return [
+                        'nombre'        => $recolector?->name ?? 'Sin nombre',
+                        'total'         => $totalRecolector,
+                        'pago30'        => round($totalRecolector * 0.30),
+                        'cantidad'      => $facturas->count(),
+                        'pagado'        => false,
+                        'pagado_en'     => null,
+                        'recolector_id' => $facturas->first()->recolector_id,
+                    ];
+                })
+                ->values();
+        }
 
         $total30PorCiento = $recolectoresConFacturas->sum('pago30');
 
@@ -96,6 +126,14 @@ class AdminController extends Controller
 
         // Panel: Ganancia = Total Neto - Pago Usuarios - Pago Recolectores
         $ganancia = $totalNeto - $pagoUsuarios - $total30PorCiento;
+
+        // Historial de comisiones de quincenas anteriores (para el panel de pagos)
+        $historialPagosRecolectores = PagoRecolector::query()
+            ->with('recolector')
+            ->orderByDesc('quincena')
+            ->orderBy('recolector_id')
+            ->limit(50)
+            ->get();
 
         // ingresosTotales (para el panel de resumen de producción) = usuarios + recolectores activos
         $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
@@ -246,7 +284,8 @@ class AdminController extends Controller
             'codigoEmpresarial',
             'dispositivosBloqueados',
             'recolectores',
-            'clientesConRecolector'
+            'clientesConRecolector',
+            'historialPagosRecolectores'
         ));
     }
 
@@ -613,10 +652,49 @@ class AdminController extends Controller
             return back()->with('error', 'Solo el administrador puede cambiar facturas canceladas.');
         }
 
-        $facturaRecolector->update([
+        // ── REGLA DE NEGOCIO: Reasignación de quincena al momento del pago ─────────
+        //
+        // Cuando se marca una factura como PAGADA:
+        //  1. La quincena_origen permanece intacta (quincena en que se creó).
+        //  2. Se asigna quincena_pago = quincena activa actual (donde ocurre el cobro).
+        //  3. Se recalcula el 30% de comisión para el recolector en esa quincena de pago.
+        //
+        // Esto resuelve el caso en que una factura de una quincena cerrada se paga
+        // en la quincena activa: el dinero queda en la quincena correcta.
+
+        $camposActualizar = [
             'estado_factura' => $nuevoEstado,
-            'metodo_pago' => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
-        ]);
+            'metodo_pago'    => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
+        ];
+
+        if ($nuevoEstado === 'pagado') {
+            // Determinar la quincena activa actual (donde se efectuú el pago)
+            $periodoActivo = Gasto::periodoDesdeFecha(now());
+            $quincenaPago  = $periodoActivo['periodo'];
+
+            $camposActualizar['quincena_pago'] = $quincenaPago;
+
+            // Si la factura aún no tenía quincena_origen, la backfilleamos ahora
+            if (empty($facturaRecolector->quincena_origen)) {
+                $fechaIngreso = $facturaRecolector->fecha_ingreso ?? now();
+                $camposActualizar['quincena_origen'] = Gasto::periodoDesdeFecha(
+                    \Carbon\Carbon::parse($fechaIngreso)
+                )['periodo'];
+            }
+        }
+
+        DB::transaction(function () use ($facturaRecolector, $camposActualizar, $nuevoEstado) {
+            $facturaRecolector->update($camposActualizar);
+
+            // Recalcular comisión del 30% solo al confirmar un pago
+            if ($nuevoEstado === 'pagado') {
+                PagoRecolector::recalcular(
+                    recolectorId: (int) $facturaRecolector->recolector_id,
+                    quincena:     $camposActualizar['quincena_pago'],
+                    porcentaje:   30.0
+                );
+            }
+        });
 
         return back()->with('success', 'Estatus de factura actualizado correctamente.');
     }

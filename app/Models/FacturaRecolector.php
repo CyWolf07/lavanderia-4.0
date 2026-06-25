@@ -25,6 +25,8 @@ class FacturaRecolector extends Model
         'total',
         'estado_factura',
         'metodo_pago',
+        'quincena_origen',   // quincena en que se creó la factura (inmutable)
+        'quincena_pago',     // quincena activa cuando se marcó como pagado
     ];
 
     protected function casts(): array
@@ -35,6 +37,22 @@ class FacturaRecolector extends Model
             'observaciones' => 'array',
             'total'         => 'decimal:2',
         ];
+    }
+
+    // ── Scopes adicionales ────────────────────────────────────────────────────
+
+    /** Facturas pagadas en una quincena concreta (por quincena_pago). */
+    public function scopePagadasEnQuincena($query, string $quincena)
+    {
+        return $query
+            ->where('estado_factura', 'pagado')
+            ->where('quincena_pago', $quincena);
+    }
+
+    /** Facturas creadas en una quincena concreta (por quincena_origen). */
+    public function scopeCreadasEnQuincena($query, string $quincena)
+    {
+        return $query->where('quincena_origen', $quincena);
     }
 
     public function estaPagada(): bool

@@ -6,6 +6,7 @@ use App\Models\Cliente;
 use App\Models\FacturaRecolector;
 use App\Models\Gasto;
 use App\Models\IncongruenciaRecolector;
+use App\Models\PagoRecolector;
 use App\Models\RecolectorPrenda;
 use App\Models\User;
 use App\Notifications\IncongruenciaRecolectorDetectada;
@@ -204,6 +205,9 @@ class RecolectorController extends Controller
         $totalFactura = $detalles->sum('subtotal');
 
         $factura = DB::transaction(function () use ($cliente, $fechaIngreso, $fechaEntrega, $data, $detalles, $totalPrendas, $totalFactura) {
+            // Determinar la quincena de origen al momento de crear la factura
+            $periodoOrigen = Gasto::periodoDesdeFecha(\Carbon\Carbon::parse($fechaIngreso));
+
             $factura = FacturaRecolector::create([
                 'numero_orden'   => $this->numeroOrdenService->obtenerSiguiente(Auth::id()),
                 'recolector_id'  => Auth::id(),
@@ -217,6 +221,7 @@ class RecolectorController extends Controller
                 'total_prendas'  => $totalPrendas,
                 'total'          => $totalFactura,
                 'estado_factura' => 'pendiente',
+                'quincena_origen'=> $periodoOrigen['periodo'],  // Registro inmutable del origen
             ]);
 
             $factura->detalles()->createMany($detalles->all());
@@ -264,10 +269,37 @@ class RecolectorController extends Controller
 
         $nuevoEstado = $data['estado_factura'];
 
-        $facturaRecolector->update([
+        // ── Reasignación de quincena al momento del pago (igual que en AdminController) ──
+        $camposActualizar = [
             'estado_factura' => $nuevoEstado,
             'metodo_pago'    => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
-        ]);
+        ];
+
+        if ($nuevoEstado === 'pagado') {
+            $periodoActivo = Gasto::periodoDesdeFecha(now());
+            $quincenaPago  = $periodoActivo['periodo'];
+
+            $camposActualizar['quincena_pago'] = $quincenaPago;
+
+            if (empty($facturaRecolector->quincena_origen)) {
+                $fechaIngreso = $facturaRecolector->fecha_ingreso ?? now();
+                $camposActualizar['quincena_origen'] = Gasto::periodoDesdeFecha(
+                    \Carbon\Carbon::parse($fechaIngreso)
+                )['periodo'];
+            }
+        }
+
+        DB::transaction(function () use ($facturaRecolector, $camposActualizar, $nuevoEstado) {
+            $facturaRecolector->update($camposActualizar);
+
+            if ($nuevoEstado === 'pagado') {
+                PagoRecolector::recalcular(
+                    recolectorId: (int) $facturaRecolector->recolector_id,
+                    quincena:     $camposActualizar['quincena_pago'],
+                    porcentaje:   30.0
+                );
+            }
+        });
 
         return back()->with('success', 'Estatus de factura actualizado correctamente.');
     }
