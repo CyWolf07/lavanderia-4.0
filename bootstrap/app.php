@@ -51,17 +51,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'rol'             => RolMiddleware::class,
             'throttle.admin'  => ThrottleAdminRequests::class,
         ]);
-
-        // Configurar Rate Limiters globales de la aplicación
-        \Illuminate\Support\Facades\RateLimiter::for('login', function (\Illuminate\Http\Request $request) {
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute(10)
-                ->by($request->ip());
-        });
-
-        \Illuminate\Support\Facades\RateLimiter::for('admin-writes', function (\Illuminate\Http\Request $request) {
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute(30)
-                ->by(optional($request->user())->id ?: $request->ip());
-        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
