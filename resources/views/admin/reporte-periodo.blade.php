@@ -83,7 +83,9 @@
                 <p class="mt-1 text-sm text-slate-500">Producción registrada y cerrada en este período. Puedes editar registros individuales.</p>
             </div>
             @foreach ($registrosPorUsuario as $registros)
-                @php($usuario = $registros->first()->user)
+                @php
+                    $usuario = $registros->first()->user;
+                @endphp
                 <div class="overflow-hidden border-b border-slate-100 break-inside-avoid last:border-0">
                     <div class="flex flex-col gap-2 bg-slate-50 px-6 py-4 sm:flex-row sm:items-end sm:justify-between">
                         <div>
@@ -161,7 +163,9 @@
                 <p class="mt-1 text-sm text-slate-500">Órdenes pagadas asignadas a este período. Se pueden editar desde el panel.</p>
             </div>
             @foreach ($facturasRecolector->groupBy('recolector_id') as $recolectorId => $facturas)
-                @php($recolector = $facturas->first()->recolector)
+                @php
+                    $recolector = $facturas->first()->recolector;
+                @endphp
                 <div class="overflow-hidden border-b border-slate-100 break-inside-avoid last:border-0">
                     <div class="flex flex-col gap-2 bg-amber-50 px-6 py-4 sm:flex-row sm:items-end sm:justify-between">
                         <div>

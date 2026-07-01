@@ -330,8 +330,10 @@
     ═══════════════════════════════════════════════════════════════════════ --}}
 
     {{-- ── Helper: Clase base para el overlay de modal ── --}}
-    @php($modalOverlay = 'fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8')
-    @php($modalBox = 'relative w-full max-w-5xl rounded-[1.75rem] bg-white shadow-2xl my-auto')
+    @php
+        $modalOverlay = 'fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8';
+        $modalBox = 'relative w-full max-w-5xl rounded-[1.75rem] bg-white shadow-2xl my-auto';
+    @endphp
 
     {{-- ════════ MODAL: GESTIÓN DE USUARIOS ════════ --}}
     <div x-cloak x-show="modalUsuarios" class="{{ $modalOverlay }}">
@@ -510,7 +512,9 @@
             @endphp
             <div class="grid gap-3 p-6 pb-4 md:grid-cols-3">
                 @foreach (['pendiente' => 'Pendientes', 'pagado' => 'Pagadas', 'cancelado' => 'Canceladas'] as $estado => $label)
-                    @php($resumenEstado = $facturaStatusResumen->get($estado))
+                    @php
+                        $resumenEstado = $facturaStatusResumen->get($estado);
+                    @endphp
                     <div class="rounded-2xl px-4 py-3 ring-1 {{ $estadoClases[$estado] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
                         <p class="text-xs font-bold uppercase tracking-[0.18em]">{{ $label }}</p>
                         <p class="mt-1 text-2xl font-black">{{ $resumenEstado->cantidad ?? 0 }}</p>
@@ -717,7 +721,9 @@
                 @if ($historialPagosRecolectores->isNotEmpty())
                     <div>
                         <h3 class="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-slate-500">Historial de quincenas anteriores</h3>
-                        @php($historialAgrupado = $historialPagosRecolectores->groupBy('quincena'))
+                        @php
+                            $historialAgrupado = $historialPagosRecolectores->groupBy('quincena');
+                        @endphp
                         <div class="space-y-3">
                             @foreach ($historialAgrupado as $quincena => $pagos)
                                 <details class="rounded-2xl border border-slate-200 bg-slate-50">
@@ -952,7 +958,9 @@
     {{-- ════════ MODAL: REGISTROS ACTIVOS LAVANDEROS ════════ --}}
     <div x-cloak x-show="modalRegistrosActivos" class="{{ $modalOverlay }}">
         <div @click.outside="modalRegistrosActivos = false" class="{{ $modalBox }}">
-            @php($produccionIds = $ultimasProducciones->pluck('id')->values())
+            @php
+                $produccionIds = $ultimasProducciones->pluck('id')->values();
+            @endphp
             <form id="bulk-delete-producciones-modal" action="{{ route('admin.produccion.destroy-bulk') }}" method="POST" class="hidden">
                 @csrf
                 @method('DELETE')

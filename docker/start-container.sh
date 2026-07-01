@@ -178,7 +178,7 @@ php artisan event:clear     > /dev/null 2>&1 || true
 # --force es obligatorio en ambiente production
 # Las migraciones crean las tablas: users, sessions, cache, jobs, etc.
 echo "Ejecutando migraciones..."
-php artisan migrate --force || true
+php artisan migrate --force
 
 # Los seeders crean datos iniciales (roles, configuracion, admin por defecto)
 echo "Ejecutando seeders..."
