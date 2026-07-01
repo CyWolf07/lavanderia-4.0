@@ -46,9 +46,10 @@ it('shows active admin totals from production and collector invoices', function 
 
     $cliente = Cliente::create([
         'nombre' => 'Cliente prueba',
-        'nit_cedula' => '900123456',
         'celular' => '3001234567',
         'direccion' => 'Calle 1',
+        'barrio' => 'Centro',
+        'activo' => true,
     ]);
 
     Produccion::create([
@@ -108,9 +109,10 @@ it('allows programmers to delete paid collector invoices from the status table',
 
     $cliente = Cliente::create([
         'nombre' => 'Cliente pago',
-        'nit_cedula' => '900987654',
         'celular' => '3009876543',
         'direccion' => 'Calle 2',
+        'barrio' => 'Sur',
+        'activo' => true,
     ]);
 
     $factura = FacturaRecolector::create([

@@ -29,9 +29,9 @@ it('saves collector order and sends WhatsApp business message when requested', f
 
     $cliente = Cliente::create([
         'nombre' => 'Cliente WhatsApp',
-        'nit_cedula' => '901123123',
         'celular' => '300 123 4567',
         'direccion' => 'Calle 1 #2-3',
+        'barrio' => 'Centro',
         'activo' => true,
     ]);
 
@@ -88,9 +88,9 @@ it('saves collector order when WhatsApp business is not configured', function ()
 
     $cliente = Cliente::create([
         'nombre' => 'Cliente Sin Configuracion',
-        'nit_cedula' => '901123124',
         'celular' => '3001234568',
         'direccion' => 'Calle 4 #5-6',
+        'barrio' => 'Norte',
         'activo' => true,
     ]);
 
