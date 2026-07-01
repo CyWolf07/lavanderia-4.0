@@ -789,7 +789,7 @@ class AdminController extends Controller
             ->whereYear('fecha', now()->year)
             ->whereMonth('fecha', now()->month)
             ->get()
-            ->groupBy(fn ($item) => $item->prenda->nombre ?? 'Sin nombre')
+            ->groupBy(fn ($item) => $item->prenda?->nombre ?? 'Sin nombre')
             ->map(fn ($items, $nombre) => [
                 'prenda' => $nombre,
                 'cantidad' => $items->sum('cantidad'),
@@ -832,7 +832,7 @@ class AdminController extends Controller
 
                 return [
                     'id' => (int) $userId,
-                    'nombre' => $usuario->name ?? 'Usuario eliminado',
+                    'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
                     'cantidad' => (int) $registros->sum('cantidad'),
                     'total' => (float) $registros->sum('total'),
@@ -851,7 +851,7 @@ class AdminController extends Controller
 
                 return [
                     'id' => (int) $recolectorId,
-                    'nombre' => $recolector->name ?? 'Recolector eliminado',
+                    'nombre' => $recolector?->name ?? 'Recolector eliminado',
                     'rol' => $recolector?->obtenerRol() ?? 'recolector',
                     'cantidad' => (int) $registros->sum('total_prendas'),
                     'total' => (float) $registros->sum('total'),
@@ -870,10 +870,10 @@ class AdminController extends Controller
 
                 return [
                     'id' => (int) $userId,
-                    'nombre' => $usuario->name ?? 'Usuario eliminado',
+                    'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
-                    'cedula' => $usuario->cedula ?? 'No registrada',
-                    'contacto' => $usuario->contacto ?? 'No registrado',
+                    'cedula' => $usuario?->cedula ?? 'No registrada',
+                    'contacto' => $usuario?->contacto ?? 'No registrado',
                     'cantidad' => (int) $registros->sum('cantidad'),
                     'total' => (float) $registros->sum('total'),
                     'registros' => $registros,
@@ -892,10 +892,10 @@ class AdminController extends Controller
 
                 return [
                     'id' => (int) $recolectorId,
-                    'nombre' => $recolector->name ?? 'Recolector eliminado',
+                    'nombre' => $recolector?->name ?? 'Recolector eliminado',
                     'rol' => $recolector?->obtenerRol() ?? 'recolector',
-                    'cedula' => $recolector->cedula ?? 'No registrada',
-                    'contacto' => $recolector->contacto ?? 'No registrado',
+                    'cedula' => $recolector?->cedula ?? 'No registrada',
+                    'contacto' => $recolector?->contacto ?? 'No registrado',
                     'cantidad' => (int) $registros->sum('total_prendas'),
                     'total' => (float) $registros->sum('total'),
                     'registros' => $registros,
@@ -915,7 +915,7 @@ class AdminController extends Controller
                     ->groupBy(fn (Produccion $registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
                     ->map(function (Collection $registrosDia, string $fecha) {
                         $detalle = $registrosDia
-                            ->groupBy(fn (Produccion $registro) => $registro->prenda->nombre ?? 'Sin prenda')
+                            ->groupBy(fn (Produccion $registro) => $registro->prenda?->nombre ?? 'Sin prenda')
                             ->map(function (Collection $registrosPrenda, string $nombrePrenda) {
                                 return [
                                     'nombre' => $nombrePrenda,
@@ -938,7 +938,7 @@ class AdminController extends Controller
 
                 return [
                     'id' => (int) $userId,
-                    'nombre' => $usuario->name ?? 'Usuario eliminado',
+                    'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
                     'dias' => $dias,
                     'cantidad' => (int) $registros->sum('cantidad'),
@@ -962,7 +962,7 @@ class AdminController extends Controller
                             ->map(function (FacturaRecolector $factura) {
                                 return [
                                     'factura' => $factura->id,
-                                    'cliente' => $factura->cliente->nombre ?? 'Cliente eliminado',
+                                    'cliente' => $factura->cliente?->nombre ?? 'Cliente eliminado',
                                     'cantidad' => (int) $factura->total_prendas,
                                     'total' => (float) $factura->total,
                                     'prendas' => $factura->detalles
@@ -984,7 +984,7 @@ class AdminController extends Controller
 
                 return [
                     'id' => (int) $recolectorId,
-                    'nombre' => $recolector->name ?? 'Recolector eliminado',
+                    'nombre' => $recolector?->name ?? 'Recolector eliminado',
                     'rol' => $recolector?->obtenerRol() ?? 'recolector',
                     'dias' => $dias,
                     'cantidad' => (int) $registros->sum('total_prendas'),
