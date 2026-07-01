@@ -70,13 +70,13 @@ class DatabaseSeeder extends Seeder
         Prenda::firstOrCreate(['nombre' => 'Abrigo'], ['tipo' => 'Lavado Seco', 'precio' => 45000]);
 
         Cliente::firstOrCreate(
-            ['nit_cedula' => '900123456'],
-            ['nombre' => 'Hotel Plaza Central', 'celular' => '3105550001', 'direccion' => 'Cra 12 #45-18']
+            ['nombre' => 'Hotel Plaza Central'],
+            ['celular' => '3105550001', 'direccion' => 'Cra 12 #45-18', 'barrio' => 'Centro', 'activo' => true]
         );
 
         Cliente::firstOrCreate(
-            ['nit_cedula' => '1012345678'],
-            ['nombre' => 'Maria Gomez', 'celular' => '3115550002', 'direccion' => 'Calle 8 #22-10']
+            ['nombre' => 'Maria Gomez'],
+            ['celular' => '3115550002', 'direccion' => 'Calle 8 #22-10', 'barrio' => 'Norte', 'activo' => true]
         );
 
         $this->call(RecolectorPrendasSeeder::class);

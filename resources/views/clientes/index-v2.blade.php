@@ -38,7 +38,7 @@
                 @csrf
                 {{-- Datos básicos del cliente --}}
                 <input type="text" name="nombre" placeholder="Nombre del cliente" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                <input type="text" name="nit_cedula" placeholder="NIT o C.C." class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+
                 <input type="text" name="celular" placeholder="Celular" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                 <input type="text" name="direccion" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                 {{-- El cliente nace habilitado por defecto --}}
@@ -67,7 +67,6 @@
                             @csrf
                             @method('PUT')
                             <input name="nombre" type="text" value="{{ $cliente->nombre }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
-                            <input name="nit_cedula" type="text" value="{{ $cliente->nit_cedula }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                             <input name="celular" type="text" value="{{ $cliente->celular }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                             <input name="direccion" type="text" value="{{ $cliente->direccion }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                             {{-- Estado actual del cliente --}}
@@ -78,7 +77,7 @@
                             </label>
                             <div class="md:col-span-2 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                 <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                                    <span>{{ $cliente->nombre }} | {{ $cliente->nit_cedula }}</span>
+                                    <span>N°{{ $cliente->numero_cliente }} | {{ $cliente->nombre }}</span>
                                     {{-- Badge de estado visual --}}
                                     <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $cliente->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
                                         {{ $cliente->activo ? 'Habilitado' : 'Inhabilitado' }}

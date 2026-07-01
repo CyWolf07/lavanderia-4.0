@@ -393,7 +393,7 @@
                                 @foreach ($item['registros'] as $registro)
                                     <tr>
                                         <td class="px-6 py-4 text-slate-700">{{ optional($registro->fecha)->format('d/m/Y') }}</td>
-                                        <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda->nombre ?? 'Sin prenda' }}</td>
+                                        <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda?->nombre ?? 'Sin prenda' }}</td>
                                         <td class="px-6 py-4 text-slate-600">{{ $registro->cantidad }}</td>
                                         <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($registro->total, 0, ',', '.') }}</td>
                                     </tr>
@@ -407,14 +407,14 @@
                             <div class="rounded-[1.5rem] border border-slate-200 p-5">
                                 <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                     <div>
-                                        <p class="text-lg font-bold text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</p>
+                                        <p class="text-lg font-bold text-slate-900">{{ $factura->cliente?->nombre ?? 'Cliente eliminado' }}</p>
                                         <p class="mt-1 text-sm text-slate-500">
                                             Ingreso {{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }} |
                                             Entrega {{ optional($factura->fecha_entrega)->format('d/m/Y') }}
                                         </p>
                                         <p class="mt-1 text-sm text-slate-500">
                                             {{ $factura->direccion ?: 'Sin direcci?n' }} |
-                                            {{ $factura->nit_cedula ?: 'Sin documento' }} |
+                                            {{ $factura->numero_cliente ?: 'Sin documento' }} |
                                             {{ $factura->celular ?: 'Sin celular' }}
                                         </p>
                                     </div>

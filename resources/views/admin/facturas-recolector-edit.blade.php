@@ -5,7 +5,7 @@
 @section('content')
 <div
     x-data="editFacturaForm({
-        clientes: @js($clientes->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'nit_cedula' => $c->nit_cedula, 'celular' => $c->celular, 'direccion' => $c->direccion])->values()),
+        clientes: @js($clientes->map(fn ($c) => ['id' => $c->id, 'nombre' => $c->nombre, 'numero_cliente' => $c->numero_cliente, 'celular' => $c->celular, 'direccion' => $c->direccion])->values()),
         prendas:  @js($prendas->map(fn ($p) => ['id' => $p->id, 'nombre' => $p->nombre, 'tipo' => $p->tipo, 'precio' => (float) $p->precio])->values()),
         itemsIniciales: @js($factura->detalles->map(fn ($d) => ['prenda_id' => $d->recolector_prenda_id, 'cantidad' => $d->cantidad, 'precio_unitario' => (float) $d->valor_unitario])->values()),
         clienteIdInicial: @js($factura->cliente_id),
@@ -57,8 +57,8 @@
                     <input type="text" :value="clienteActual.direccion ?? ''" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" readonly>
                 </div>
                 <div>
-                    <label class="mb-2 block text-sm font-semibold text-slate-700">NIT / C.C.</label>
-                    <input type="text" :value="clienteActual.nit_cedula ?? ''" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" readonly>
+                    <label class="mb-2 block text-sm font-semibold text-slate-700">N° Cliente</label>
+                    <input type="text" :value="clienteActual.numero_cliente ?? ''" class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm" readonly>
                 </div>
                 <div class="md:col-span-2">
                     <label class="mb-2 block text-sm font-semibold text-slate-700">Celular</label>
