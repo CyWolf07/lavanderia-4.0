@@ -3,103 +3,81 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 /**
  * Servicio centralizado de caché para el dashboard administrativo.
  *
- * - Agrupa todas las claves de caché en un namespace único (`lav:dashboard:`).
- * - TTLs configurados por tipo de dato:
- *     · Estadísticas live (tarjetas)   →  2 min  (datos que cambian frecuentemente)
- *     · Gráficas (por día)             →  5 min  (suficiente precisión)
- *     · Historial de períodos cerrados →  10 min (cambia pocas veces al día)
- *     · Datos de usuarios              →  5 min
- * - flush() invalida TODO el namespace del dashboard de una vez.
+ * Totalmente fail-safe: si el driver de caché falla por cualquier motivo
+ * (tabla no existe, conexión rota, etc.), el método remember() ejecuta
+ * el callback directamente sin propagar la excepción.
+ *
+ * TTLs por tipo de dato:
+ *   - live    →  2 min  (estadísticas que cambian frecuentemente)
+ *   - charts  →  5 min  (gráficas por día)
+ *   - history →  10 min (períodos cerrados)
+ *   - users   →  5 min  (listas de usuarios)
  */
 class DashboardCacheService
 {
-    /** Prefijo de namespace para todas las claves */
     private const PREFIX = 'lav:dashboard:';
 
-    /** TTLs en segundos */
-    public const TTL_LIVE    = 120;   // 2 min
-    public const TTL_CHARTS  = 300;   // 5 min
-    public const TTL_HISTORY = 600;   // 10 min
-    public const TTL_USERS   = 300;   // 5 min
+    public const TTL_LIVE    = 120;
+    public const TTL_CHARTS  = 300;
+    public const TTL_HISTORY = 600;
+    public const TTL_USERS   = 300;
 
     /**
      * Obtiene (o genera y guarda) un valor cacheado.
-     *
-     * @param  string    $key      Identificador del dato dentro del namespace
-     * @param  int       $ttl      Tiempo de vida en segundos
-     * @param  callable  $callback Función que genera el valor si no existe en caché
-     * @return mixed
+     * Si el caché no está disponible, ejecuta el callback directamente.
      */
     public function remember(string $key, int $ttl, callable $callback): mixed
     {
-        return Cache::remember(self::PREFIX . $key, $ttl, $callback);
-    }
-
-    /**
-     * Guarda un valor directamente en caché.
-     */
-    public function put(string $key, mixed $value, int $ttl): void
-    {
-        Cache::put(self::PREFIX . $key, $value, $ttl);
-    }
-
-    /**
-     * Elimina un valor específico del caché.
-     */
-    public function forget(string $key): void
-    {
-        Cache::forget(self::PREFIX . $key);
-    }
-
-    /**
-     * Invalida todo el caché del dashboard.
-     * Se debe llamar cuando se realizan escrituras que afectan los datos mostrados:
-     * - Cerrar quincena
-     * - Editar/eliminar producción o facturas
-     * - Cambiar estado de usuario
-     */
-    public function flush(): void
-    {
-        $keys = [
-            'estadisticas',
-            'financiero',
-            'facturas_dia',
-            'produccion_dia',
-            'periodos_cerrados',
-            'pago_recolectores',
-            'recolectores_facturas',
-            'prendas_mes',
-        ];
-
-        foreach ($keys as $key) {
-            Cache::forget(self::PREFIX . $key);
+        try {
+            return Cache::remember(self::PREFIX . $key, $ttl, $callback);
+        } catch (Throwable) {
+            // Caché no disponible → ejecutar el callback directamente
+            return $callback();
         }
     }
 
     /**
-     * Invalida solo las claves que afecta una operación de escritura en facturas.
+     * Invalida todo el caché del dashboard de forma segura.
      */
-    public function flushFacturas(): void
+    public function flush(): void
     {
-        Cache::forget(self::PREFIX . 'estadisticas');
-        Cache::forget(self::PREFIX . 'financiero');
-        Cache::forget(self::PREFIX . 'facturas_dia');
-        Cache::forget(self::PREFIX . 'recolectores_facturas');
-        Cache::forget(self::PREFIX . 'periodos_cerrados');
+        $keys = [
+            'estadisticas', 'financiero', 'facturas_dia', 'produccion_dia',
+            'periodos_cerrados', 'pago_recolectores', 'recolectores_facturas',
+            'prendas_mes', 'total_usuarios', 'usuarios_lista',
+            'recolectores_activos', 'clientes_recolector', 'historial_pagos_rec',
+        ];
+
+        foreach ($keys as $key) {
+            $this->forget($key);
+        }
     }
 
-    /**
-     * Invalida solo las claves que afecta una operación de escritura en producción.
-     */
+    public function flushFacturas(): void
+    {
+        foreach (['estadisticas', 'financiero', 'facturas_dia', 'recolectores_facturas', 'periodos_cerrados', 'pago_recolectores'] as $key) {
+            $this->forget($key);
+        }
+    }
+
     public function flushProduccion(): void
     {
-        Cache::forget(self::PREFIX . 'estadisticas');
-        Cache::forget(self::PREFIX . 'financiero');
-        Cache::forget(self::PREFIX . 'produccion_dia');
-        Cache::forget(self::PREFIX . 'prendas_mes');
+        foreach (['estadisticas', 'financiero', 'produccion_dia', 'prendas_mes', 'periodos_cerrados'] as $key) {
+            $this->forget($key);
+        }
+    }
+
+    public function forget(string $key): void
+    {
+        try {
+            Cache::forget(self::PREFIX . $key);
+        } catch (Throwable) {
+            // silencioso si el caché no está disponible
+        }
     }
 }
