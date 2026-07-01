@@ -242,7 +242,12 @@ class RecolectorController extends Controller
             ->with('nueva_factura_id', $factura->id);
 
         if ($whatsappStatus === 'disabled') {
-            $redirect->with('error', 'La automatizacion de WhatsApp Business no esta habilitada.');
+            // with() devuelve una nueva instancia — se debe reasignar
+            $redirect = $redirect->with('error', 'La automatizacion de WhatsApp Business no esta habilitada.');
+        }
+
+        if ($whatsappStatus === 'error') {
+            $redirect = $redirect->with('error', 'La orden fue guardada pero el mensaje de WhatsApp no pudo enviarse.');
         }
 
         return $redirect;
@@ -384,28 +389,36 @@ class RecolectorController extends Controller
             return 'disabled';
         }
 
-        Http::withToken((string) config('services.whatsapp.token'))
-            ->post(sprintf(
-                'https://graph.facebook.com/%s/%s/messages',
-                config('services.whatsapp.api_version', 'v20.0'),
-                config('services.whatsapp.phone_number_id')
-            ), [
-                'messaging_product' => 'whatsapp',
-                'to'                => $telefono,
-                'type'              => 'text',
-                'text'              => [
-                    'body' => sprintf(
-                        'Hola %s, tu orden de lavanderia #%s fue registrada correctamente. Total prendas: %s. Fecha de entrega: %s.',
-                        $cliente->nombre,
-                        $factura->id,
-                        $factura->total_prendas,
-                        optional($factura->fecha_entrega)->format('d/m/Y') ?? $factura->fecha_entrega
-                    ),
-                ],
-            ])
-            ->throw();
+        try {
+            Http::withToken((string) config('services.whatsapp.token'))
+                ->post(sprintf(
+                    'https://graph.facebook.com/%s/%s/messages',
+                    config('services.whatsapp.api_version', 'v20.0'),
+                    config('services.whatsapp.phone_number_id')
+                ), [
+                    'messaging_product' => 'whatsapp',
+                    'to'                => $telefono,
+                    'type'              => 'text',
+                    'text'              => [
+                        'body' => sprintf(
+                            'Hola %s, tu orden de lavanderia #%s fue registrada correctamente. Total prendas: %s. Fecha de entrega: %s.',
+                            $cliente->nombre,
+                            $factura->id,
+                            $factura->total_prendas,
+                            optional($factura->fecha_entrega)->format('d/m/Y') ?? $factura->fecha_entrega
+                        ),
+                    ],
+                ])
+                ->throw();
 
-        return 'sent';
+            return 'sent';
+        } catch (\Throwable $e) {
+            // La factura ya fue guardada en DB. Solo se reporta el fallo de WA
+            // sin relanzar la excepción para no causar un 500 al usuario.
+            report($e);
+
+            return 'error';
+        }
     }
 
     private function normalizarTelefonoWhatsapp(?string $celular): ?string

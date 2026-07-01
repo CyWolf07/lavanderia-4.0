@@ -145,9 +145,12 @@ Route::middleware(['auth', 'activo'])->group(function () {
     Route::prefix('pqrs')->group(function () {
         Route::get('/', [PqrsController::class, 'index'])->name('pqrs.index');     // Listado + formulario de radicación
         Route::post('/', [PqrsController::class, 'store'])->name('pqrs.store');     // Guardar nuevo PQRS
-        Route::get('/{id}/edit', [PqrsController::class, 'edit'])->name('pqrs.edit');       // Formulario de edición
-        Route::put('/{id}', [PqrsController::class, 'update'])->name('pqrs.update');   // Actualizar PQRS existente
-        Route::delete('/{id}', [PqrsController::class, 'destroy'])->name('pqrs.destroy'); // Eliminar PQRS
+        // Edit y delete sólo para admin/programador
+        Route::middleware('rol:admin,programador')->group(function () {
+            Route::get('/{id}/edit', [PqrsController::class, 'edit'])->name('pqrs.edit');
+            Route::put('/{id}', [PqrsController::class, 'update'])->name('pqrs.update');
+            Route::delete('/{id}', [PqrsController::class, 'destroy'])->name('pqrs.destroy');
+        });
     });
 
 });
@@ -228,9 +231,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])
 |--------------------------------------------------------------------------
 | SOLO PROGRAMADOR (Acciones técnicas críticas)
 |--------------------------------------------------------------------------
+| Nota: la eliminación de historial ya está cubierta por el grupo admin
+| (rol:admin,programador). No se duplica aquí.
+|--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'activo', 'rol:programador'])->group(function () {
-    // Eliminar un registro del historial de producción (acción irreversible)
-    Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])
-        ->name('programador.historial.destroy');
-});

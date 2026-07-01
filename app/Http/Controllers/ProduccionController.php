@@ -195,7 +195,7 @@ class ProduccionController extends Controller
                 HistorialProduccion::create([
                     'user_id' => $produccion->user_id,
                     'prenda_id' => $produccion->prenda_id,
-                    'prenda_nombre' => $produccion->prenda->nombre ?? 'Prenda eliminada',
+                    'prenda_nombre' => $produccion->prenda?->nombre ?? 'Prenda eliminada',
                     'precio_unitario' => $produccion->cantidad > 0 ? ($produccion->total / $produccion->cantidad) : 0,
                     'cantidad' => $produccion->cantidad,
                     'total' => $produccion->total,
