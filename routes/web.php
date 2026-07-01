@@ -63,7 +63,7 @@ Route::get('/', function () {
 Route::get('/codigo-empresarial', [EnterpriseAccessController::class, 'create'])->name('enterprise-code.create');
 Route::post('/codigo-empresarial', [EnterpriseAccessController::class, 'store'])->name('enterprise-code.store');
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:login');
 
 // Registro de nuevos usuarios (puede estar deshabilitado en producción)
 Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
@@ -132,7 +132,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
 
     // ── MÓDULO RECOLECTOR ──────────────────────────────────────────────────────
     // Solo para el rol 'recolector'. Gestiona facturas de entrega de ropa.
-    Route::middleware('rol:recolector')->prefix('recolector')->group(function () {
+    Route::middleware(['rol:recolector', 'throttle:60,1'])->prefix('recolector')->group(function () {
         Route::get('/', [RecolectorController::class,  'index'])->name('recolector.index');         // Ver facturas y formulario
         Route::post('/clientes', [ClienteController::class,     'storeFromRecolector'])->name('recolector.clientes.store'); // Crear cliente rápido
         Route::post('/facturas', [RecolectorController::class,  'store'])->name('recolector.facturas.store'); // Guardar factura nueva
@@ -157,7 +157,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
 | SOLO ADMIN / PROGRAMADOR (Requieren: auth + activo + rol:admin,programador)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])->prefix('admin')->group(function () {
 
     // ── PANEL PRINCIPAL ────────────────────────────────────────────────────────
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
@@ -209,6 +209,8 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador'])->prefix('admin')-
     Route::patch('/facturas-recolector/{facturaRecolector}/estatus', [AdminController::class, 'updateFacturaEstado'])->name('admin.facturas-recolector.estatus');
 
     Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])->name('admin.historial.destroy');
+    Route::get('/historial/{historialProduccion}/edit', [ProduccionController::class, 'editHistorial'])->name('admin.historial.edit');
+    Route::put('/historial/{historialProduccion}', [ProduccionController::class, 'updateHistorial'])->name('admin.historial.update');
     Route::post('/produccion/cerrar', [ProduccionController::class, 'cerrar'])->name('produccion.cerrar');
     Route::get('/reportes/{periodo}', [ProduccionController::class, 'reportePeriodo'])
         ->where('periodo', '.*')              // Permite el formato AÑO/MES/QUINCENA con slash

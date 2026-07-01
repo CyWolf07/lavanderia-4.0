@@ -7,6 +7,7 @@ use App\Models\Gasto;
 use App\Models\HistorialProduccion;
 use App\Models\Prenda;
 use App\Models\Produccion;
+use App\Services\DashboardCacheService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -210,10 +211,59 @@ class ProduccionController extends Controller
             Produccion::query()->delete();
         });
 
+        // Invalidar caché del dashboard (quincena cerrada, historial cambió)
+        app(DashboardCacheService::class)->flush();
+
         return redirect()->route('admin.reportes.periodo', [
-            'periodo' => $periodo['periodo'],
+            'periodo'  => $periodo['periodo'],
             'imprimir' => 1,
         ])->with('success', 'Quincena cerrada, respaldada e informe listo para imprimir.');
+    }
+
+    public function editHistorial(HistorialProduccion $historialProduccion)
+    {
+        abort_unless(auth()->user()?->tieneRol('admin', 'programador'), 403);
+        $historialProduccion->load(['user', 'prenda', 'cerradoPor']);
+        $usuarios = \App\Models\User::orderBy('name')->get();
+        $prendas  = Prenda::orderBy('nombre')->get();
+
+        return view('admin.historial-edit', [
+            'registro' => $historialProduccion,
+            'usuarios' => $usuarios,
+            'prendas'  => $prendas,
+        ]);
+    }
+
+    public function updateHistorial(Request $request, HistorialProduccion $historialProduccion)
+    {
+        abort_unless(auth()->user()?->tieneRol('admin', 'programador'), 403);
+
+        $data = $request->validate([
+            'user_id'   => ['required', 'exists:users,id'],
+            'prenda_id' => ['required', 'exists:prendas,id'],
+            'cantidad'  => ['required', 'integer', 'min:1'],
+            'fecha'     => ['required', 'date'],
+        ]);
+
+        $prenda = Prenda::findOrFail($data['prenda_id']);
+        $total  = $data['cantidad'] * $prenda->precio;
+
+        $historialProduccion->update([
+            'user_id'         => $data['user_id'],
+            'prenda_id'       => $prenda->id,
+            'prenda_nombre'   => $prenda->nombre,
+            'precio_unitario' => $prenda->precio,
+            'cantidad'        => $data['cantidad'],
+            'total'           => $total,
+            'fecha'           => $data['fecha'],
+        ]);
+
+        // Invalidar caché del dashboard (historial actualizado)
+        app(DashboardCacheService::class)->flushProduccion();
+
+        return redirect()
+            ->route('admin.reportes.periodo', $historialProduccion->periodo)
+            ->with('success', 'Registro histórico actualizado correctamente.');
     }
 
     public function reportePeriodo(string $periodo)

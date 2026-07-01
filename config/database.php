@@ -47,18 +47,47 @@ return [
         ],
 
         'pgsql' => [
-            'driver' => 'pgsql',
-            'url' => $databaseUrl,
-            'host' => env('DB_HOST', env('PGHOST', '127.0.0.1')),
-            'port' => env('DB_PORT', env('PGPORT', '5432')),
-            'database' => env('DB_DATABASE', env('PGDATABASE', 'laravel')),
-            'username' => env('DB_USERNAME', env('PGUSER', 'root')),
-            'password' => env('DB_PASSWORD', env('PGPASSWORD', '')),
-            'charset' => env('DB_CHARSET', 'utf8'),
-            'prefix' => '',
+            'driver'         => 'pgsql',
+            'url'            => $databaseUrl,
+            'host'           => env('DB_HOST', env('PGHOST', '127.0.0.1')),
+            'port'           => env('DB_PORT', env('PGPORT', '5432')),
+            'database'       => env('DB_DATABASE', env('PGDATABASE', 'laravel')),
+            'username'       => env('DB_USERNAME', env('PGUSER', 'root')),
+            'password'       => env('DB_PASSWORD', env('PGPASSWORD', '')),
+            'charset'        => env('DB_CHARSET', 'utf8'),
+            'prefix'         => '',
             'prefix_indexes' => true,
-            'search_path' => env('DB_SCHEMA', env('PGSCHEMA', 'public')),
-            'sslmode' => env('DB_SSLMODE', env('PGSSLMODE', 'prefer')),
+            'search_path'    => env('DB_SCHEMA', env('PGSCHEMA', 'public')),
+            'sslmode'        => env('DB_SSLMODE', env('PGSSLMODE', 'prefer')),
+
+            // ── Connection Pool & Timeouts ────────────────────────────────────
+            // Estos valores se usan cuando la app corre detrás de PgBouncer
+            // o cuando se escala con más workers (Octane, FPM, queue workers).
+            'options'        => [
+                // Abortar consultas que superen este tiempo (ms). Previene consultas
+                // largas que bloqueen conexiones bajo carga alta.
+                PDO::ATTR_TIMEOUT              => env('DB_STATEMENT_TIMEOUT', 30),
+
+                // Mantener la conexión viva entre requests (reutilización de socket)
+                PDO::ATTR_PERSISTENT           => env('DB_PERSISTENT', false),
+
+                // Errores como excepciones PHP (no modo silencioso)
+                PDO::ATTR_ERRMODE              => PDO::ERRMODE_EXCEPTION,
+
+                // No emular prepared statements; usa los nativos de PostgreSQL
+                PDO::ATTR_EMULATE_PREPARES     => false,
+            ],
+
+            // statement_timeout (ms): limite de tiempo por consulta SQL
+            // application_name: visible en pg_stat_activity para monitoreo
+            // idle_in_transaction_session_timeout: aborta transacciones que se
+            // quedan abiertas demasiado tiempo (peón de concurrencia alta).
+            'init_commands'  => [
+                'SET statement_timeout = ' . env('DB_STATEMENT_TIMEOUT_MS', 30000),
+                "SET application_name = '" . env('APP_NAME', 'lavanderia') . "'",
+                'SET idle_in_transaction_session_timeout = ' . env('DB_IDLE_TXN_TIMEOUT_MS', 60000),
+                'SET lock_timeout = ' . env('DB_LOCK_TIMEOUT_MS', 5000),
+            ],
         ],
 
     ],

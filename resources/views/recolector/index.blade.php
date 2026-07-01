@@ -157,10 +157,17 @@
         <aside class="xl:sticky xl:top-24 xl:self-start">
             <div class="rounded-[1.5rem] border border-amber-100 bg-white/90 p-3 shadow-xl shadow-amber-100">
                 <nav class="grid gap-3">
-                    <a href="#ingresar-orden" class="rounded-[1.35rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-800 shadow-sm hover:-translate-y-0.5 hover:bg-amber-100">Ingresar orden</a>
-                    <a href="#estatus-factura" class="rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700 shadow-sm hover:-translate-y-0.5 hover:bg-emerald-100">Estatus factura</a>
-                    <a href="#gastos-quincena" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Gastos quincena</a>
-                    <a href="#ordenes-recientes" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50">Órdenes recientes</a>
+                    <a href="#ingresar-orden" class="rounded-[1.35rem] border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-bold text-amber-800 shadow-sm hover:-translate-y-0.5 hover:bg-amber-100 transition-transform">📝 Ingresar orden</a>
+                    <a href="#gastos-quincena" class="rounded-[1.35rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700 shadow-sm hover:-translate-y-0.5 hover:bg-rose-100 transition-transform">💸 Gastos quincena</a>
+                    <hr class="border-slate-200">
+                    <button type="button" @click="modalEstatus = true" class="w-full text-left rounded-[1.35rem] border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-700 shadow-sm hover:-translate-y-0.5 hover:bg-emerald-100 transition-transform">
+                        📋 Estatus de facturas
+                        <span class="mt-1 block text-xs font-normal text-emerald-600">{{ $facturas->count() }} órdenes</span>
+                    </button>
+                    <button type="button" @click="modalOrdenes = true" class="w-full text-left rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50 transition-transform">
+                        🗂 Órdenes recientes
+                        <span class="mt-1 block text-xs font-normal text-slate-500">Historial completo</span>
+                    </button>
                 </nav>
             </div>
         </aside>
@@ -535,218 +542,6 @@
                 </div>
             </div>
 
-            {{-- ─── ESTATUS FACTURA ─── --}}
-            @php
-                $estadoClases = [
-                    'pagado'    => 'bg-emerald-100 text-emerald-700 ring-emerald-200',
-                    'pendiente' => 'bg-amber-100 text-amber-700 ring-amber-200',
-                    'cancelado' => 'bg-rose-100 text-rose-700 ring-rose-200',
-                ];
-            @endphp
-
-            <div id="estatus-factura" class="scroll-mt-24 rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Estatus factura</h2>
-                    <p class="mt-1 text-sm text-slate-500">Haz clic en el número de orden para ver el resumen completo.</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead class="bg-slate-50 text-left text-slate-500">
-                            <tr>
-                                <th class="px-6 py-4 font-semibold">Orden #</th>
-                                <th class="px-6 py-4 font-semibold">Cliente</th>
-                                <th class="px-6 py-4 font-semibold">Valor total</th>
-                                <th class="px-6 py-4 font-semibold">Estatus</th>
-                                <th class="px-6 py-4 font-semibold">Cambiar estado</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @forelse ($facturas as $factura)
-                                @php
-                                    $estadoFactura = $factura->estado_factura ?? 'pendiente';
-                                    $ordenFactura = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
-                                    $estatusAction = route('recolector.facturas.estatus', $factura);
-                                    $facturaJson = json_encode([
-                                        'numero_orden' => $ordenFactura,
-                                        'cliente_nombre' => $factura->cliente->nombre ?? 'Cliente eliminado',
-                                        'celular' => $factura->celular ?? '',
-                                        'total' => number_format((float)$factura->total, 0, ',', '.'),
-                                        'total_prendas' => $factura->total_prendas,
-                                        'estado' => $estadoFactura,
-                                        'detalles' => $factura->detalles->map(fn($d) => [
-                                            'prenda_nombre' => $d->prenda_nombre,
-                                            'cantidad' => $d->cantidad,
-                                            'color_prenda' => $d->color_prenda ?? '',
-                                            'subtotal' => number_format((float)$d->subtotal, 0, ',', '.'),
-                                        ])->values(),
-                                    ]);
-                                @endphp
-                                <tr>
-                                    {{-- F3: Clic en número de orden abre modal de resumen --}}
-                                    <td class="px-6 py-4">
-                                        <button
-                                            type="button"
-                                            @click="openOrderSummary({{ $facturaJson }})"
-                                            class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 transition hover:bg-amber-200 hover:shadow-sm"
-                                        >{{ $ordenFactura }}</button>
-                                    </td>
-                                    <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</td>
-                                    <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
-                                    <td class="px-6 py-4">
-                                        <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ring-1 {{ $estadoClases[$estadoFactura] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
-                                            {{ $estadoFactura }}
-                                        </span>
-                                        @if ($factura->metodo_pago)
-                                            <p class="mt-2 text-xs font-semibold text-slate-500">{{ str_replace('_', ' ', $factura->metodo_pago) }}</p>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex flex-wrap gap-2">
-                                            <button
-                                                type="button"
-                                                @click="openPayment('{{ $estatusAction }}', '{{ $ordenFactura }}')"
-                                                @disabled($estadoFactura !== 'pendiente')
-                                                class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-                                            >
-                                                Pagado
-                                            </button>
-                                            <form action="{{ $estatusAction }}" method="POST">
-                                                @csrf
-                                                @method('PATCH')
-                                                <input type="hidden" name="estado_factura" value="pendiente">
-                                                <button @disabled($estadoFactura !== 'pendiente') class="rounded-full border border-amber-200 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
-                                                    Pendiente
-                                                </button>
-                                            </form>
-                                            <span class="rounded-full border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-500">
-                                                Cancelado admin
-                                            </span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-slate-500">Todavia no has registrado ordenes de pedido.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {{-- ÓRDENES RECIENTES --}}
-            <div id="ordenes-recientes" class="scroll-mt-24 rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h2 class="text-lg font-bold text-slate-900">Órdenes recientes</h2>
-                    <p class="mt-1 text-sm text-slate-500">Cada orden conserva el cliente, fecha de entrega, observaciones y detalle de prendas.</p>
-                </div>
-
-                <div class="space-y-4 p-6">
-                    @forelse ($facturas as $factura)
-                        <div class="rounded-[1.5rem] border border-slate-200 p-5">
-                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
-                                        Orden #{{ str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT) }}
-                                    </p>
-                                    <p class="text-lg font-bold text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</p>
-                                    <p class="mt-1 text-sm text-slate-500">
-                                        Ingreso {{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }} |
-                                        Entrega {{ optional($factura->fecha_entrega)->format('d/m/Y') }}
-                                    </p>
-                                    <p class="mt-1 text-sm text-slate-500">
-                                        {{ $factura->direccion ?: 'Sin dirección' }} |
-                                        Cliente #{{ $factura->numero_cliente ?? 'N/A' }} |
-                                        {{ $factura->celular ?: 'Sin celular' }}
-                                    </p>
-                                </div>
-                                <div class="text-left lg:text-right">
-                                    <p class="text-sm font-semibold text-slate-500">{{ $factura->total_prendas }} prendas</p>
-                                    <p class="mt-1 text-2xl font-black text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</p>
-                                </div>
-                            </div>
-
-                            <div class="mt-4 rounded-2xl bg-slate-50 px-4 py-4">
-                                <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Observaciones</p>
-                                <p class="mt-2 text-sm text-slate-700">
-                                    {{ filled($factura->observaciones) ? implode(', ', $factura->observaciones) : 'Sin observaciones adicionales.' }}
-                                </p>
-                            </div>
-
-                            <div class="mt-4 overflow-x-auto">
-                                <table class="min-w-full text-sm">
-                                    <thead class="text-left text-slate-500">
-                                        <tr>
-                                            <th class="pb-3 font-semibold">Prenda</th>
-                                            <th class="pb-3 font-semibold">Color</th>
-                                            <th class="pb-3 font-semibold">Cantidad</th>
-                                            <th class="pb-3 font-semibold">Valor unitario</th>
-                                            <th class="pb-3 font-semibold">Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-200">
-                                        @foreach ($factura->detalles as $detalle)
-                                            <tr>
-                                                <td class="py-3 font-medium text-slate-900">{{ $detalle->prenda_nombre }}</td>
-                                                <td class="py-3 text-slate-600">
-                                                    @if($detalle->color_prenda)
-                                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold">{{ $detalle->color_prenda }}</span>
-                                                    @else
-                                                        <span class="text-slate-400">—</span>
-                                                    @endif
-                                                </td>
-                                                <td class="py-3 text-slate-600">{{ $detalle->cantidad }}</td>
-                                                <td class="py-3 text-slate-600">$ {{ number_format($detalle->valor_unitario, 0, ',', '.') }}</td>
-                                                <td class="py-3 font-semibold text-slate-900">$ {{ number_format($detalle->subtotal, 0, ',', '.') }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {{-- Botón WhatsApp --}}
-                            @php
-                                $numLimpio     = preg_replace('/\D+/', '', (string) $factura->celular);
-                                $numWa         = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
-                                $numeroOrden   = str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
-                                $nombreCliente = $factura->cliente->nombre ?? 'Cliente';
-                                $valorTotal    = number_format((float) $factura->total, 0, ',', '.');
-                                $lineasPrendas = '';
-                                foreach ($factura->detalles as $det) {
-                                    $colorStr = $det->color_prenda ? ' (' . $det->color_prenda . ')' : '';
-                                    $lineasPrendas .= '%0A-' . rawurlencode($det->prenda_nombre . $colorStr) . ' x ' . $det->cantidad;
-                                }
-                                $mensaje = 'Orden de pedido: ' . $numeroOrden
-                                    . '%0ANombre Cliente: ' . rawurlencode($nombreCliente)
-                                    . '%0ATipo de Prenda: ' . $lineasPrendas
-                                    . '%0ACantidad: ' . $factura->total_prendas
-                                    . '%0ATotal: $%20' . rawurlencode($valorTotal)
-                                    . '%0A%0A%C2%A1%C2%A1%C2%A1Muchas gracias por escoger nuestro servicio!!!'
-                                    . '%0ALavanderia Exclusiva'
-                                    . '%0Aa su servicio...';
-                                $waUrl = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
-                            @endphp
-
-                            @if ($factura->celular && $numLimpio)
-                                <div class="mt-4">
-                                    <a
-                                        href="{{ $waUrl }}"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold shadow transition hover:-translate-y-0.5 hover:shadow-md"
-                                        style="color: #ffffff;"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
-                                        WhatsApp al cliente
-                                    </a>
-                                </div>
-                            @endif
-                        </div>
-                    @empty
-                        <p class="text-sm text-slate-500">Todavía no has registrado órdenes de pedido como recolector.</p>
-                    @endforelse
-                </div>
-            </div>
         </div>
     </div>
         </section>
@@ -845,8 +640,218 @@
     </div>
 </div>
 
+    {{-- ════════ MODAL: ESTATUS DE FACTURAS ════════ --}}
+    <div x-cloak x-show="modalEstatus" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
+        <div @click.outside="modalEstatus = false" class="relative w-full max-w-5xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900">📋 Estatus de facturas</h2>
+                    <p class="mt-1 text-sm text-slate-500">Haz clic en el número de orden para ver el resumen completo.</p>
+                </div>
+                <button @click="modalEstatus = false" class="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            @php
+                $estadoClasesModal = [
+                    'pagado'    => 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+                    'pendiente' => 'bg-amber-100 text-amber-700 ring-amber-200',
+                    'cancelado' => 'bg-rose-100 text-rose-700 ring-rose-200',
+                ];
+            @endphp
+            <div class="overflow-x-auto max-h-[75vh]">
+                <table class="min-w-full text-sm">
+                    <thead class="sticky top-0 bg-slate-50 text-left text-slate-500">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Orden #</th>
+                            <th class="px-6 py-4 font-semibold">Cliente</th>
+                            <th class="px-6 py-4 font-semibold">Total prendas</th>
+                            <th class="px-6 py-4 font-semibold">Valor total</th>
+                            <th class="px-6 py-4 font-semibold">Estatus</th>
+                            <th class="px-6 py-4 font-semibold">Cambiar estado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse ($facturas as $factura)
+                            @php
+                                $estadoF = $factura->estado_factura ?? 'pendiente';
+                                $ordenF  = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
+                                $actionF = route('recolector.facturas.estatus', $factura);
+                                $facturaJsonM = json_encode([
+                                    'numero_orden'   => $ordenF,
+                                    'cliente_nombre' => $factura->cliente->nombre ?? 'Cliente eliminado',
+                                    'celular'        => $factura->celular ?? '',
+                                    'total'          => number_format((float)$factura->total, 0, ',', '.'),
+                                    'total_prendas'  => $factura->total_prendas,
+                                    'estado'         => $estadoF,
+                                    'detalles'       => $factura->detalles->map(fn($d) => [
+                                        'prenda_nombre' => $d->prenda_nombre,
+                                        'cantidad'      => $d->cantidad,
+                                        'color_prenda'  => $d->color_prenda ?? '',
+                                        'subtotal'      => number_format((float)$d->subtotal, 0, ',', '.'),
+                                    ])->values(),
+                                ]);
+                            @endphp
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4">
+                                    <button type="button" @click="openOrderSummary({{ $facturaJsonM }})" class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 hover:bg-amber-200">
+                                        {{ $ordenF }}
+                                    </button>
+                                </td>
+                                <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</td>
+                                <td class="px-6 py-4 text-slate-700">{{ $factura->total_prendas }}</td>
+                                <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] ring-1 {{ $estadoClasesModal[$estadoF] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                                        {{ $estadoF }}
+                                    </span>
+                                    @if ($factura->metodo_pago)
+                                        <p class="mt-1 text-xs text-slate-500">{{ str_replace('_', ' ', $factura->metodo_pago) }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="button" @click="openPayment('{{ $actionF }}', '{{ $ordenF }}')" @disabled($estadoF !== 'pendiente') class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
+                                            Pagado
+                                        </button>
+                                        <form action="{{ $actionF }}" method="POST">
+                                            @csrf @method('PATCH')
+                                            <input type="hidden" name="estado_factura" value="pendiente">
+                                            <button @disabled($estadoF !== 'pendiente') class="rounded-full border border-amber-200 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
+                                                Pendiente
+                                            </button>
+                                        </form>
+                                        <span class="rounded-full border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-500">Cancelado admin</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">Todavia no has registrado ordenes de pedido.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════ MODAL: ÓRDENES RECIENTES ════════ --}}
+    <div x-cloak x-show="modalOrdenes" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
+        <div @click.outside="modalOrdenes = false" class="relative w-full max-w-4xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
+                <div>
+                    <h2 class="text-xl font-black text-slate-900">🗂 Órdenes recientes</h2>
+                    <p class="mt-1 text-sm text-slate-500">Historial completo de órdenes de pedido registradas.</p>
+                </div>
+                <button @click="modalOrdenes = false" class="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="max-h-[75vh] overflow-y-auto p-6 space-y-4">
+                @forelse ($facturas as $factura)
+                    <div class="rounded-[1.5rem] border border-slate-200 p-5">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-700">
+                                    Orden #{{ str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT) }}
+                                </p>
+                                <p class="text-lg font-bold text-slate-900">{{ $factura->cliente->nombre ?? 'Cliente eliminado' }}</p>
+                                <p class="mt-1 text-sm text-slate-500">
+                                    Ingreso {{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }} |
+                                    Entrega {{ optional($factura->fecha_entrega)->format('d/m/Y') }}
+                                </p>
+                                <p class="mt-1 text-sm text-slate-500">
+                                    {{ $factura->direccion ?: 'Sin dirección' }} |
+                                    Cliente #{{ $factura->numero_cliente ?? 'N/A' }} |
+                                    {{ $factura->celular ?: 'Sin celular' }}
+                                </p>
+                            </div>
+                            <div class="text-left lg:text-right">
+                                <p class="text-sm font-semibold text-slate-500">{{ $factura->total_prendas }} prendas</p>
+                                <p class="mt-1 text-2xl font-black text-emerald-700">$ {{ number_format($factura->total, 0, ',', '.') }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 rounded-2xl bg-slate-50 px-4 py-4">
+                            <p class="text-xs uppercase tracking-[0.22em] text-slate-500">Observaciones</p>
+                            <p class="mt-2 text-sm text-slate-700">
+                                {{ filled($factura->observaciones) ? implode(', ', $factura->observaciones) : 'Sin observaciones adicionales.' }}
+                            </p>
+                        </div>
+
+                        <div class="mt-4 overflow-x-auto">
+                            <table class="min-w-full text-sm">
+                                <thead class="text-left text-slate-500">
+                                    <tr>
+                                        <th class="pb-3 font-semibold">Prenda</th>
+                                        <th class="pb-3 font-semibold">Color</th>
+                                        <th class="pb-3 font-semibold">Cantidad</th>
+                                        <th class="pb-3 font-semibold">Valor unitario</th>
+                                        <th class="pb-3 font-semibold">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    @foreach ($factura->detalles as $detalle)
+                                        <tr>
+                                            <td class="py-3 font-medium text-slate-900">{{ $detalle->prenda_nombre }}</td>
+                                            <td class="py-3 text-slate-600">
+                                                @if($detalle->color_prenda)
+                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold">{{ $detalle->color_prenda }}</span>
+                                                @else
+                                                    <span class="text-slate-400">—</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-3 text-slate-600">{{ $detalle->cantidad }}</td>
+                                            <td class="py-3 text-slate-600">$ {{ number_format($detalle->valor_unitario, 0, ',', '.') }}</td>
+                                            <td class="py-3 font-semibold text-slate-900">$ {{ number_format($detalle->subtotal, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @php
+                            $numLimpio     = preg_replace('/\D+/', '', (string) $factura->celular);
+                            $numWa         = strlen($numLimpio) === 10 ? '57' . $numLimpio : $numLimpio;
+                            $numeroOrdenWa = str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
+                            $nombreClienteWa = $factura->cliente->nombre ?? 'Cliente';
+                            $valorTotalWa  = number_format((float) $factura->total, 0, ',', '.');
+                            $lineasPrendas = '';
+                            foreach ($factura->detalles as $det) {
+                                $colorStr = $det->color_prenda ? ' (' . $det->color_prenda . ')' : '';
+                                $lineasPrendas .= '%0A-' . rawurlencode($det->prenda_nombre . $colorStr) . ' x ' . $det->cantidad;
+                            }
+                            $mensajeWa = 'Orden de pedido: ' . $numeroOrdenWa
+                                . '%0ANombre Cliente: ' . rawurlencode($nombreClienteWa)
+                                . '%0ATipo de Prenda: ' . $lineasPrendas
+                                . '%0ACantidad: ' . $factura->total_prendas
+                                . '%0ATotal: $%20' . rawurlencode($valorTotalWa)
+                                . '%0A%0A%C2%A1%C2%A1%C2%A1Muchas gracias por escoger nuestro servicio!!!'
+                                . '%0ALavanderia Exclusiva'
+                                . '%0Aa su servicio...';
+                            $waUrlModal = 'https://wa.me/' . $numWa . '?text=' . $mensajeWa;
+                        @endphp
+
+                        @if ($factura->celular && $numLimpio)
+                            <div class="mt-4">
+                                <a href="{{ $waUrlModal }}" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold shadow transition hover:-translate-y-0.5 hover:shadow-md"
+                                   style="color: #ffffff;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-3.5 w-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
+                                    WhatsApp al cliente
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-sm text-slate-500">Todavía no has registrado órdenes de pedido como recolector.</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
 <script>
 function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldItems, puedeEditarPrecios, numeroFactura, facturas }) {
+    // modalEstatus y modalOrdenes se agregan vía x-data en la plantilla blade
     return {
         clientes,
         prendas,
@@ -865,6 +870,8 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         paymentAction: '',
         orderSummaryOpen: false,
         selectedOrderSummary: {},
+        modalEstatus: false,
+        modalOrdenes: false,
         isTouchDevice: false,
         isMobileViewport: false,
 

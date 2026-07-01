@@ -13,6 +13,7 @@ use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
 use App\Models\Rol;
 use App\Models\User;
+use App\Services\DashboardCacheService;
 use App\Services\DeviceAccessService;
 use App\Services\EnterpriseCodeService;
 use App\Services\NumeroOrdenService;
@@ -24,78 +25,82 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    public function dashboard(EnterpriseCodeService $enterpriseCodes, DeviceAccessService $deviceAccess)
+    public function dashboard(EnterpriseCodeService $enterpriseCodes, DeviceAccessService $deviceAccess, DashboardCacheService $cache)
     {
         $periodoActual = Gasto::periodoDesdeFecha(now());
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
 
-        $totalUsuarios = User::count();
-        $totalProduccionesActivas = Produccion::count();
-        $ingresosProduccionActiva = Produccion::sum('total');
+        // ── Estadísticas principales (cambian con frecuencia) ─────────────────
+        $estadisticas = $cache->remember('estadisticas', DashboardCacheService::TTL_LIVE, function () use ($inicioQuincena, $finQuincena) {
+            $totalProduccionesActivas = Produccion::count();
+            $ingresosProduccionActiva = Produccion::sum('total');
+            $totalFacturasActivas     = FacturaRecolector::query()
+                ->noCanceladas()
+                ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+                ->count();
+            $ingresoRecolectoresActivo = FacturaRecolector::query()
+                ->where(function ($q) {
+                    $q->whereNull('estado_factura')->orWhere('estado_factura', 'pendiente');
+                })
+                ->sum('total');
 
-        $totalFacturasActivas = FacturaRecolector::query()
-            ->noCanceladas()
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
-            ->count();
-        $totalProducciones = $totalProduccionesActivas + $totalFacturasActivas;
+            return compact(
+                'totalProduccionesActivas',
+                'ingresosProduccionActiva',
+                'totalFacturasActivas',
+                'ingresoRecolectoresActivo'
+            );
+        });
 
-        // Ingreso activo = SOLO lo que ingresan los recolectores (facturas no pagadas, todas las quincenas)
-        $ingresoRecolectoresActivo = FacturaRecolector::query()
-            ->noCanceladas()
-            ->where('estado_factura', '!=', 'pagado')
-            ->orWhereNull('estado_factura')
-            ->sum('total');
+        $totalUsuarios             = $cache->remember('total_usuarios', DashboardCacheService::TTL_USERS, fn () => User::count());
+        $totalProducciones         = $estadisticas['totalProduccionesActivas'] + $estadisticas['totalFacturasActivas'];
+        $ingresosProduccionActiva  = $estadisticas['ingresosProduccionActiva'];
+        $ingresoRecolectoresActivo = $estadisticas['ingresoRecolectoresActivo'];
 
-        // Rewrite to fix the orWhereNull conflict
-        $ingresoRecolectoresActivo = FacturaRecolector::query()
-            ->where(function ($q) {
-                $q->whereNull('estado_factura')
-                  ->orWhere('estado_factura', 'pendiente');
-            })
-            ->sum('total');
+        // ── Panel financiero de la quincena ──────────────────────────────────
+        $financiero = $cache->remember('financiero', DashboardCacheService::TTL_LIVE, function () use ($inicioQuincena, $finQuincena) {
+            $ordenesPagadasTotal    = FacturaRecolector::query()
+                ->where('estado_factura', 'pagado')
+                ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+                ->sum('total');
+            $ordenesPagadasCantidad = FacturaRecolector::query()
+                ->where('estado_factura', 'pagado')
+                ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+                ->count();
+            $gastosQuincena = Gasto::query()
+                ->where('periodo', Gasto::periodoDesdeFecha(now())['periodo'])
+                ->sum('monto');
+            return compact('ordenesPagadasTotal', 'ordenesPagadasCantidad', 'gastosQuincena');
+        });
 
-        // Panel: Órdenes Pagadas (usando updated_at para incluir pagos de órdenes pasadas)
-        $ordenesPagadasTotal = FacturaRecolector::query()
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
-            ->sum('total');
-        $ordenesPagadasCantidad = FacturaRecolector::query()
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
-            ->count();
+        $ordenesPagadasTotal    = $financiero['ordenesPagadasTotal'];
+        $ordenesPagadasCantidad = $financiero['ordenesPagadasCantidad'];
+        $gastosQuincena         = $financiero['gastosQuincena'];
+        $totalNeto              = $ordenesPagadasTotal - $gastosQuincena;
 
-        // Panel: Gastos de la quincena
-        $gastosQuincena = Gasto::query()
-            ->where('periodo', $periodoActual['periodo'])
-            ->sum('monto');
-
-        // Total Neto = Órdenes Pagadas - Gastos
-        $totalNeto = $ordenesPagadasTotal - $gastosQuincena;
-
-        // Panel: 30% por recolector — fuente primaria: tabla pagos_recolector (persistida).
-        // Se enriquece con la lectura directa de facturas para mantener consistencia en tiempo real.
+        // ── Comisiones del 30% ───────────────────────────────────────────────
         $periodoKey = Gasto::periodoDesdeFecha(now())['periodo'];
 
-        $pagosRecolectorQuincena = PagoRecolector::query()
-            ->deQuincena($periodoKey)
-            ->with('recolector')
-            ->get();
+        $pagosRecolectorQuincena = $cache->remember('pago_recolectores', DashboardCacheService::TTL_LIVE, function () use ($periodoKey) {
+            return PagoRecolector::query()
+                ->deQuincena($periodoKey)
+                ->with('recolector')
+                ->get();
+        });
 
-        // Construir la colección que se pasa a la vista (compatible con la vista existente)
         $recolectoresConFacturas = $pagosRecolectorQuincena->map(function (PagoRecolector $pago) {
             return [
-                'nombre'          => $pago->recolector?->name ?? 'Sin nombre',
-                'total'           => (float) $pago->total_facturas,
-                'pago30'          => (int) $pago->monto_comision,
-                'cantidad'        => $pago->cantidad_facturas,
-                'pagado'          => $pago->pagado_al_recolector,
-                'pagado_en'       => $pago->pagado_en,
-                'recolector_id'   => $pago->recolector_id,
+                'nombre'        => $pago->recolector?->name ?? 'Sin nombre',
+                'total'         => (float) $pago->total_facturas,
+                'pago30'        => (int) $pago->monto_comision,
+                'cantidad'      => $pago->cantidad_facturas,
+                'pagado'        => $pago->pagado_al_recolector,
+                'pagado_en'     => $pago->pagado_en,
+                'recolector_id' => $pago->recolector_id,
             ];
         })->values();
 
-        // Fallback: si aún no hay registros en pagos_recolector (antes de la primera migración),
-        // calcular en tiempo real como antes para no romper el panel.
+        // Fallback: calcular en tiempo real si no hay registros en pagos_recolector
         if ($recolectoresConFacturas->isEmpty()) {
             $recolectoresConFacturas = FacturaRecolector::query()
                 ->where('estado_factura', 'pagado')
@@ -104,7 +109,7 @@ class AdminController extends Controller
                 ->get()
                 ->groupBy('recolector_id')
                 ->map(function ($facturas) {
-                    $recolector = $facturas->first()->recolector;
+                    $recolector    = $facturas->first()->recolector;
                     $totalRecolector = (float) $facturas->sum('total');
                     return [
                         'nombre'        => $recolector?->name ?? 'Sin nombre',
@@ -120,62 +125,58 @@ class AdminController extends Controller
         }
 
         $total30PorCiento = $recolectoresConFacturas->sum('pago30');
+        $pagoUsuarios     = $ingresosProduccionActiva;
+        $ganancia         = $totalNeto - $pagoUsuarios - $total30PorCiento;
 
-        // Pago Usuarios (Lavanderos)
-        $pagoUsuarios = $ingresosProduccionActiva;
+        // ── Historial de pagos recolectores (quincenas anteriores) ───────────
+        $historialPagosRecolectores = $cache->remember('historial_pagos_rec', DashboardCacheService::TTL_HISTORY, fn () =>
+            PagoRecolector::query()
+                ->with('recolector')
+                ->orderByDesc('quincena')
+                ->orderBy('recolector_id')
+                ->limit(50)
+                ->get()
+        );
 
-        // Panel: Ganancia = Total Neto - Pago Usuarios - Pago Recolectores
-        $ganancia = $totalNeto - $pagoUsuarios - $total30PorCiento;
-
-        // Historial de comisiones de quincenas anteriores (para el panel de pagos)
-        $historialPagosRecolectores = PagoRecolector::query()
-            ->with('recolector')
-            ->orderByDesc('quincena')
-            ->orderBy('recolector_id')
-            ->limit(50)
-            ->get();
-
-        // ingresosTotales (para el panel de resumen de producción) = usuarios + recolectores activos
-        $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
-            ->noCanceladas()
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
-            ->sum('total');
-
+        // ── Resumen financiero de gastos ─────────────────────────────────────
         $totalFacturasQuincena = FacturaRecolector::query()
             ->noCanceladas()
             ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
 
         $reportePagoQuincena = $totalFacturasQuincena - $gastosQuincena;
+
         $gastosRecientes = Gasto::query()
             ->with('user')
-            ->where('periodo', $periodoActual['periodo'])
+            ->where('periodo', $periodoKey)
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->take(8)
             ->get();
+
         $periodoActual = $periodoActual['periodo'];
 
+        // ── Registros de producción activa ───────────────────────────────────
         $ultimasProducciones = Produccion::with(['user', 'prenda'])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->get();
 
-        // Estatus Factura: TODAS las no pagadas de todos los recolectores + las de la quincena
-        $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
-                // No pagadas (de cualquier fecha) + todas de la quincena actual
-                $q->where('estado_factura', '!=', 'pagado')
-                  ->orWhereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena]);
-            })
-            ->where(function ($q) {
-                // Excluir canceladas
-                $q->whereNull('estado_factura')
-                  ->orWhere('estado_factura', '!=', 'cancelado');
-            })
-            ->orderByDesc('fecha_ingreso')
-            ->orderByDesc('id')
-            ->get();
+        // ── Facturas recolector activas + quincena ───────────────────────────
+        $ultimasFacturasRecolector = $cache->remember('recolectores_facturas', DashboardCacheService::TTL_LIVE, function () use ($inicioQuincena, $finQuincena) {
+            return FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
+                ->where(function ($q) use ($inicioQuincena, $finQuincena) {
+                    $q->where('estado_factura', '!=', 'pagado')
+                      ->orWhereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena]);
+                })
+                ->where(function ($q) {
+                    $q->whereNull('estado_factura')
+                      ->orWhere('estado_factura', '!=', 'cancelado');
+                })
+                ->orderByDesc('fecha_ingreso')
+                ->orderByDesc('id')
+                ->get();
+        });
 
         $facturaStatusResumen = FacturaRecolector::query()
             ->where(function ($q) use ($inicioQuincena, $finQuincena) {
@@ -191,37 +192,76 @@ class AdminController extends Controller
             ->get()
             ->keyBy('estado');
 
-        $ingresoFacturasPorDia = $ultimasFacturasRecolector
-            ->groupBy(fn (FacturaRecolector $factura) => optional($factura->fecha_ingreso)->format('d/m') ?? 'Sin fecha')
-            ->map(fn (Collection $facturas, string $dia) => [
-                'dia' => $dia,
-                'cantidad' => $facturas->count(),
-                'total' => (float) $facturas->sum('total'),
-            ])
-            ->values();
+        // ── Gráficas: facturas por día ────────────────────────────────────────
+        $ingresoFacturasPorDia = $cache->remember('facturas_dia', DashboardCacheService::TTL_CHARTS, function () use ($ultimasFacturasRecolector) {
+            return $ultimasFacturasRecolector
+                ->groupBy(fn (FacturaRecolector $factura) => optional($factura->fecha_ingreso)->format('d/m') ?? 'Sin fecha')
+                ->map(fn (Collection $facturas, string $dia) => [
+                    'dia'      => $dia,
+                    'cantidad' => $facturas->count(),
+                    'total'    => (float) $facturas->sum('total'),
+                ])
+                ->values();
+        });
 
-        $usuarios = User::query()
-            ->orderBy('name')
-            ->get();
+        // ── Usuarios (para formulario) ────────────────────────────────────────
+        $usuarios = $cache->remember('usuarios_lista', DashboardCacheService::TTL_USERS, fn () =>
+            User::query()->orderBy('name')->get()
+        );
 
-        $resumenMensualPrendas = $this->resumenMensualPrendas();
+        // ── Prendas por mes (acumula activas + históricas) ────────────────────
+        $resumenMensualPrendas = $cache->remember('prendas_mes', DashboardCacheService::TTL_CHARTS, fn () => $this->resumenMensualPrendas());
 
-        $produccionUsuariosPorDia = $ultimasProducciones
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
-            ->groupBy(fn (Produccion $produccion) => optional($produccion->fecha)->format('d/m') ?? 'Sin fecha')
-            ->map(fn (Collection $producciones, string $dia) => [
-                'dia' => $dia,
-                'cantidad' => (int) $producciones->sum('cantidad'),
-                'total' => (float) $producciones->sum('total'),
-            ])
-            ->values();
+        // ── Gráficas: producción por día ──────────────────────────────────────
+        $produccionUsuariosPorDia = $cache->remember('produccion_dia', DashboardCacheService::TTL_CHARTS, function () use ($ultimasProducciones, $inicioQuincena, $finQuincena) {
+            return $ultimasProducciones
+                ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+                ->groupBy(fn (Produccion $produccion) => optional($produccion->fecha)->format('d/m') ?? 'Sin fecha')
+                ->map(fn (Collection $producciones, string $dia) => [
+                    'dia'      => $dia,
+                    'cantidad' => (int) $producciones->sum('cantidad'),
+                    'total'    => (float) $producciones->sum('total'),
+                ])
+                ->values();
+        });
 
-        $periodosCerrados = HistorialProduccion::query()
-            ->selectRaw('periodo, SUM(total) as total_general, SUM(cantidad) as total_prendas')
-            ->groupBy('periodo')
-            ->orderByDesc('periodo')
-            ->get();
+        // ── Períodos cerrados (historial + automáticos) ────────────────────────
+        $periodosCerrados = $cache->remember('periodos_cerrados', DashboardCacheService::TTL_HISTORY, function () {
+            $periodosHistorial = HistorialProduccion::query()
+                ->selectRaw("periodo, SUM(total) as total_general, SUM(cantidad) as total_prendas, 'manual' as tipo_cierre")
+                ->groupBy('periodo')
+                ->get()
+                ->keyBy('periodo');
 
+            $periodosRecolector = FacturaRecolector::query()
+                ->whereNotNull('quincena_pago')
+                ->where('estado_factura', 'pagado')
+                ->selectRaw('quincena_pago as periodo, SUM(total) as total_facturas_rec, COUNT(*) as cant_facturas_rec')
+                ->groupBy('quincena_pago')
+                ->get()
+                ->keyBy('periodo');
+
+            $todosPeriodos = collect(
+                $periodosHistorial->keys()->merge($periodosRecolector->keys())->unique()->values()
+            );
+
+            return $todosPeriodos
+                ->map(function (string $periodo) use ($periodosHistorial, $periodosRecolector) {
+                    $hist = $periodosHistorial->get($periodo);
+                    $rec  = $periodosRecolector->get($periodo);
+                    return (object) [
+                        'periodo'         => $periodo,
+                        'total_general'   => (float) ($hist->total_general ?? 0) + (float) ($rec->total_facturas_rec ?? 0),
+                        'total_prendas'   => (int) ($hist->total_prendas ?? 0),
+                        'tiene_historial' => $hist !== null,
+                        'tiene_facturas'  => $rec !== null,
+                    ];
+                })
+                ->sortByDesc('periodo')
+                ->values();
+        });
+
+        // ── Incongruencias y notificaciones (datos en tiempo real) ────────────
         $incongruenciasPendientes = IncongruenciaRecolector::query()
             ->with(['recolector', 'factura'])
             ->where('estado', 'pendiente')
@@ -237,6 +277,7 @@ class AdminController extends Controller
             ->take(10)
             ->get();
 
+        // ── Panel programador ─────────────────────────────────────────────────
         $codigoEmpresarial = auth()->user()->esProgramador()
             ? $enterpriseCodes->current()
             : null;
@@ -244,15 +285,19 @@ class AdminController extends Controller
             ? $deviceAccess->lockedDevices()
             : collect();
 
-        $recolectores = User::query()
-            ->where('rol', 'recolector')
-            ->where('activo', true)
-            ->orderBy('name')
-            ->get();
+        // ── Datos para delegación ─────────────────────────────────────────────
+        $recolectores = $cache->remember('recolectores_activos', DashboardCacheService::TTL_USERS, fn () =>
+            User::query()->where('rol', 'recolector')->where('activo', true)->orderBy('name')->get()
+        );
 
-        $clientesConRecolector = Cliente::with('recolector')
-            ->orderBy('nombre')
-            ->get();
+        $clientesConRecolector = $cache->remember('clientes_recolector', DashboardCacheService::TTL_USERS, fn () =>
+            Cliente::with('recolector')->orderBy('nombre')->get()
+        );
+
+        $ingresosTotales = $ingresosProduccionActiva + FacturaRecolector::query()
+            ->noCanceladas()
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->sum('total');
 
         return view('admin.dashboard', compact(
             'totalUsuarios',
@@ -355,6 +400,11 @@ class AdminController extends Controller
 
         $rol = $this->resolverRol($data['rol']);
 
+        // Detectar si cambian credenciales sensibles
+        $emailCambiado    = $user->email !== $data['email'];
+        $passwordCambiada = ! empty($data['password']);
+        $credencialesCambiadas = $emailCambiado || $passwordCambiada;
+
         $user->fill([
             'name' => $data['name'],
             'email' => $data['email'],
@@ -366,7 +416,7 @@ class AdminController extends Controller
             'puede_editar_precios' => $data['rol'] === 'recolector' && $request->boolean('puede_editar_precios'),
         ]);
 
-        if (! empty($data['password'])) {
+        if ($passwordCambiada) {
             $user->password = Hash::make($data['password']);
         }
 
@@ -376,7 +426,20 @@ class AdminController extends Controller
 
         $user->save();
 
-        return redirect()->route('admin.dashboard')->with('success', 'Usuario actualizado correctamente.');
+        // Invalidar sesiones activas del usuario si cambiaron sus credenciales.
+        // Si el admin se está editando a sí mismo, se conserva su sesión actual.
+        if ($credencialesCambiadas && $user->id !== auth()->id()) {
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
+        }
+
+        $mensaje = 'Usuario actualizado correctamente.';
+        if ($credencialesCambiadas && $user->id !== auth()->id()) {
+            $mensaje .= ' Las sesiones activas de este usuario han sido cerradas.';
+        }
+
+        return redirect()->route('admin.dashboard')->with('success', $mensaje);
     }
 
     public function destroyUser(User $user)
@@ -686,7 +749,6 @@ class AdminController extends Controller
         DB::transaction(function () use ($facturaRecolector, $camposActualizar, $nuevoEstado) {
             $facturaRecolector->update($camposActualizar);
 
-            // Recalcular comisión del 30% solo al confirmar un pago
             if ($nuevoEstado === 'pagado') {
                 PagoRecolector::recalcular(
                     recolectorId: (int) $facturaRecolector->recolector_id,
@@ -695,6 +757,9 @@ class AdminController extends Controller
                 );
             }
         });
+
+        // Invalidar caché del dashboard (datos financieros cambiaron)
+        app(DashboardCacheService::class)->flushFacturas();
 
         return back()->with('success', 'Estatus de factura actualizado correctamente.');
     }
@@ -727,12 +792,15 @@ class AdminController extends Controller
         $total = $data['cantidad'] * $prenda->precio;
 
         $produccion->update([
-            'user_id' => $data['user_id'],
+            'user_id'   => $data['user_id'],
             'prenda_id' => $data['prenda_id'],
-            'cantidad' => $data['cantidad'],
-            'total' => $total,
-            'fecha' => $data['fecha'],
+            'cantidad'  => $data['cantidad'],
+            'total'     => $total,
+            'fecha'     => $data['fecha'],
         ]);
+
+        // Invalidar caché del dashboard (producción cambió)
+        app(DashboardCacheService::class)->flushProduccion();
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro de producción actualizado correctamente.');
     }
