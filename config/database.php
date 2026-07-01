@@ -59,15 +59,7 @@ return [
             'prefix_indexes' => true,
             'search_path'    => env('DB_SCHEMA', env('PGSCHEMA', 'public')),
             'sslmode'        => env('DB_SSLMODE', env('PGSSLMODE', 'prefer')),
-
-            // ── Escalabilidad: opciones nativas del conector PostgreSQL ──────────
-            // application_name: identifica la app en pg_stat_activity (monitoreo).
-            //   Es procesado nativamente por PostgresConnector y se incluye en el DSN.
-            // Las opciones statement_timeout/lock_timeout se gestionan a nivel
-            //   de infraestructura (PgBouncer / variables de entorno de PostgreSQL).
-            'application_name' => env('APP_NAME', 'lavanderia'),
         ],
-
 
     ],
 
