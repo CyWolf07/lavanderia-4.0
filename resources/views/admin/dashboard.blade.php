@@ -644,7 +644,7 @@
                             </div>
                             <div class="flex items-center gap-3">
                                 <p class="text-sm font-semibold text-emerald-700">$ {{ number_format($periodo->total_general, 0, ',', '.') }}</p>
-                                @if ($periodo->tiene_historial)
+                                @if ($periodo->tiene_historial || $periodo->tiene_facturas)
                                     <a href="{{ route('admin.reportes.periodo', $periodo->periodo) }}" class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">Ver informe</a>
                                 @endif
                             </div>

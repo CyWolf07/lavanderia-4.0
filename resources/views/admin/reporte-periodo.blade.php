@@ -156,6 +156,47 @@
     @endif
 
     {{-- ─── FACTURAS DE RECOLECTORES (con edición para admin/programador) ─── --}}
+    {{-- GASTOS ESPECIFICOS DE LA QUINCENA --}}
+    @if ($gastosDetalle->isNotEmpty())
+        <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            <div class="border-b border-slate-200 px-6 py-5">
+                <h2 class="text-lg font-bold text-slate-900">Gastos especificos</h2>
+                <p class="mt-1 text-sm text-slate-500">Gastos registrados dentro de esta quincena.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-slate-500">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Fecha</th>
+                            <th class="px-6 py-4 font-semibold">Concepto</th>
+                            <th class="px-6 py-4 font-semibold">Registrado por</th>
+                            <th class="px-6 py-4 text-right font-semibold">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach ($gastosDetalle as $gasto)
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 text-slate-700">{{ optional($gasto->fecha)->format('d/m/Y') }}</td>
+                                <td class="px-6 py-4 font-medium text-slate-900">{{ $gasto->concepto }}</td>
+                                <td class="px-6 py-4 text-slate-700">{{ $gasto->user->name ?? 'Usuario eliminado' }}</td>
+                                <td class="px-6 py-4 text-right font-semibold text-rose-700">$ {{ number_format($gasto->monto, 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot class="border-t-2 border-slate-200 bg-rose-50">
+                        <tr>
+                            <td colspan="3" class="px-6 py-3 font-bold text-slate-900">Total gastos</td>
+                            <td class="px-6 py-3 text-right font-bold text-rose-700">$ {{ number_format($gastosDetalle->sum('monto'), 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    @else
+        <div class="rounded-[1.75rem] bg-slate-50 p-6 text-center text-sm text-slate-500 ring-1 ring-slate-200">
+            No hay gastos registrados para este periodo.
+        </div>
+    @endif
     @if ($facturasRecolector->isNotEmpty())
         <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
             <div class="border-b border-slate-200 px-6 py-5">

@@ -177,6 +177,7 @@ class ProduccionController extends Controller
     {
         abort_unless(Auth::user()?->tieneRol('admin', 'programador'), 403);
 
+        $periodoActual = HistorialProduccion::periodoDesdeFecha(now());
         $producciones = Produccion::with(['user', 'prenda'])
             ->orderBy('user_id')
             ->orderBy('fecha')
@@ -184,6 +185,18 @@ class ProduccionController extends Controller
             ->get();
 
         if ($producciones->isEmpty()) {
+            $tieneDatosPeriodo = FacturaRecolector::query()
+                ->pagadasEnQuincena($periodoActual['periodo'])
+                ->exists()
+                || Gasto::query()->where('periodo', $periodoActual['periodo'])->exists();
+
+            if ($tieneDatosPeriodo) {
+                return redirect()->route('admin.reportes.periodo', [
+                    'periodo'  => $periodoActual['periodo'],
+                    'imprimir' => 1,
+                ])->with('success', 'Informe de quincena listo para imprimir.');
+            }
+
             return redirect()->route('admin.dashboard')->with('error', 'No hay registros activos para cerrar.');
         }
 
@@ -268,7 +281,6 @@ class ProduccionController extends Controller
 
     public function reportePeriodo(string $periodo)
     {
-        [$inicioPeriodo, $finPeriodo] = $this->rangoParaPeriodo($periodo);
 
         $registros = HistorialProduccion::with('user')
             ->where('periodo', $periodo)
@@ -277,15 +289,20 @@ class ProduccionController extends Controller
             ->orderBy('id')
             ->get();
 
-        abort_if($registros->isEmpty(), 404);
-
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioPeriodo, $finPeriodo])
+            ->pagadasEnQuincena($periodo)
             ->orderBy('updated_at')
             ->orderBy('recolector_id')
             ->orderBy('id')
             ->get();
+
+        $gastosDetalle = Gasto::with('user')
+            ->where('periodo', $periodo)
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
+
+        abort_if($registros->isEmpty() && $facturasRecolector->isEmpty() && $gastosDetalle->isEmpty(), 404);
 
         $gastosPeriodo = Gasto::query()
             ->where('periodo', $periodo)
@@ -326,6 +343,7 @@ class ProduccionController extends Controller
             'totalFacturasPeriodo' => $facturasRecolector->sum('total'),
             'totalPrendasFacturas' => $facturasRecolector->sum('total_prendas'),
             'gastosPeriodo' => $gastosPeriodo,
+            'gastosDetalle' => $gastosDetalle,
             'ordenesPagadasTotal' => $ordenesPagadasTotal,
             'totalNeto' => $totalNeto,
             'resumen30Recolectores' => $resumen30Recolectores,

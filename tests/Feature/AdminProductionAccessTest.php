@@ -2,6 +2,7 @@
 
 use App\Models\Cliente;
 use App\Models\FacturaRecolector;
+use App\Models\Gasto;
 use App\Models\Prenda;
 use App\Models\Produccion;
 use App\Models\User;
@@ -94,6 +95,68 @@ it('shows active admin totals from production and collector invoices', function 
         ->assertSeeText('Pago Lavanderos')
         ->assertSeeText('$ 20.000')
         ->assertDontSeeText('$ 120.000');
+});
+
+it('shows reports for collector-only periods with detailed expenses', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+        'name' => 'Recolector Prueba',
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente informe',
+        'celular' => '3001112233',
+        'direccion' => 'Calle 9',
+        'barrio' => 'Centro',
+        'activo' => true,
+    ]);
+
+    FacturaRecolector::create([
+        'numero_orden' => 77,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => now(),
+        'fecha_entrega' => now()->addDays(2)->toDateString(),
+        'total_prendas' => 4,
+        'total' => 69000,
+        'estado_factura' => 'pagado',
+        'metodo_pago' => 'efectivo',
+        'quincena_pago' => '2026/07/QUINCENA1',
+        'quincena_origen' => '2026/07/QUINCENA1',
+    ]);
+
+    Gasto::create([
+        'user_id' => $admin->id,
+        'concepto' => 'Compra de detergente',
+        'monto' => 12000,
+        'fecha' => '2026-07-05',
+        'periodo' => '2026/07/QUINCENA1',
+        'anio' => 2026,
+        'mes' => 7,
+        'quincena' => 1,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.reportes.periodo', '2026/07/QUINCENA1'))
+        ->assertOk()
+        ->assertSeeText('Recolector Prueba')
+        ->assertSeeText('$ 69.000')
+        ->assertSeeText('Gastos especificos')
+        ->assertSeeText('Compra de detergente')
+        ->assertSeeText('$ 12.000');
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSeeText('2026/07/QUINCENA1')
+        ->assertSeeText('Solo recolectores')
+        ->assertSeeText('Ver informe');
 });
 
 it('allows programmers to delete paid collector invoices from the status table', function () {
