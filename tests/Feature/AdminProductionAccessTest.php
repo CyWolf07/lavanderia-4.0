@@ -6,6 +6,7 @@ use App\Models\Gasto;
 use App\Models\Prenda;
 use App\Models\Produccion;
 use App\Models\User;
+use Carbon\Carbon;
 
 it('allows administrators to access production from the admin panel', function () {
     $admin = User::factory()->create([
@@ -157,6 +158,112 @@ it('shows reports for collector-only periods with detailed expenses', function (
         ->assertSeeText('2026/07/QUINCENA1')
         ->assertSeeText('Solo recolectores')
         ->assertSeeText('Ver informe');
+});
+
+it('counts paid and canceled invoices in the active quincena status summary', function () {
+    $this->travelTo(Carbon::parse('2026-07-10 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente estatus',
+        'celular' => '3004445566',
+        'direccion' => 'Calle 10',
+        'barrio' => 'Centro',
+        'activo' => true,
+    ]);
+
+    FacturaRecolector::create([
+        'numero_orden' => 101,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => '2026-06-20 08:00:00',
+        'fecha_entrega' => '2026-07-12',
+        'total_prendas' => 2,
+        'total' => 25000,
+        'estado_factura' => 'pagado',
+        'metodo_pago' => 'efectivo',
+        'quincena_pago' => '2026/07/QUINCENA1',
+        'quincena_origen' => '2026/06/QUINCENA2',
+    ]);
+
+    FacturaRecolector::create([
+        'numero_orden' => 102,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => '2026-06-22 08:00:00',
+        'fecha_entrega' => '2026-07-12',
+        'total_prendas' => 1,
+        'total' => 15000,
+        'estado_factura' => 'cancelado',
+        'quincena_origen' => '2026/06/QUINCENA2',
+    ]);
+
+    FacturaRecolector::create([
+        'numero_orden' => 103,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => '2026-07-05 08:00:00',
+        'fecha_entrega' => '2026-07-12',
+        'total_prendas' => 3,
+        'total' => 30000,
+        'estado_factura' => 'pendiente',
+        'quincena_origen' => '2026/07/QUINCENA1',
+    ]);
+
+    FacturaRecolector::create([
+        'numero_orden' => 104,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => '2026-06-10 08:00:00',
+        'fecha_entrega' => '2026-06-12',
+        'total_prendas' => 2,
+        'total' => 22000,
+        'estado_factura' => 'pagado',
+        'metodo_pago' => 'efectivo',
+        'quincena_pago' => '2026/06/QUINCENA2',
+        'quincena_origen' => '2026/06/QUINCENA1',
+        'updated_at' => '2026-06-20 10:00:00',
+        'created_at' => '2026-06-10 10:00:00',
+    ]);
+
+    $canceladaAnterior = FacturaRecolector::create([
+        'numero_orden' => 105,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => '2026-06-10 08:00:00',
+        'fecha_entrega' => '2026-06-12',
+        'total_prendas' => 2,
+        'total' => 22000,
+        'estado_factura' => 'cancelado',
+        'quincena_origen' => '2026/06/QUINCENA1',
+    ]);
+    $canceladaAnterior->timestamps = false;
+    $canceladaAnterior->forceFill([
+        'updated_at' => '2026-06-20 10:00:00',
+        'created_at' => '2026-06-10 10:00:00',
+    ])->save();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk();
+
+    $resumen = $response->viewData('facturaStatusResumen');
+    expect((int) $resumen->get('pagado')->cantidad)->toBe(1);
+    expect((int) $resumen->get('cancelado')->cantidad)->toBe(1);
+    expect((int) $resumen->get('pendiente')->cantidad)->toBe(1);
+
+    $ordenes = $response->viewData('ultimasFacturasRecolector')->pluck('numero_orden')->all();
+    expect($ordenes)->toContain(101, 102, 103);
+    expect($ordenes)->not->toContain(104, 105);
 });
 
 it('allows programmers to delete paid collector invoices from the status table', function () {

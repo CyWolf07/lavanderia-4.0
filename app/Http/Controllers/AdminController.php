@@ -51,13 +51,11 @@ class AdminController extends Controller
 
         // ── Panel financiero de la quincena ──────────────────────────────────
         $ordenesPagadasTotal = FacturaRecolector::query()
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+            ->pagadasEnQuincena($periodoKey)
             ->sum('total');
 
         $ordenesPagadasCantidad = FacturaRecolector::query()
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+            ->pagadasEnQuincena($periodoKey)
             ->count();
 
         $gastosQuincena = Gasto::query()
@@ -87,8 +85,7 @@ class AdminController extends Controller
         } else {
             // Fallback: calcular desde facturas si no hay registros en pagos_recolector
             $recolectoresConFacturas = FacturaRecolector::query()
-                ->where('estado_factura', 'pagado')
-                ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
+                ->pagadasEnQuincena($periodoKey)
                 ->with('recolector')
                 ->get()
                 ->groupBy('recolector_id')
@@ -145,28 +142,36 @@ class AdminController extends Controller
             ->get();
 
         // ── Facturas recolector activas + quincena ───────────────────────────
+        $facturasEstatusQuincena = function ($q) use ($periodoKey, $inicioQuincena, $finQuincena) {
+            $q->where(function ($pendientes) {
+                $pendientes->whereNull('estado_factura')
+                    ->orWhere('estado_factura', 'pendiente');
+            })
+            ->orWhere(function ($pagadas) use ($periodoKey, $inicioQuincena, $finQuincena) {
+                $pagadas->where('estado_factura', 'pagado')
+                    ->where(function ($periodoPago) use ($periodoKey, $inicioQuincena, $finQuincena) {
+                        $periodoPago->where('quincena_pago', $periodoKey)
+                            ->orWhere(function ($legacy) use ($inicioQuincena, $finQuincena) {
+                                $legacy->whereNull('quincena_pago')
+                                    ->whereBetween('updated_at', [$inicioQuincena, $finQuincena]);
+                            });
+                    });
+            })
+            ->orWhere(function ($canceladas) use ($inicioQuincena, $finQuincena) {
+                $canceladas->where('estado_factura', 'cancelado')
+                    ->whereBetween('updated_at', [$inicioQuincena, $finQuincena]);
+            });
+        };
+
         $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
-                $q->where('estado_factura', '!=', 'pagado')
-                  ->orWhereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena]);
-            })
-            ->where(function ($q) {
-                $q->whereNull('estado_factura')
-                  ->orWhere('estado_factura', '!=', 'cancelado');
-            })
+            ->where($facturasEstatusQuincena)
+            ->orderByDesc('updated_at')
             ->orderByDesc('fecha_ingreso')
             ->orderByDesc('id')
             ->get();
 
         $facturaStatusResumen = FacturaRecolector::query()
-            ->where(function ($q) use ($inicioQuincena, $finQuincena) {
-                $q->where('estado_factura', '!=', 'pagado')
-                  ->orWhereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena]);
-            })
-            ->where(function ($q) {
-                $q->whereNull('estado_factura')
-                  ->orWhere('estado_factura', '!=', 'cancelado');
-            })
+            ->where($facturasEstatusQuincena)
             ->selectRaw("COALESCE(estado_factura, 'pendiente') as estado, COUNT(*) as cantidad, SUM(total) as total")
             ->groupBy('estado')
             ->get()
