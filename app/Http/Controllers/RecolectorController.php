@@ -11,6 +11,7 @@ use App\Models\RecolectorPrenda;
 use App\Models\User;
 use App\Notifications\IncongruenciaRecolectorDetectada;
 use App\Services\FacturaRecolectorAuditService;
+use App\Services\DashboardCacheService;
 use App\Services\NumeroOrdenService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -42,10 +43,17 @@ class RecolectorController extends Controller
         $siguienteNumeroFactura = $this->numeroOrdenService->peekSiguiente($user->id);
 
         $facturas = FacturaRecolector::with(['cliente', 'detalles'])
-            ->where('recolector_id', Auth::id())
+            ->where('recolector_id', $user->id)
             ->orderByDesc('fecha_ingreso')
             ->orderByDesc('id')
             ->get();
+
+        $facturaStatusResumen = $facturas
+            ->groupBy(fn (FacturaRecolector $factura) => $factura->estado_factura ?? 'pendiente')
+            ->map(fn ($items) => (object) [
+                'cantidad' => $items->count(),
+                'total' => (float) $items->sum('total'),
+            ]);
 
         $totalFacturasQuincena = FacturaRecolector::query()
             ->noCanceladas()
@@ -79,6 +87,7 @@ class RecolectorController extends Controller
             'siguienteNumeroFactura'=> $siguienteNumeroFactura,
             'periodoActual'         => $periodoActual['periodo'],
             'totalFacturasQuincena' => $totalFacturasQuincena,
+            'facturaStatusResumen'  => $facturaStatusResumen,
             'gastosQuincena'        => $gastosQuincena,
             'reportePagoQuincena'   => $reportePagoQuincena,
             'gastosRecientes'       => $gastosRecientes,
@@ -306,6 +315,8 @@ class RecolectorController extends Controller
             }
         });
 
+        app(DashboardCacheService::class)->flushFacturas();
+
         return back()->with('success', 'Estatus de factura actualizado correctamente.');
     }
 
@@ -445,7 +456,10 @@ class RecolectorController extends Controller
         }
 
         $admins = User::query()
-            ->whereIn('rol', ['admin', 'programador'])
+            ->where(function ($query) {
+                $query->whereIn('rol', ['admin', 'programador'])
+                    ->orWhereHas('rolRelacion', fn ($rolQuery) => $rolQuery->whereIn('nombre', ['Admin', 'Programador']));
+            })
             ->where('activo', true)
             ->get();
 

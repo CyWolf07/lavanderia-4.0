@@ -782,10 +782,20 @@ class AdminController extends Controller
 
     private function resolverRol(string $rol): Rol
     {
-        return Rol::firstOrCreate(
-            ['nombre' => ucfirst($rol)],
-            ['descripcion' => 'Rol '.$rol.' del sistema']
-        );
+        $rolNormalizado = strtolower(trim($rol));
+
+        $rolExistente = Rol::query()
+            ->whereRaw('LOWER(nombre) = ?', [$rolNormalizado])
+            ->first();
+
+        if ($rolExistente) {
+            return $rolExistente;
+        }
+
+        return Rol::create([
+            'nombre' => ucfirst($rolNormalizado),
+            'descripcion' => 'Rol '.$rolNormalizado.' del sistema',
+        ]);
     }
 
     private function resumenMensualPrendas()

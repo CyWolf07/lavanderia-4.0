@@ -90,12 +90,14 @@ class User extends Authenticatable
 
     public function obtenerRol(): string
     {
-        if (! empty($this->rol)) {
-            return strtolower((string) $this->rol);
+        $rol = trim((string) $this->rol);
+
+        if ($rol !== '') {
+            return strtolower($rol);
         }
 
-        if ($this->relationLoaded('rolRelacion') || $this->rol_id) {
-            return strtolower((string) optional($this->rolRelacion)->nombre);
+        if ($this->rol_id) {
+            return strtolower(trim((string) $this->rolRelacion()->value('nombre')));
         }
 
         return 'usuario';

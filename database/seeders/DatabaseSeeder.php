@@ -21,48 +21,36 @@ class DatabaseSeeder extends Seeder
         $rolUsuario = Rol::firstOrCreate(['nombre' => 'Usuario'], ['descripcion' => 'Empleado de produccion']);
         $rolRecolector = Rol::firstOrCreate(['nombre' => 'Recolector'], ['descripcion' => 'Ingreso de facturas y pedidos']);
 
-        User::updateOrCreate([
-            'email' => 'admin@lavanderia.com',
-        ], [
+        $this->crearUsuarioBaseSiFalta('admin', $rolAdmin->id, [
             'name' => 'Administrador',
+            'email' => 'admin@lavanderia.com',
             'cedula' => '1000000001',
             'contacto' => '3000000001',
             'password' => Hash::make('admin123'),
-            'rol' => 'admin',
-            'rol_id' => $rolAdmin->id,
         ]);
 
-        User::updateOrCreate([
-            'email' => 'programador@lavanderia.com',
-        ], [
+        $this->crearUsuarioBaseSiFalta('programador', $rolProgramador->id, [
             'name' => 'Programador Principal',
+            'email' => 'programador@lavanderia.com',
             'cedula' => '1000000002',
             'contacto' => '3000000002',
             'password' => Hash::make('programador123'),
-            'rol' => 'programador',
-            'rol_id' => $rolProgramador->id,
         ]);
 
-        User::updateOrCreate([
-            'email' => 'usuario@lavanderia.com',
-        ], [
+        $this->crearUsuarioBaseSiFalta('usuario', $rolUsuario->id, [
             'name' => 'Empleado 1',
+            'email' => 'usuario@lavanderia.com',
             'cedula' => '1000000003',
             'contacto' => '3000000003',
             'password' => Hash::make('usuario123'),
-            'rol' => 'usuario',
-            'rol_id' => $rolUsuario->id,
         ]);
 
-        User::updateOrCreate([
-            'email' => 'recolector@lavanderia.com',
-        ], [
+        $this->crearUsuarioBaseSiFalta('recolector', $rolRecolector->id, [
             'name' => 'Recolector Principal',
+            'email' => 'recolector@lavanderia.com',
             'cedula' => '1000000004',
             'contacto' => '3000000004',
             'password' => Hash::make('recolector123'),
-            'rol' => 'recolector',
-            'rol_id' => $rolRecolector->id,
         ]);
 
         Prenda::firstOrCreate(['nombre' => 'Camisa'], ['tipo' => 'Normal', 'precio' => 12500]);
@@ -80,5 +68,23 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(RecolectorPrendasSeeder::class);
+    }
+
+    private function crearUsuarioBaseSiFalta(string $rol, int $rolId, array $datos): void
+    {
+        $existeRol = User::query()
+            ->whereRaw('LOWER(rol) = ?', [$rol])
+            ->orWhere('rol_id', $rolId)
+            ->exists();
+
+        if ($existeRol) {
+            return;
+        }
+
+        User::create($datos + [
+            'rol' => $rol,
+            'rol_id' => $rolId,
+            'activo' => true,
+        ]);
     }
 }

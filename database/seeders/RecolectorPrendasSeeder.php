@@ -74,9 +74,11 @@ class RecolectorPrendasSeeder extends Seeder
                 [
                     'nombre' => $prenda['nombre'],
                     'tipo' => $prenda['tipo'],
-                    'precio' => $prenda['precio'],
                 ],
-                ['activo' => true]
+                [
+                    'precio' => $prenda['precio'],
+                    'activo' => true,
+                ]
             );
         }
 

@@ -21,6 +21,12 @@
         </div>
     @endif
 
+    @if ($errors->any())
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {{ $errors->first() }}
+        </div>
+    @endif
+
     <div class="grid gap-8 xl:grid-cols-[380px_1fr]">
         <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
             <h2 class="text-lg font-bold text-slate-900">Nueva prenda</h2>
@@ -72,4 +78,3 @@
     </div>
 </div>
 @endsection
-

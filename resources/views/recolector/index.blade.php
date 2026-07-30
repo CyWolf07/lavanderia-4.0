@@ -659,6 +659,17 @@
                     'cancelado' => 'bg-rose-100 text-rose-700 ring-rose-200',
                 ];
             @endphp
+            <div class="grid gap-3 p-6 pb-4 md:grid-cols-3">
+                @foreach (['pendiente' => 'Pendientes', 'pagado' => 'Pagadas', 'cancelado' => 'Canceladas'] as $estado => $label)
+                    @php
+                        $resumenEstado = $facturaStatusResumen->get($estado);
+                    @endphp
+                    <div class="rounded-2xl px-4 py-3 ring-1 {{ $estadoClasesModal[$estado] ?? 'bg-slate-100 text-slate-700 ring-slate-200' }}">
+                        <p class="text-xs font-bold uppercase tracking-[0.18em]">{{ $label }}</p>
+                        <p class="mt-1 text-2xl font-black">{{ $resumenEstado->cantidad ?? 0 }}</p>
+                    </div>
+                @endforeach
+            </div>
             <div class="overflow-x-auto max-h-[75vh]">
                 <table class="min-w-full text-sm">
                     <thead class="sticky top-0 bg-slate-50 text-left text-slate-500">

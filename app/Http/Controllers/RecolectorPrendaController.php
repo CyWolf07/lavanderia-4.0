@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RecolectorPrenda;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class RecolectorPrendaController extends Controller
 {
@@ -26,6 +27,10 @@ class RecolectorPrendaController extends Controller
             'activo' => ['nullable', 'boolean'],
         ]);
 
+        $this->validarPrendaUnica($data['nombre'], $data['tipo'] ?? null);
+
+        $data['nombre'] = trim($data['nombre']);
+        $data['tipo'] = filled($data['tipo'] ?? null) ? trim($data['tipo']) : null;
         $data['activo'] = $request->boolean('activo', true);
 
         RecolectorPrenda::create($data);
@@ -42,6 +47,10 @@ class RecolectorPrendaController extends Controller
             'activo' => ['nullable', 'boolean'],
         ]);
 
+        $this->validarPrendaUnica($data['nombre'], $data['tipo'] ?? null, $recolectorPrenda->id);
+
+        $data['nombre'] = trim($data['nombre']);
+        $data['tipo'] = filled($data['tipo'] ?? null) ? trim($data['tipo']) : null;
         $data['activo'] = $request->boolean('activo', $recolectorPrenda->activo);
 
         $recolectorPrenda->update($data);
@@ -67,5 +76,23 @@ class RecolectorPrendaController extends Controller
                 ? 'Prenda del recolector habilitada correctamente.'
                 : 'Prenda del recolector inhabilitada correctamente.'
         );
+    }
+
+    private function validarPrendaUnica(string $nombre, ?string $tipo, ?int $exceptoId = null): void
+    {
+        $nombreNormalizado = strtolower(trim($nombre));
+        $tipoNormalizado = strtolower(trim((string) $tipo));
+
+        $existe = RecolectorPrenda::query()
+            ->when($exceptoId, fn ($query) => $query->whereKeyNot($exceptoId))
+            ->whereRaw('LOWER(TRIM(nombre)) = ?', [$nombreNormalizado])
+            ->whereRaw("LOWER(TRIM(COALESCE(tipo, ''))) = ?", [$tipoNormalizado])
+            ->exists();
+
+        if ($existe) {
+            throw ValidationException::withMessages([
+                'nombre' => 'Ya existe una prenda de recolector con ese nombre y tipo.',
+            ]);
+        }
     }
 }

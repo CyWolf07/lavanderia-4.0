@@ -5,8 +5,12 @@ use App\Models\FacturaRecolector;
 use App\Models\Gasto;
 use App\Models\Prenda;
 use App\Models\Produccion;
+use App\Models\RecolectorPrenda;
+use App\Models\Rol;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 it('allows administrators to access production from the admin panel', function () {
     $admin = User::factory()->create([
@@ -21,6 +25,24 @@ it('allows administrators to access production from the admin panel', function (
 
     $this->actingAs($admin)
         ->get(route('produccion.index'))
+        ->assertOk();
+});
+
+it('allows administrators identified by rol id to access the admin panel', function () {
+    $rolAdmin = Rol::firstOrCreate([
+        'nombre' => 'Admin',
+    ], [
+        'descripcion' => 'Administrador',
+    ]);
+
+    $admin = User::factory()->create([
+        'rol' => '',
+        'rol_id' => $rolAdmin->id,
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
         ->assertOk();
 });
 
@@ -158,6 +180,120 @@ it('shows reports for collector-only periods with detailed expenses', function (
         ->assertSeeText('2026/07/QUINCENA1')
         ->assertSeeText('Solo recolectores')
         ->assertSeeText('Ver informe');
+});
+
+it('does not overwrite edited base admin credentials when database seeder runs again', function () {
+    $rolAdmin = Rol::firstOrCreate([
+        'nombre' => 'Admin',
+    ], [
+        'descripcion' => 'Administrador',
+    ]);
+
+    $admin = User::factory()->create([
+        'name' => 'Admin Editado',
+        'email' => 'admin.editado@lavanderia.com',
+        'cedula' => '1999999999',
+        'rol' => 'admin',
+        'rol_id' => $rolAdmin->id,
+        'password' => Hash::make('clave-editada'),
+        'activo' => true,
+    ]);
+
+    $this->seed(DatabaseSeeder::class);
+
+    expect($admin->fresh()->email)->toBe('admin.editado@lavanderia.com')
+        ->and(Hash::check('clave-editada', $admin->fresh()->password))->toBeTrue();
+
+    $this->assertDatabaseMissing('users', [
+        'email' => 'admin@lavanderia.com',
+    ]);
+});
+
+it('keeps collector garment catalog unique and shared', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    RecolectorPrenda::create([
+        'nombre' => 'Camisa',
+        'tipo' => 'Lavado',
+        'precio' => 9000,
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('recolector-prendas.store'), [
+            'nombre' => ' camisa ',
+            'tipo' => ' lavado ',
+            'precio' => 9500,
+            'activo' => true,
+        ])
+        ->assertSessionHasErrors('nombre');
+
+    expect(RecolectorPrenda::count())->toBe(1);
+});
+
+it('shows collector invoice status only for the authenticated collector', function () {
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $otherCollector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente recolector',
+        'celular' => '3002223344',
+        'direccion' => 'Calle 7',
+        'barrio' => 'Centro',
+        'activo' => true,
+    ]);
+
+    foreach (['pendiente', 'pagado', 'cancelado'] as $index => $estado) {
+        FacturaRecolector::create([
+            'numero_orden' => 200 + $index,
+            'recolector_id' => $collector->id,
+            'cliente_id' => $cliente->id,
+            'fecha_ingreso' => now(),
+            'fecha_entrega' => now()->addDays(2)->toDateString(),
+            'total_prendas' => 1,
+            'total' => 10000,
+            'estado_factura' => $estado,
+            'metodo_pago' => $estado === 'pagado' ? 'efectivo' : null,
+        ]);
+    }
+
+    FacturaRecolector::create([
+        'numero_orden' => 300,
+        'recolector_id' => $otherCollector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => now(),
+        'fecha_entrega' => now()->addDays(2)->toDateString(),
+        'total_prendas' => 1,
+        'total' => 10000,
+        'estado_factura' => 'pagado',
+        'metodo_pago' => 'efectivo',
+    ]);
+
+    $response = $this->actingAs($collector)
+        ->get(route('recolector.index'))
+        ->assertOk()
+        ->assertSeeText('Pagadas')
+        ->assertSeeText('Canceladas');
+
+    $resumen = $response->viewData('facturaStatusResumen');
+
+    expect($resumen->get('pendiente')->cantidad)->toBe(1)
+        ->and($resumen->get('pagado')->cantidad)->toBe(1)
+        ->and($resumen->get('cancelado')->cantidad)->toBe(1);
+
+    expect($response->viewData('facturas')->pluck('numero_orden')->all())
+        ->toContain(200, 201, 202)
+        ->not->toContain(300);
 });
 
 it('counts paid and canceled invoices in the active quincena status summary', function () {
