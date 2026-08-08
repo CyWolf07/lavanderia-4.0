@@ -34,6 +34,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\EnterpriseAccessController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\MapaClientesController;
+use App\Http\Controllers\OrdenPedidoController;
 use App\Http\Controllers\PqrsController;
 use App\Http\Controllers\PrendaController;
 use App\Http\Controllers\ProduccionController;
@@ -86,6 +87,11 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'activo'])->group(function () {
+
+    // Comprobante individual disponible para administrador, programador y dueño recolector.
+    Route::get('/ordenes/{facturaRecolector}/imprimir', [OrdenPedidoController::class, 'imprimir'])
+        ->middleware('rol:admin,programador,recolector')
+        ->name('ordenes.imprimir');
 
     // ── DASHBOARD ──────────────────────────────────────────────────────────────
     // Redirige al módulo correcto según el rol del usuario autenticado
