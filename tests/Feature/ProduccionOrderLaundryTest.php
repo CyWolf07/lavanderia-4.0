@@ -10,6 +10,7 @@ use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
 use App\Models\SystemSetting;
 use App\Models\User;
+use Database\Seeders\LavanderoPrendasEquivalenciasSeeder;
 
 it('allows standard users to manually register daily washed garments', function () {
     $usuario = User::factory()->create([
@@ -555,4 +556,118 @@ it('uses explicit collector-to-washer garment equivalences when names differ', f
         'total' => 22000,
         'total_validado' => 22000,
     ]);
+});
+
+it('groups collector garment variants into hidden washer garments when marking orders as washed', function () {
+    $usuario = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $recolector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente Agrupado',
+        'celular' => '3001234567',
+        'direccion' => 'Calle 90',
+        'activo' => true,
+    ]);
+
+    $chaquetaDelgada = RecolectorPrenda::create([
+        'nombre' => 'CHAQUETA DELGADA CORTA',
+        'tipo' => 'LAVADO',
+        'precio' => 18000,
+        'activo' => true,
+    ]);
+
+    $chaquetaGruesa = RecolectorPrenda::create([
+        'nombre' => 'CHAQUETA GRUESA LARGA',
+        'tipo' => 'LAVADO',
+        'precio' => 25000,
+        'activo' => true,
+    ]);
+
+    $this->seed(LavanderoPrendasEquivalenciasSeeder::class);
+    app(App\Services\PrendasLavanderoSyncService::class)->sync();
+
+    $chaqueta = Prenda::find(1);
+
+    expect($chaqueta)->not->toBeNull()
+        ->and($chaqueta->nombre)->toBe('CHAQUETA')
+        ->and(PrendaEquivalencia::where('prenda_id', 1)->count())->toBe(2);
+
+    $factura = FacturaRecolector::create([
+        'numero_orden' => 900,
+        'recolector_id' => $recolector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => now(),
+        'fecha_entrega' => now()->addDay()->toDateString(),
+        'total_prendas' => 3,
+        'total' => 61000,
+        'estado_factura' => 'pendiente',
+    ]);
+
+    $detalleDelgada = FacturaRecolectorDetalle::create([
+        'factura_recolector_id' => $factura->id,
+        'recolector_prenda_id' => $chaquetaDelgada->id,
+        'prenda_nombre' => $chaquetaDelgada->nombre,
+        'valor_unitario' => 18000,
+        'cantidad' => 1,
+        'subtotal' => 18000,
+    ]);
+
+    $detalleGruesa = FacturaRecolectorDetalle::create([
+        'factura_recolector_id' => $factura->id,
+        'recolector_prenda_id' => $chaquetaGruesa->id,
+        'prenda_nombre' => $chaquetaGruesa->nombre,
+        'valor_unitario' => 25000,
+        'cantidad' => 2,
+        'subtotal' => 50000,
+    ]);
+
+    $this->actingAs($usuario)
+        ->patch(route('produccion.ordenes.lavado', $factura), [
+            'detalles' => [$detalleDelgada->id, $detalleGruesa->id],
+        ])
+        ->assertRedirect(route('produccion.index'))
+        ->assertSessionHas('success');
+
+    expect(Produccion::query()->where('prenda_id', 1)->sum('cantidad'))->toBe(3)
+        ->and($detalleDelgada->fresh()->lavado_en)->not->toBeNull()
+        ->and($detalleGruesa->fresh()->lavado_en)->not->toBeNull();
+});
+
+it('seeds requested washer garment ids and payment values', function () {
+    $this->seed(LavanderoPrendasEquivalenciasSeeder::class);
+
+    $this->assertDatabaseHas('prendas', [
+        'id' => 104,
+        'nombre' => 'CUBRELECHO',
+        'tipo' => 'LAVADO',
+        'precio' => 1200,
+    ]);
+
+    $this->assertDatabaseHas('prendas', [
+        'id' => 105,
+        'nombre' => 'PLUMON',
+        'tipo' => 'LAVADO',
+        'precio' => 1200,
+    ]);
+
+    foreach ([
+        'BATAS' => 900,
+        'BLUSAS' => 800,
+        'CASCO ABIERTO' => 2500,
+        'FALDAS' => 900,
+    ] as $nombre => $precio) {
+        $this->assertDatabaseHas('prendas', [
+            'nombre' => $nombre,
+            'tipo' => 'LAVADO',
+            'precio' => $precio,
+            'activo' => true,
+        ]);
+    }
 });

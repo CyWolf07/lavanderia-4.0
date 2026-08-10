@@ -27,8 +27,8 @@ class PrendasLavanderoSyncService
 
             foreach ($recolectorPrendas as $recolectorPrenda) {
                 $clave = $this->clave($recolectorPrenda->nombre, $recolectorPrenda->tipo);
-                $prenda = $this->buscarPrendaPorEquivalencia($prendasLavandero, $recolectorPrenda->id)
-                    ?? $this->buscarPrendaPorClave($prendasLavandero, $clave);
+                $prendaPorEquivalencia = $this->buscarPrendaPorEquivalencia($prendasLavandero, $recolectorPrenda->id);
+                $prenda = $prendaPorEquivalencia ?? $this->buscarPrendaPorClave($prendasLavandero, $clave);
                 $precio = $preciosPorClave->get($clave, $prenda?->precio ?? 0);
 
                 if (! $prenda) {
@@ -40,7 +40,7 @@ class PrendasLavanderoSyncService
                     ]);
 
                     $prendasLavandero->push($prenda);
-                } else {
+                } elseif (! $this->esEquivalenciaAgrupada($prendaPorEquivalencia, $recolectorPrenda)) {
                     $prenda->update([
                         'nombre' => trim($recolectorPrenda->nombre),
                         'tipo' => $this->normalizarTipo($recolectorPrenda->tipo),
@@ -89,6 +89,15 @@ class PrendasLavanderoSyncService
         }
 
         return $prendas->firstWhere('id', $prendaId) ?? Prenda::query()->find($prendaId);
+    }
+
+    private function esEquivalenciaAgrupada(?Prenda $prenda, RecolectorPrenda $recolectorPrenda): bool
+    {
+        if (! $prenda) {
+            return false;
+        }
+
+        return $this->clave($prenda->nombre, $prenda->tipo) !== $this->clave($recolectorPrenda->nombre, $recolectorPrenda->tipo);
     }
 
     private function clave(?string $nombre, ?string $tipo): string

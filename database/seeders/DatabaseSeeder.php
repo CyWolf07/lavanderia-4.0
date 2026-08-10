@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(RecolectorPrendasSeeder::class);
+        $this->call(LavanderoPrendasEquivalenciasSeeder::class);
     }
 
     private function crearUsuarioBaseSiFalta(string $rol, int $rolId, array $datos): void
