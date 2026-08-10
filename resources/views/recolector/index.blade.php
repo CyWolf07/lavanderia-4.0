@@ -638,7 +638,6 @@
             </button>
         </div>
     </div>
-</div>
 
     {{-- ════════ MODAL: ESTATUS DE FACTURAS ════════ --}}
     <div x-cloak x-show="modalEstatus" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
@@ -680,6 +679,7 @@
                             <th class="px-6 py-4 font-semibold">Valor total</th>
                             <th class="px-6 py-4 font-semibold">Estatus</th>
                             <th class="px-6 py-4 font-semibold">Cambiar estado</th>
+                            <th class="px-6 py-4 font-semibold">Acciones</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -735,9 +735,14 @@
                                         <span class="rounded-full border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-500">Cancelado admin</span>
                                     </div>
                                 </td>
+                                <td class="px-6 py-4">
+                                    <a href="{{ route('ordenes.imprimir', ['facturaRecolector' => $factura, 'imprimir' => 1]) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 hover:bg-sky-100">
+                                        Imprimir orden
+                                    </a>
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-6 py-8 text-center text-slate-500">Todavia no has registrado ordenes de pedido.</td></tr>
+                            <tr><td colspan="7" class="px-6 py-8 text-center text-slate-500">Todavia no has registrado ordenes de pedido.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -859,6 +864,7 @@
             </div>
         </div>
     </div>
+</div>
 
 <script>
 function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldItems, puedeEditarPrecios, numeroFactura, facturas }) {

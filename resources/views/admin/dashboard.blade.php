@@ -600,6 +600,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-2">
+                                        <a href="{{ route('ordenes.imprimir', ['facturaRecolector' => $factura, 'imprimir' => 1]) }}" target="_blank" rel="noopener noreferrer" class="rounded-full border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100">Imprimir</a>
                                         @if ($estadoFactura === 'pagado')
                                             <span class="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Bloqueada</span>
                                         @else
