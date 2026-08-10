@@ -644,12 +644,23 @@ it('seeds requested washer garment ids and payment values', function () {
 
     foreach ([
         6 => 'TAPETE',
+        9 => 'RUANA',
+        12 => 'PANTALONETAS',
         14 => 'ALFOMBRA PEQUENA',
         16 => 'SOFA',
         19 => 'ALFOMBRA GRANDE',
+        20 => 'GORRA',
         23 => 'MUEBLE',
+        24 => 'MANTEL',
         25 => 'CORBATA',
         27 => 'ALBAS',
+        28 => 'LEGGINGS',
+        29 => 'PIJAMA',
+        30 => 'COJIN',
+        32 => 'MALETA',
+        33 => 'TOALLA',
+        40 => 'DELANTAL',
+        44 => 'BUFANDA',
         101 => 'EDREDON',
         103 => 'MEDIAS PAR',
     ] as $id => $nombre) {
@@ -731,5 +742,16 @@ it('shows active washer garments even when they do not have collector equivalenc
         ->assertSee('MUEBLE')
         ->assertSee('ALBAS')
         ->assertSee('CORBATA')
-        ->assertSee('MEDIAS PAR');
+        ->assertSee('MEDIAS PAR')
+        ->assertSee('BUFANDA')
+        ->assertSee('DELANTAL')
+        ->assertSee('PANTALONETAS')
+        ->assertSee('LEGGINGS')
+        ->assertSee('COJIN')
+        ->assertSee('TOALLA')
+        ->assertSee('RUANA')
+        ->assertSee('MANTEL')
+        ->assertSee('MALETA')
+        ->assertSee('GORRA')
+        ->assertSee('PIJAMA');
 });
