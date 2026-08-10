@@ -638,7 +638,6 @@
             </button>
         </div>
     </div>
-</div>
 
     {{-- ════════ MODAL: ESTATUS DE FACTURAS ════════ --}}
     <div x-cloak x-show="modalEstatus" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
@@ -865,6 +864,7 @@
             </div>
         </div>
     </div>
+</div>
 
 <script>
 function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldItems, puedeEditarPrecios, numeroFactura, facturas }) {
