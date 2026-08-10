@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Prenda;
 use App\Services\PrendasLavanderoSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class PrendaController extends Controller
 {
+    private const MAX_PRECIO_PRENDA_REGULAR = 15000;
+
     public function index()
     {
         app(PrendasLavanderoSyncService::class)->sync();
@@ -34,6 +37,12 @@ class PrendaController extends Controller
         $data = $request->validate([
             'precio' => 'required|numeric|min:0',
         ]);
+
+        if ((float) $data['precio'] > self::MAX_PRECIO_PRENDA_REGULAR && ! $this->permitePrecioAlto($prenda)) {
+            throw ValidationException::withMessages([
+                'precio' => 'El valor de lavandero solo puede superar $15.000 en articulos grandes como muebles, sofas, colchones, tapetes, alfombras, cortinas, edredones, cobijas, cubrelechos o plumones.',
+            ]);
+        }
 
         $prenda->update(['precio' => $data['precio']]);
 
@@ -66,5 +75,29 @@ class PrendaController extends Controller
         throw ValidationException::withMessages([
             'nombre' => 'Inhabilita esta prenda desde el listado del recolector.',
         ]);
+    }
+
+    private function permitePrecioAlto(Prenda $prenda): bool
+    {
+        $texto = strtolower(Str::ascii(trim($prenda->nombre.' '.$prenda->tipo)));
+
+        foreach ([
+            'mueble',
+            'sofa',
+            'colchon',
+            'tapete',
+            'alfombra',
+            'cortina',
+            'edredon',
+            'cobija',
+            'cubrelecho',
+            'plumon',
+        ] as $permitido) {
+            if (str_contains($texto, $permitido)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -535,6 +535,50 @@ it('does not change garment status when editing catalog data', function () {
     expect($recolectorPrenda->fresh()->activo)->toBeFalse();
 });
 
+it('rejects high washer prices for regular garments', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Abrigo',
+        'tipo' => 'Lavado seco',
+        'precio' => 2400,
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('prendas.update', $prenda), [
+            'precio' => 45000,
+        ])
+        ->assertSessionHasErrors('precio');
+
+    expect((float) $prenda->fresh()->precio)->toBe(2400.0);
+});
+
+it('allows high washer prices for large garments', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'MUEBLE',
+        'tipo' => 'Lavado',
+        'precio' => 7000,
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('prendas.update', $prenda), [
+            'precio' => 25000,
+        ])
+        ->assertRedirect(route('prendas.index'));
+
+    expect((float) $prenda->fresh()->precio)->toBe(25000.0);
+});
+
 it('shows collector invoice status only for the authenticated collector', function () {
     $collector = User::factory()->create([
         'rol' => 'recolector',
