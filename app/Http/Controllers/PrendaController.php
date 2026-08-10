@@ -20,7 +20,8 @@ class PrendaController extends Controller
 
         $prendas = Prenda::query()
             ->where(fn ($query) => $query
-                ->whereIn('id', LavanderoPrendasEquivalenciasSeeder::PRENDAS_BASE_VISIBLES)
+                ->where('activo', true)
+                ->orWhereIn('id', LavanderoPrendasEquivalenciasSeeder::PRENDAS_BASE_VISIBLES)
                 ->orWhereHas('equivalenciasRecolector'))
             ->orderByDesc('activo')
             ->orderBy('nombre')
@@ -31,9 +32,28 @@ class PrendaController extends Controller
 
     public function store(Request $request)
     {
-        throw ValidationException::withMessages([
-            'nombre' => 'Las prendas del lavandero se generan desde el listado del recolector. Ajusta solo el valor de pago.',
+        $data = $request->validate([
+            'nombre' => ['required', 'string', 'max:100'],
+            'tipo' => ['nullable', 'string', 'max:50'],
+            'precio' => ['required', 'numeric', 'min:0'],
         ]);
+
+        $data['nombre'] = trim($data['nombre']);
+        $data['tipo'] = filled($data['tipo'] ?? null) ? trim($data['tipo']) : 'LAVADO';
+
+        $this->validarPrendaUnica($data['nombre'], $data['tipo']);
+
+        $prenda = new Prenda($data + ['activo' => true]);
+
+        if ((float) $data['precio'] > self::MAX_PRECIO_PRENDA_REGULAR && ! $this->permitePrecioAlto($prenda)) {
+            throw ValidationException::withMessages([
+                'precio' => 'El valor de lavandero solo puede superar $15.000 en articulos grandes como muebles, sofas, colchones, tapetes, alfombras, cortinas, edredones, cobijas, cubrelechos o plumones.',
+            ]);
+        }
+
+        $prenda->save();
+
+        return redirect()->route('prendas.index')->with('success', 'Prenda de lavandero creada correctamente.');
     }
 
     public function update(Request $request, Prenda $prenda)
@@ -124,5 +144,23 @@ class PrendaController extends Controller
         }
 
         return false;
+    }
+
+    private function validarPrendaUnica(string $nombre, ?string $tipo, ?int $exceptoId = null): void
+    {
+        $nombreNormalizado = strtolower(trim($nombre));
+        $tipoNormalizado = strtolower(trim((string) $tipo));
+
+        $existe = Prenda::query()
+            ->when($exceptoId, fn ($query) => $query->whereKeyNot($exceptoId))
+            ->whereRaw('LOWER(TRIM(nombre)) = ?', [$nombreNormalizado])
+            ->whereRaw("LOWER(TRIM(COALESCE(tipo, ''))) = ?", [$tipoNormalizado])
+            ->exists();
+
+        if ($existe) {
+            throw ValidationException::withMessages([
+                'nombre' => 'Ya existe una prenda de lavandero con ese nombre y tipo.',
+            ]);
+        }
     }
 }

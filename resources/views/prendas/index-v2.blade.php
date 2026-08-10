@@ -8,7 +8,7 @@
         <div>
             <p class="text-sm uppercase tracking-[0.35em] text-slate-500">Catalogo</p>
             <h1 class="mt-2 text-3xl font-black text-slate-900">Prendas lavandero</h1>
-            <p class="mt-2 text-sm text-slate-500">Este listado se toma del recolector. Aqui solo se ajusta el valor que se paga al lavandero.</p>
+            <p class="mt-2 text-sm text-slate-500">Administra las prendas propias del lavandero y sus valores de pago.</p>
         </div>
         <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
             Volver al panel
@@ -26,6 +26,32 @@
             {{ $errors->first() }}
         </div>
     @endif
+
+    <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        <h2 class="text-lg font-bold text-slate-900">Nueva prenda lavandero</h2>
+        <form action="{{ route('prendas.store') }}" method="POST" class="mt-6 grid gap-4 md:grid-cols-[1fr_180px_180px_auto] md:items-end">
+            @csrf
+
+            <div>
+                <label for="nombre" class="mb-2 block text-sm font-semibold text-slate-700">Prenda</label>
+                <input id="nombre" name="nombre" type="text" placeholder="Nombre de la prenda" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+            </div>
+
+            <div>
+                <label for="tipo" class="mb-2 block text-sm font-semibold text-slate-700">Tipo</label>
+                <input id="tipo" name="tipo" type="text" value="LAVADO" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
+            </div>
+
+            <div>
+                <label for="precio" class="mb-2 block text-sm font-semibold text-slate-700">Valor lavandero</label>
+                <input id="precio" name="precio" type="number" step="0.01" min="0" placeholder="0" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+            </div>
+
+            <button class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
+                Crear prenda
+            </button>
+        </form>
+    </div>
 
     <div class="space-y-4">
         @forelse ($prendas as $prenda)
@@ -93,7 +119,7 @@
             </div>
         @empty
             <div class="rounded-[1.75rem] bg-white p-6 text-sm text-slate-500 shadow-xl ring-1 ring-slate-200">
-                No hay prendas del recolector para sincronizar.
+                No hay prendas de lavandero registradas.
             </div>
         @endforelse
     </div>

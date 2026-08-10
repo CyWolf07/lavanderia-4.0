@@ -364,24 +364,32 @@ it('keeps collector garment catalog unique and shared', function () {
     expect(RecolectorPrenda::count())->toBe(1);
 });
 
-it('rejects creating washer garments outside the collector catalog', function () {
-    $admin = User::factory()->create([
-        'rol' => 'admin',
+it('allows privileged users to create washer garments outside the collector catalog', function (string $role) {
+    $user = User::factory()->create([
+        'rol' => $role,
         'activo' => true,
     ]);
 
-    $this->actingAs($admin)
+    $this->actingAs($user)
+        ->get(route('prendas.index'))
+        ->assertOk()
+        ->assertSeeText('Nueva prenda lavandero');
+
+    $this->actingAs($user)
         ->post(route('prendas.store'), [
             'nombre' => 'Chaqueta Premium',
             'tipo' => 'Lavado especial',
-            'precio' => 28000,
+            'precio' => 14000,
         ])
-        ->assertSessionHasErrors('nombre');
+        ->assertRedirect(route('prendas.index'));
 
-    $this->assertDatabaseMissing('prendas', [
+    $this->assertDatabaseHas('prendas', [
         'nombre' => 'Chaqueta Premium',
+        'tipo' => 'Lavado especial',
+        'precio' => 14000,
+        'activo' => true,
     ]);
-});
+})->with(['admin', 'programador']);
 
 it('creates collector garments as active even when an inactive value is submitted', function () {
     $admin = User::factory()->create([

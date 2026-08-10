@@ -124,9 +124,9 @@ it('shows washer garments from collector catalog while preserving washer values'
         ->assertOk()
         ->assertSee('Camisa')
         ->assertSee('Pantalon')
+        ->assertSee('Prenda fuera de recolector')
         ->assertDontSee('| $ 7.000')
-        ->assertDontSee('$ 12.000')
-        ->assertDontSee('Prenda fuera de recolector');
+        ->assertDontSee('$ 12.000');
 
     $camisa = Prenda::where('nombre', 'Camisa')->where('tipo', 'Lavado')->first();
     $pantalon = Prenda::where('nombre', 'Pantalon')->where('tipo', 'Lavado')->first();
