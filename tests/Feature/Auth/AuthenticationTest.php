@@ -24,8 +24,9 @@ test('enterprise code is static until programmer regenerates it', function () {
     $currentCode = $codes->current();
 
     expect($codes->current())->toBe($currentCode);
-    $this->assertDatabaseMissing('system_settings', [
+    $this->assertDatabaseHas('system_settings', [
         'key' => 'enterprise_code',
+        'value' => $currentCode,
     ]);
 
     $newCode = $codes->regenerate();

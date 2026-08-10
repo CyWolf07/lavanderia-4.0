@@ -55,20 +55,45 @@
                             <input name="tipo" type="text" value="{{ $prenda->tipo }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm">
                             <input name="precio" type="number" step="0.01" min="0" value="{{ $prenda->precio }}" class="rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
                             <div class="md:col-span-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <p class="text-sm text-slate-500">{{ $prenda->nombre }} | $ {{ number_format($prenda->precio, 0, ',', '.') }}</p>
+                                <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                                    <span>{{ $prenda->nombre }} | $ {{ number_format($prenda->precio, 0, ',', '.') }}</span>
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $prenda->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
+                                        {{ $prenda->activo ? 'Habilitada' : 'Deshabilitada' }}
+                                    </span>
+                                </div>
                                 <button class="rounded-full bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700">
                                     Guardar cambios
                                 </button>
                             </div>
                         </form>
 
-                        <form action="{{ route('recolector-prendas.destroy', $prenda) }}" method="POST" class="mt-3">
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            @if (auth()->user()?->tieneRol('admin', 'programador'))
+                                <form action="{{ route('recolector-prendas.habilitar', $prenda) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button @disabled($prenda->activo) class="rounded-full border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent">
+                                        Habilitar
+                                    </button>
+                                </form>
+
+                                <form action="{{ route('recolector-prendas.inhabilitar', $prenda) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button @disabled(! $prenda->activo) class="rounded-full border border-amber-200 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent">
+                                        Deshabilitar
+                                    </button>
+                                </form>
+                            @endif
+
+                        <form action="{{ route('recolector-prendas.destroy', $prenda) }}" method="POST">
                             @csrf
                             @method('DELETE')
                             <button onclick="return confirm('¿Eliminar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                                 Eliminar
                             </button>
                         </form>
+                        </div>
                     </div>
                 @empty
                     <p class="px-6 pb-6 text-sm text-slate-500">No hay prendas del recolector registradas todavía.</p>

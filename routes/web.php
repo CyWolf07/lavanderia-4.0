@@ -164,6 +164,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])
 
     // ── PANEL PRINCIPAL ────────────────────────────────────────────────────────
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::patch('/produccion/interfaz', [AdminController::class, 'updateProduccionInterface'])->name('admin.produccion.interfaz');
 
     // ── GESTIÓN DE USUARIOS ────────────────────────────────────────────────────
     Route::post('/usuarios', [AdminController::class, 'storeUser'])->name('admin.usuarios.store');
@@ -178,6 +179,8 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])
     Route::put('/prendas/{prenda}', [PrendaController::class, 'update'])->name('prendas.update');
     Route::delete('/prendas/{prenda}', [PrendaController::class, 'destroy'])->name('prendas.destroy');
     Route::patch('/prendas/{prenda}/estado', [PrendaController::class, 'toggleStatus'])->name('prendas.toggle-status');
+    Route::patch('/prendas/{prenda}/habilitar', [PrendaController::class, 'habilitar'])->name('prendas.habilitar');
+    Route::patch('/prendas/{prenda}/inhabilitar', [PrendaController::class, 'inhabilitar'])->name('prendas.inhabilitar');
 
     // ── GESTIÓN DE CLIENTES ────────────────────────────────────────────────────
     Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index');
@@ -199,6 +202,8 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])
     Route::put('/recolector-prendas/{recolectorPrenda}', [RecolectorPrendaController::class, 'update'])->name('recolector-prendas.update');
     Route::delete('/recolector-prendas/{recolectorPrenda}', [RecolectorPrendaController::class, 'destroy'])->name('recolector-prendas.destroy');
     Route::patch('/recolector-prendas/{recolectorPrenda}/estado', [RecolectorPrendaController::class, 'toggleStatus'])->name('recolector-prendas.toggle-status');
+    Route::patch('/recolector-prendas/{recolectorPrenda}/habilitar', [RecolectorPrendaController::class, 'habilitar'])->name('recolector-prendas.habilitar');
+    Route::patch('/recolector-prendas/{recolectorPrenda}/inhabilitar', [RecolectorPrendaController::class, 'inhabilitar'])->name('recolector-prendas.inhabilitar');
 
     // ── CIERRE DE QUINCENA Y REPORTES ─────────────────────────────────────────
     Route::delete('/produccion/bulk-delete', [AdminController::class, 'destroyProducciones'])->name('admin.produccion.destroy-bulk');
@@ -221,6 +226,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])
     Route::get('/reportes-impresion', [AdminController::class, 'printReports'])->name('admin.reportes.impresion');
     Route::post('/gastos', [GastoController::class, 'storeFromAdmin'])->name('admin.gastos.store');
     Route::get('/incongruencias', [AdminController::class, 'incongruencias'])->name('admin.incongruencias.index');
+    Route::patch('/incongruencias-produccion/{incongruenciaProduccion}/aprobar', [AdminController::class, 'aprobarIncongruenciaProduccion'])->name('admin.incongruencias-produccion.aprobar');
     Route::patch('/notificaciones/{notificationId}/leer', [AdminController::class, 'markNotificationAsRead'])->name('admin.notificaciones.read');
     Route::patch('/dispositivos-bloqueados/{accessControl}/desbloquear', [EnterpriseAccessController::class, 'unlock'])->name('admin.dispositivos.unlock');
     Route::post('/codigo-empresarial/regenerar', [EnterpriseAccessController::class, 'regenerate'])->name('admin.codigo-empresarial.regenerate');

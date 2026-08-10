@@ -15,7 +15,7 @@ class RecolectorPrendaController extends Controller
             ->orderBy('nombre')
             ->get();
 
-        return view('recolector-prendas.index', compact('prendas'));
+        return view('recolector-prendas.index-v2', compact('prendas'));
     }
 
     public function store(Request $request)
@@ -24,14 +24,13 @@ class RecolectorPrendaController extends Controller
             'nombre' => ['required', 'string', 'max:100'],
             'tipo' => ['nullable', 'string', 'max:50'],
             'precio' => ['required', 'numeric', 'min:0'],
-            'activo' => ['nullable', 'boolean'],
         ]);
 
         $this->validarPrendaUnica($data['nombre'], $data['tipo'] ?? null);
 
         $data['nombre'] = trim($data['nombre']);
         $data['tipo'] = filled($data['tipo'] ?? null) ? trim($data['tipo']) : null;
-        $data['activo'] = $request->boolean('activo', true);
+        $data['activo'] = true;
 
         RecolectorPrenda::create($data);
 
@@ -44,14 +43,12 @@ class RecolectorPrendaController extends Controller
             'nombre' => ['required', 'string', 'max:100'],
             'tipo' => ['nullable', 'string', 'max:50'],
             'precio' => ['required', 'numeric', 'min:0'],
-            'activo' => ['nullable', 'boolean'],
         ]);
 
         $this->validarPrendaUnica($data['nombre'], $data['tipo'] ?? null, $recolectorPrenda->id);
 
         $data['nombre'] = trim($data['nombre']);
         $data['tipo'] = filled($data['tipo'] ?? null) ? trim($data['tipo']) : null;
-        $data['activo'] = $request->boolean('activo', $recolectorPrenda->activo);
 
         $recolectorPrenda->update($data);
 
@@ -76,6 +73,20 @@ class RecolectorPrendaController extends Controller
                 ? 'Prenda del recolector habilitada correctamente.'
                 : 'Prenda del recolector inhabilitada correctamente.'
         );
+    }
+
+    public function habilitar(RecolectorPrenda $recolectorPrenda)
+    {
+        $recolectorPrenda->update(['activo' => true]);
+
+        return back()->with('success', 'Prenda del recolector habilitada correctamente.');
+    }
+
+    public function inhabilitar(RecolectorPrenda $recolectorPrenda)
+    {
+        $recolectorPrenda->update(['activo' => false]);
+
+        return back()->with('success', 'Prenda del recolector inhabilitada correctamente.');
     }
 
     private function validarPrendaUnica(string $nombre, ?string $tipo, ?int $exceptoId = null): void

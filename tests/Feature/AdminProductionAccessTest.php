@@ -3,13 +3,15 @@
 use App\Models\Cliente;
 use App\Models\FacturaRecolector;
 use App\Models\Gasto;
+use App\Models\HistorialProduccion;
 use App\Models\Prenda;
 use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
 use App\Models\Rol;
+use App\Models\SystemSetting;
 use App\Models\User;
-use Database\Seeders\DatabaseSeeder;
 use Carbon\Carbon;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Support\Facades\Hash;
 
 it('allows administrators to access production from the admin panel', function () {
@@ -26,6 +28,133 @@ it('allows administrators to access production from the admin panel', function (
     $this->actingAs($admin)
         ->get(route('produccion.index'))
         ->assertOk();
+});
+
+it('lets admins choose the washer interface mode', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.produccion.interfaz'), [
+            'modo' => 'avanzada',
+        ])
+        ->assertRedirect();
+
+    expect(SystemSetting::getValue('produccion_interfaz_lavandero'))->toBe('avanzada');
+});
+
+it('does not count active production from previous quincenas in current dashboard totals', function () {
+    $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Camisa',
+        'tipo' => 'Lavado',
+        'precio' => 7000,
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 2,
+        'cantidad_validada' => 2,
+        'total' => 14000,
+        'total_validado' => 14000,
+        'fecha' => '2026-07-10',
+        'estado_validacion' => 'validado',
+    ]);
+
+    $actual = Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 3,
+        'cantidad_validada' => 3,
+        'total' => 21000,
+        'total_validado' => 21000,
+        'fecha' => '2026-07-20',
+        'estado_validacion' => 'validado',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk();
+
+    expect((float) $response->viewData('pagoUsuarios'))->toBe(21000.0)
+        ->and($response->viewData('ultimasProducciones')->pluck('id')->all())->toBe([$actual->id]);
+});
+
+it('closes active washer records into the quincena that matches each production date', function () {
+    $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Pantalon',
+        'tipo' => 'Lavado',
+        'precio' => 8000,
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 1,
+        'cantidad_validada' => 1,
+        'total' => 8000,
+        'total_validado' => 8000,
+        'fecha' => '2026-07-10',
+        'estado_validacion' => 'validado',
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 2,
+        'cantidad_validada' => 2,
+        'total' => 16000,
+        'total_validado' => 16000,
+        'fecha' => '2026-07-20',
+        'estado_validacion' => 'validado',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('produccion.cerrar'))
+        ->assertRedirect(route('admin.reportes.periodo', [
+            'periodo' => '2026/07/QUINCENA2',
+            'imprimir' => 1,
+        ]));
+
+    expect(Produccion::count())->toBe(0);
+
+    $periodos = HistorialProduccion::query()
+        ->orderBy('periodo')
+        ->pluck('periodo')
+        ->all();
+
+    expect($periodos)->toBe([
+        '2026/07/QUINCENA1',
+        '2026/07/QUINCENA2',
+    ]);
 });
 
 it('allows administrators identified by rol id to access the admin panel', function () {
@@ -234,6 +363,178 @@ it('keeps collector garment catalog unique and shared', function () {
     expect(RecolectorPrenda::count())->toBe(1);
 });
 
+it('rejects creating washer garments outside the collector catalog', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('prendas.store'), [
+            'nombre' => 'Chaqueta Premium',
+            'tipo' => 'Lavado especial',
+            'precio' => 28000,
+        ])
+        ->assertSessionHasErrors('nombre');
+
+    $this->assertDatabaseMissing('prendas', [
+        'nombre' => 'Chaqueta Premium',
+    ]);
+});
+
+it('creates collector garments as active even when an inactive value is submitted', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('recolector-prendas.store'), [
+            'nombre' => 'Tapete Activo',
+            'tipo' => 'Lavado',
+            'precio' => 22000,
+            'activo' => false,
+        ])
+        ->assertRedirect(route('recolector-prendas.index'));
+
+    $this->assertDatabaseHas('recolector_prendas', [
+        'nombre' => 'Tapete Activo',
+        'activo' => true,
+    ]);
+});
+
+it('lets privileged users enable and disable garments from the collector catalog only', function (string $role) {
+    $user = User::factory()->create([
+        'rol' => $role,
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Blusa Estado',
+        'tipo' => 'Lavado',
+        'precio' => 9000,
+        'activo' => true,
+    ]);
+
+    $recolectorPrenda = RecolectorPrenda::create([
+        'nombre' => 'Blusa Estado',
+        'tipo' => 'Lavado',
+        'precio' => 20000,
+        'activo' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('prendas.index'))
+        ->assertOk()
+        ->assertDontSeeText('Habilitar')
+        ->assertDontSeeText('Deshabilitar');
+
+    $this->actingAs($user)
+        ->patch(route('prendas.inhabilitar', $prenda))
+        ->assertSessionHasErrors('nombre');
+
+    expect($prenda->fresh()->activo)->toBeTrue();
+
+    $this->actingAs($user)
+        ->get(route('recolector-prendas.index'))
+        ->assertOk()
+        ->assertSeeText('Habilitar')
+        ->assertSeeText('Deshabilitar');
+
+    $this->actingAs($user)
+        ->patch(route('recolector-prendas.inhabilitar', $recolectorPrenda))
+        ->assertRedirect();
+
+    expect($recolectorPrenda->fresh()->activo)->toBeFalse();
+
+    $this->actingAs($user)
+        ->patch(route('recolector-prendas.habilitar', $recolectorPrenda))
+        ->assertRedirect();
+
+    expect($recolectorPrenda->fresh()->activo)->toBeTrue();
+})->with(['admin', 'programador']);
+
+it('does not allow collectors to enable or disable catalog garments', function () {
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Blusa Protegida',
+        'tipo' => 'Lavado',
+        'precio' => 9000,
+        'activo' => false,
+    ]);
+
+    $recolectorPrenda = RecolectorPrenda::create([
+        'nombre' => 'Cobija Protegida',
+        'tipo' => 'Lavado',
+        'precio' => 20000,
+        'activo' => false,
+    ]);
+
+    $this->actingAs($collector)
+        ->patch(route('prendas.habilitar', $prenda))
+        ->assertForbidden();
+
+    $this->actingAs($collector)
+        ->patch(route('prendas.inhabilitar', $prenda))
+        ->assertForbidden();
+
+    $this->actingAs($collector)
+        ->patch(route('recolector-prendas.habilitar', $recolectorPrenda))
+        ->assertForbidden();
+
+    $this->actingAs($collector)
+        ->patch(route('recolector-prendas.inhabilitar', $recolectorPrenda))
+        ->assertForbidden();
+
+    expect($prenda->fresh()->activo)->toBeFalse();
+    expect($recolectorPrenda->fresh()->activo)->toBeFalse();
+});
+
+it('does not change garment status when editing catalog data', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Pantalon Inactivo',
+        'tipo' => 'Lavado',
+        'precio' => 12000,
+        'activo' => false,
+    ]);
+
+    $recolectorPrenda = RecolectorPrenda::create([
+        'nombre' => 'Edredon Inactivo',
+        'tipo' => 'Lavado',
+        'precio' => 24000,
+        'activo' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('prendas.update', $prenda), [
+            'nombre' => 'Pantalon Editado',
+            'tipo' => 'Lavado premium',
+            'precio' => 13000,
+        ])
+        ->assertRedirect(route('prendas.index'));
+
+    expect($prenda->fresh()->activo)->toBeFalse();
+
+    $this->actingAs($admin)
+        ->put(route('recolector-prendas.update', $recolectorPrenda), [
+            'nombre' => 'Edredon Editado',
+            'tipo' => 'Lavado premium',
+            'precio' => 25000,
+        ])
+        ->assertRedirect(route('recolector-prendas.index'));
+
+    expect($recolectorPrenda->fresh()->activo)->toBeFalse();
+});
+
 it('shows collector invoice status only for the authenticated collector', function () {
     $collector = User::factory()->create([
         'rol' => 'recolector',
@@ -439,6 +740,13 @@ it('allows programmers to delete paid collector invoices from the status table',
 
     $this->assertDatabaseMissing('facturas_recolector', [
         'id' => $factura->id,
+    ]);
+
+    $this->assertDatabaseHas('audit_events', [
+        'actor_id' => $programmer->id,
+        'auditable_type' => FacturaRecolector::class,
+        'auditable_id' => $factura->id,
+        'action' => 'factura_recolector.deleted',
     ]);
 });
 

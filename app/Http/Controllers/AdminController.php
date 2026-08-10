@@ -2,21 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditEvent;
 use App\Models\Cliente;
 use App\Models\FacturaRecolector;
 use App\Models\Gasto;
 use App\Models\HistorialProduccion;
+use App\Models\IncongruenciaProduccion;
 use App\Models\IncongruenciaRecolector;
 use App\Models\PagoRecolector;
 use App\Models\Prenda;
 use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
 use App\Models\Rol;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\DashboardCacheService;
 use App\Services\DeviceAccessService;
 use App\Services\EnterpriseCodeService;
-use App\Services\NumeroOrdenService;
+use App\Services\ProduccionValidationService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -30,11 +34,17 @@ class AdminController extends Controller
         $periodoActual = Gasto::periodoDesdeFecha(now());
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
         $periodoKey = $periodoActual['periodo'];
+        $modoInterfazLavandero = SystemSetting::getValue('produccion_interfaz_lavandero', 'basica');
 
         // ── Estadísticas de cabecera ─────────────────────────────────────────
-        $totalUsuarios            = User::count();
-        $totalProduccionesActivas = Produccion::count();
-        $ingresosProduccionActiva = Produccion::sum('total');
+        $totalUsuarios = User::count();
+        $totalProduccionesActivas = Produccion::query()
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+            ->count();
+        $ingresosProduccionActiva = Produccion::query()
+            ->pagables()
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+            ->sum('total_validado');
 
         $totalFacturasActivas = FacturaRecolector::query()
             ->noCanceladas()
@@ -73,12 +83,12 @@ class AdminController extends Controller
         if ($pagosRecolectorQuincena->isNotEmpty()) {
             $recolectoresConFacturas = $pagosRecolectorQuincena->map(function ($pago) {
                 return [
-                    'nombre'        => $pago->recolector?->name ?? 'Sin nombre',
-                    'total'         => (float) $pago->total_facturas,
-                    'pago30'        => (int) $pago->monto_comision,
-                    'cantidad'      => $pago->cantidad_facturas,
-                    'pagado'        => $pago->pagado_al_recolector,
-                    'pagado_en'     => $pago->pagado_en,
+                    'nombre' => $pago->recolector?->name ?? 'Sin nombre',
+                    'total' => (float) $pago->total_facturas,
+                    'pago30' => (int) $pago->monto_comision,
+                    'cantidad' => $pago->cantidad_facturas,
+                    'pagado' => $pago->pagado_al_recolector,
+                    'pagado_en' => $pago->pagado_en,
                     'recolector_id' => $pago->recolector_id,
                 ];
             })->values();
@@ -90,15 +100,16 @@ class AdminController extends Controller
                 ->get()
                 ->groupBy('recolector_id')
                 ->map(function ($facturas) {
-                    $recolector      = $facturas->first()->recolector;
+                    $recolector = $facturas->first()->recolector;
                     $totalRecolector = (float) $facturas->sum('total');
+
                     return [
-                        'nombre'        => $recolector?->name ?? 'Sin nombre',
-                        'total'         => $totalRecolector,
-                        'pago30'        => (int) round($totalRecolector * 0.30),
-                        'cantidad'      => $facturas->count(),
-                        'pagado'        => false,
-                        'pagado_en'     => null,
+                        'nombre' => $recolector?->name ?? 'Sin nombre',
+                        'total' => $totalRecolector,
+                        'pago30' => (int) round($totalRecolector * 0.30),
+                        'cantidad' => $facturas->count(),
+                        'pagado' => false,
+                        'pagado_en' => null,
                         'recolector_id' => $facturas->first()->recolector_id,
                     ];
                 })
@@ -106,8 +117,8 @@ class AdminController extends Controller
         }
 
         $total30PorCiento = $recolectoresConFacturas->sum('pago30');
-        $pagoUsuarios     = $ingresosProduccionActiva;
-        $ganancia         = $totalNeto - $pagoUsuarios - $total30PorCiento;
+        $pagoUsuarios = $ingresosProduccionActiva;
+        $ganancia = $totalNeto - $pagoUsuarios - $total30PorCiento;
 
         // ── Historial de pagos recolectores ──────────────────────────────────
         $historialPagosRecolectores = PagoRecolector::query()
@@ -137,6 +148,7 @@ class AdminController extends Controller
 
         // ── Registros de producción activa ───────────────────────────────────
         $ultimasProducciones = Produccion::with(['user', 'prenda'])
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->get();
@@ -147,20 +159,20 @@ class AdminController extends Controller
                 $pendientes->whereNull('estado_factura')
                     ->orWhere('estado_factura', 'pendiente');
             })
-            ->orWhere(function ($pagadas) use ($periodoKey, $inicioQuincena, $finQuincena) {
-                $pagadas->where('estado_factura', 'pagado')
-                    ->where(function ($periodoPago) use ($periodoKey, $inicioQuincena, $finQuincena) {
-                        $periodoPago->where('quincena_pago', $periodoKey)
-                            ->orWhere(function ($legacy) use ($inicioQuincena, $finQuincena) {
-                                $legacy->whereNull('quincena_pago')
-                                    ->whereBetween('updated_at', [$inicioQuincena, $finQuincena]);
-                            });
-                    });
-            })
-            ->orWhere(function ($canceladas) use ($inicioQuincena, $finQuincena) {
-                $canceladas->where('estado_factura', 'cancelado')
-                    ->whereBetween('updated_at', [$inicioQuincena, $finQuincena]);
-            });
+                ->orWhere(function ($pagadas) use ($periodoKey, $inicioQuincena, $finQuincena) {
+                    $pagadas->where('estado_factura', 'pagado')
+                        ->where(function ($periodoPago) use ($periodoKey, $inicioQuincena, $finQuincena) {
+                            $periodoPago->where('quincena_pago', $periodoKey)
+                                ->orWhere(function ($legacy) use ($inicioQuincena, $finQuincena) {
+                                    $legacy->whereNull('quincena_pago')
+                                        ->whereBetween('updated_at', [$inicioQuincena, $finQuincena]);
+                                });
+                        });
+                })
+                ->orWhere(function ($canceladas) use ($inicioQuincena, $finQuincena) {
+                    $canceladas->where('estado_factura', 'cancelado')
+                        ->whereBetween('updated_at', [$inicioQuincena, $finQuincena]);
+                });
         };
 
         $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
@@ -181,9 +193,9 @@ class AdminController extends Controller
         $ingresoFacturasPorDia = $ultimasFacturasRecolector
             ->groupBy(fn ($factura) => optional($factura->fecha_ingreso)->format('d/m') ?? 'Sin fecha')
             ->map(fn ($facturas, $dia) => [
-                'dia'      => $dia,
+                'dia' => $dia,
                 'cantidad' => $facturas->count(),
-                'total'    => (float) $facturas->sum('total'),
+                'total' => (float) $facturas->sum('total'),
             ])
             ->values();
 
@@ -191,9 +203,9 @@ class AdminController extends Controller
             ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->groupBy(fn ($produccion) => optional($produccion->fecha)->format('d/m') ?? 'Sin fecha')
             ->map(fn ($producciones, $dia) => [
-                'dia'      => $dia,
+                'dia' => $dia,
                 'cantidad' => (int) $producciones->sum('cantidad'),
-                'total'    => (float) $producciones->sum('total'),
+                'total' => (float) $producciones->sum('total_validado'),
             ])
             ->values();
 
@@ -202,7 +214,7 @@ class AdminController extends Controller
 
         // ── Períodos cerrados (historial manual + cierres automáticos) ────────
         $periodosHistorial = HistorialProduccion::query()
-            ->selectRaw("periodo, SUM(total) as total_general, SUM(cantidad) as total_prendas")
+            ->selectRaw('periodo, SUM(total) as total_general, SUM(cantidad) as total_prendas')
             ->groupBy('periodo')
             ->get()
             ->keyBy('periodo');
@@ -222,13 +234,14 @@ class AdminController extends Controller
 
         $periodosCerrados = $todosPeriodos->map(function ($periodo) use ($periodosHistorial, $periodosRecolector) {
             $hist = $periodosHistorial->get($periodo);
-            $rec  = $periodosRecolector->get($periodo);
+            $rec = $periodosRecolector->get($periodo);
+
             return (object) [
-                'periodo'         => $periodo,
-                'total_general'   => (float) ($hist->total_general ?? 0) + (float) ($rec->total_facturas_rec ?? 0),
-                'total_prendas'   => (int) ($hist->total_prendas ?? 0),
+                'periodo' => $periodo,
+                'total_general' => (float) ($hist->total_general ?? 0) + (float) ($rec->total_facturas_rec ?? 0),
+                'total_prendas' => (int) ($hist->total_prendas ?? 0),
                 'tiene_historial' => $hist !== null,
-                'tiene_facturas'  => $rec !== null,
+                'tiene_facturas' => $rec !== null,
             ];
         })->sortByDesc('periodo')->values();
 
@@ -239,6 +252,14 @@ class AdminController extends Controller
             ->orderByDesc('detectada_en')
             ->orderByDesc('id')
             ->take(10)
+            ->get();
+
+        $incongruenciasProduccionPendientes = IncongruenciaProduccion::query()
+            ->with(['user', 'prenda', 'produccion'])
+            ->where('estado', 'pendiente')
+            ->orderByDesc('detectada_en')
+            ->orderByDesc('id')
+            ->take(15)
             ->get();
 
         $notificacionesIncongruencias = auth()->user()
@@ -292,6 +313,7 @@ class AdminController extends Controller
             'periodoActual',
             'gastosRecientes',
             'incongruenciasPendientes',
+            'incongruenciasProduccionPendientes',
             'notificacionesIncongruencias',
             'ultimasProducciones',
             'ultimasFacturasRecolector',
@@ -305,8 +327,21 @@ class AdminController extends Controller
             'dispositivosBloqueados',
             'recolectores',
             'clientesConRecolector',
-            'historialPagosRecolectores'
+            'historialPagosRecolectores',
+            'modoInterfazLavandero'
         ));
+    }
+
+    public function updateProduccionInterface(Request $request)
+    {
+        $data = $request->validate([
+            'modo' => ['required', Rule::in(['basica', 'avanzada'])],
+        ]);
+
+        SystemSetting::setValue('produccion_interfaz_lavandero', $data['modo']);
+        app(DashboardCacheService::class)->flush();
+
+        return back()->with('success', 'Interfaz del lavandero actualizada correctamente.');
     }
 
     public function incongruencias()
@@ -376,7 +411,7 @@ class AdminController extends Controller
         $rol = $this->resolverRol($data['rol']);
 
         // Detectar si cambian credenciales sensibles
-        $emailCambiado    = $user->email !== $data['email'];
+        $emailCambiado = $user->email !== $data['email'];
         $passwordCambiada = ! empty($data['password']);
         $credencialesCambiadas = $emailCambiado || $passwordCambiada;
 
@@ -480,113 +515,135 @@ class AdminController extends Controller
             ->orderBy('id')
             ->get();
 
-        $resumenUsuarios    = $this->resumenProduccionUsuarios($producciones);
+        $resumenUsuarios = $this->resumenProduccionUsuarios($producciones);
         $resumenRecolectores = $this->resumenRecolectores($facturasRecolector);
 
         $tipoReporte = $request->input('tipo_reporte', 'detallado');
-        $grupo       = $request->input('grupo', 'usuarios');
-        $registroId  = $request->filled('registro_id') ? (int) $request->input('registro_id') : null;
+        $grupo = $request->input('grupo', 'usuarios');
+        $registroId = $request->filled('registro_id') ? (int) $request->input('registro_id') : null;
 
-        $detalleUsuarios          = $this->detalleProduccionUsuarios($producciones);
-        $detalleRecolectores      = $this->detalleFacturasRecolector($facturasRecolector);
-        $resumenDiarioUsuarios    = $this->resumenDiarioProduccionUsuarios($producciones);
+        $detalleUsuarios = $this->detalleProduccionUsuarios($producciones);
+        $detalleRecolectores = $this->detalleFacturasRecolector($facturasRecolector);
+        $resumenDiarioUsuarios = $this->resumenDiarioProduccionUsuarios($producciones);
         $resumenDiarioRecolectores = $this->resumenDiarioRecolectores($facturasRecolector);
 
         // Datos financieros para el resumen de impresión
-        $gastosQuincena    = Gasto::where('periodo', Gasto::periodoDesdeFecha(now())['periodo'])->sum('monto');
-        
+        $gastosQuincena = Gasto::where('periodo', Gasto::periodoDesdeFecha(now())['periodo'])->sum('monto');
+
         // Buscamos las órdenes pagadas en esta quincena usando updated_at para incluir órdenes de quincenas pasadas que se pagaron ahora
         $ordenesPagadas = $facturasRecolector;
         $ordenesPagadasTotal = (float) $ordenesPagadas->sum('total');
-        
+
         $totalNeto = $ordenesPagadasTotal - (float) $gastosQuincena;
-        
+
         $resumen30Recolectores = $ordenesPagadas
             ->groupBy('recolector_id')
             ->map(function ($facturas) {
                 $rec = $facturas->first()->recolector;
                 $total = (float) $facturas->sum('total');
+
                 return [
                     'nombre' => $rec?->name ?? 'Sin nombre',
-                    'total'  => $total,
+                    'total' => $total,
                     'pago30' => round($total * 0.30),
                 ];
             })->values();
-        
+
         $total30 = $resumen30Recolectores->sum('pago30');
         $pagoUsuarios = $resumenUsuarios->sum('total');
-        
+
         $ganancia = $totalNeto - $pagoUsuarios - $total30;
 
         if ($registroId) {
-            $detalleUsuarios          = $detalleUsuarios->where('id', $registroId)->values();
-            $detalleRecolectores      = $detalleRecolectores->where('id', $registroId)->values();
-            $resumenDiarioUsuarios    = $resumenDiarioUsuarios->where('id', $registroId)->values();
+            $detalleUsuarios = $detalleUsuarios->where('id', $registroId)->values();
+            $detalleRecolectores = $detalleRecolectores->where('id', $registroId)->values();
+            $resumenDiarioUsuarios = $resumenDiarioUsuarios->where('id', $registroId)->values();
             $resumenDiarioRecolectores = $resumenDiarioRecolectores->where('id', $registroId)->values();
         }
 
         return view('admin.reportes-impresion', [
-            'tipoReporte'              => $tipoReporte,
-            'grupo'                    => $grupo,
-            'registroId'               => $registroId,
-            'tomadoHasta'              => $tomadoHasta,
-            'inicioQuincena'           => $inicioQuincena,
-            'finQuincena'              => $finQuincena,
-            'resumenUsuarios'          => $resumenUsuarios,
-            'resumenRecolectores'      => $resumenRecolectores,
-            'detalleUsuarios'          => $detalleUsuarios,
-            'detalleRecolectores'      => $detalleRecolectores,
-            'resumenDiarioUsuarios'    => $resumenDiarioUsuarios,
-            'resumenDiarioRecolectores'=> $resumenDiarioRecolectores,
-            'totalGeneralUsuarios'     => $resumenUsuarios->sum('total'),
+            'tipoReporte' => $tipoReporte,
+            'grupo' => $grupo,
+            'registroId' => $registroId,
+            'tomadoHasta' => $tomadoHasta,
+            'inicioQuincena' => $inicioQuincena,
+            'finQuincena' => $finQuincena,
+            'resumenUsuarios' => $resumenUsuarios,
+            'resumenRecolectores' => $resumenRecolectores,
+            'detalleUsuarios' => $detalleUsuarios,
+            'detalleRecolectores' => $detalleRecolectores,
+            'resumenDiarioUsuarios' => $resumenDiarioUsuarios,
+            'resumenDiarioRecolectores' => $resumenDiarioRecolectores,
+            'totalGeneralUsuarios' => $resumenUsuarios->sum('total'),
             'totalGeneralRecolectores' => $resumenRecolectores->sum('total'),
-            'totalPrendasUsuarios'     => $resumenUsuarios->sum('cantidad'),
+            'totalPrendasUsuarios' => $resumenUsuarios->sum('cantidad'),
             'totalPrendasRecolectores' => $resumenRecolectores->sum('cantidad'),
-            'gastosQuincena'           => $gastosQuincena,
-            'ordenesPagadasTotal'      => $ordenesPagadasTotal,
-            'ganancia'                 => $ganancia,
-            'resumen30Recolectores'    => $resumen30Recolectores,
-            'total30'                  => $total30,
-            'totalNeto'                => $totalNeto,
-            'autoPrint'                => $request->boolean('imprimir'),
+            'gastosQuincena' => $gastosQuincena,
+            'ordenesPagadasTotal' => $ordenesPagadasTotal,
+            'ganancia' => $ganancia,
+            'resumen30Recolectores' => $resumen30Recolectores,
+            'total30' => $total30,
+            'totalNeto' => $totalNeto,
+            'autoPrint' => $request->boolean('imprimir'),
         ]);
     }
 
-    public function destroyProduccion(Produccion $produccion)
+    public function destroyProduccion(Produccion $produccion, ProduccionValidationService $validationService)
     {
+        $fecha = $produccion->fecha?->toDateString();
         $produccion->delete();
+
+        if ($fecha) {
+            $validationService->recalcularFecha($fecha);
+        }
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro de usuario eliminado correctamente.');
     }
 
-    public function destroyProducciones(Request $request)
+    public function destroyProducciones(Request $request, ProduccionValidationService $validationService)
     {
         $data = $request->validate([
             'produccion_ids' => ['required', 'array', 'min:1'],
             'produccion_ids.*' => ['integer', 'exists:producciones,id'],
         ]);
 
+        $fechas = Produccion::query()
+            ->whereIn('id', $data['produccion_ids'])
+            ->pluck('fecha')
+            ->filter()
+            ->map(fn ($fecha) => Carbon::parse($fecha)->toDateString())
+            ->unique();
+
         $deleted = Produccion::whereIn('id', $data['produccion_ids'])->delete();
+
+        foreach ($fechas as $fecha) {
+            $validationService->recalcularFecha($fecha);
+        }
 
         return redirect()
             ->route('admin.dashboard')
             ->with('success', "Se eliminaron {$deleted} registros de usuarios correctamente.");
     }
 
-    public function destroyFacturaRecolector(
-        FacturaRecolector $facturaRecolector,
-        NumeroOrdenService $numeroOrdenService,
-    ) {
-        $numeroOrden = $facturaRecolector->numero_orden;
-
+    public function destroyFacturaRecolector(FacturaRecolector $facturaRecolector)
+    {
         DB::transaction(function () use ($facturaRecolector) {
+            AuditEvent::query()->create([
+                'actor_id' => auth()->id(),
+                'auditable_type' => FacturaRecolector::class,
+                'auditable_id' => $facturaRecolector->id,
+                'action' => 'factura_recolector.deleted',
+                'summary' => 'Factura de recolector eliminada desde panel administrativo.',
+                'metadata' => [
+                    'numero_orden' => $facturaRecolector->numero_orden,
+                    'estado' => $facturaRecolector->estado,
+                    'total' => $facturaRecolector->total,
+                    'total_prendas' => $facturaRecolector->total_prendas,
+                ],
+            ]);
+
             $facturaRecolector->delete();
         });
-
-        // Reajustar el consecutivo global si la orden tenía numero_orden asignado
-        if ($numeroOrden !== null) {
-            $numeroOrdenService->reajustar($numeroOrden);
-        }
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro del recolector eliminado correctamente.');
     }
@@ -654,14 +711,14 @@ class AdminController extends Controller
 
         DB::transaction(function () use ($facturaRecolector, $cliente, $data, $detalles, $totalPrendas, $totalFactura) {
             $facturaRecolector->update([
-                'cliente_id'     => $cliente->id,
-                'direccion'      => $cliente->direccion,
+                'cliente_id' => $cliente->id,
+                'direccion' => $cliente->direccion,
                 'numero_cliente' => $cliente->numero_cliente,
-                'celular'        => $cliente->celular,
-                'fecha_entrega'  => $data['fecha_entrega'] ?? null,
-                'observaciones'  => array_values($data['observaciones'] ?? []),
-                'total_prendas'  => $totalPrendas,
-                'total'          => $totalFactura,
+                'celular' => $cliente->celular,
+                'fecha_entrega' => $data['fecha_entrega'] ?? null,
+                'observaciones' => array_values($data['observaciones'] ?? []),
+                'total_prendas' => $totalPrendas,
+                'total' => $totalFactura,
             ]);
 
             // Reemplazar detalles por completo
@@ -702,13 +759,13 @@ class AdminController extends Controller
 
         $camposActualizar = [
             'estado_factura' => $nuevoEstado,
-            'metodo_pago'    => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
+            'metodo_pago' => $nuevoEstado === 'pagado' ? $data['metodo_pago'] : null,
         ];
 
         if ($nuevoEstado === 'pagado') {
             // Determinar la quincena activa actual (donde se efectuú el pago)
             $periodoActivo = Gasto::periodoDesdeFecha(now());
-            $quincenaPago  = $periodoActivo['periodo'];
+            $quincenaPago = $periodoActivo['periodo'];
 
             $camposActualizar['quincena_pago'] = $quincenaPago;
 
@@ -716,7 +773,7 @@ class AdminController extends Controller
             if (empty($facturaRecolector->quincena_origen)) {
                 $fechaIngreso = $facturaRecolector->fecha_ingreso ?? now();
                 $camposActualizar['quincena_origen'] = Gasto::periodoDesdeFecha(
-                    \Carbon\Carbon::parse($fechaIngreso)
+                    Carbon::parse($fechaIngreso)
                 )['periodo'];
             }
         }
@@ -727,8 +784,8 @@ class AdminController extends Controller
             if ($nuevoEstado === 'pagado') {
                 PagoRecolector::recalcular(
                     recolectorId: (int) $facturaRecolector->recolector_id,
-                    quincena:     $camposActualizar['quincena_pago'],
-                    porcentaje:   30.0
+                    quincena: $camposActualizar['quincena_pago'],
+                    porcentaje: 30.0
                 );
             }
         });
@@ -754,7 +811,7 @@ class AdminController extends Controller
         ]);
     }
 
-    public function updateProduccion(Request $request, Produccion $produccion)
+    public function updateProduccion(Request $request, Produccion $produccion, ProduccionValidationService $validationService)
     {
         $data = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
@@ -767,17 +824,56 @@ class AdminController extends Controller
         $total = $data['cantidad'] * $prenda->precio;
 
         $produccion->update([
-            'user_id'   => $data['user_id'],
+            'user_id' => $data['user_id'],
             'prenda_id' => $data['prenda_id'],
-            'cantidad'  => $data['cantidad'],
-            'total'     => $total,
-            'fecha'     => $data['fecha'],
+            'cantidad' => $data['cantidad'],
+            'total' => $total,
+            'fecha' => $data['fecha'],
+            'cantidad_validada' => 0,
+            'total_validado' => 0,
+            'estado_validacion' => 'pendiente',
+            'validado_en' => null,
         ]);
+
+        $validationService->recalcularFecha($data['fecha']);
 
         // Invalidar caché del dashboard (producción cambió)
         app(DashboardCacheService::class)->flushProduccion();
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro de producción actualizado correctamente.');
+    }
+
+    public function aprobarIncongruenciaProduccion(
+        IncongruenciaProduccion $incongruenciaProduccion,
+        ProduccionValidationService $validationService,
+    ) {
+        DB::transaction(function () use ($incongruenciaProduccion) {
+            $incongruenciaProduccion->update([
+                'estado' => 'aprobada',
+                'aprobado_por' => auth()->id(),
+                'aprobado_en' => now(),
+            ]);
+
+            $produccion = $incongruenciaProduccion->produccion;
+
+            if ($produccion) {
+                $precio = (float) ($produccion->prenda?->precio ?? 0);
+                $produccion->update([
+                    'cantidad_validada' => $produccion->cantidad,
+                    'total_validado' => $precio * (int) $produccion->cantidad,
+                    'estado_validacion' => 'aprobado',
+                    'validado_en' => now(),
+                ]);
+            }
+        });
+
+        if ($incongruenciaProduccion->fecha) {
+            $validationService->recalcularFecha($incongruenciaProduccion->fecha);
+        }
+
+        app(DashboardCacheService::class)->flushProduccion();
+
+        return back()->with('success', 'Incongruencia de produccion aprobada correctamente.');
     }
 
     private function resolverRol(string $rol): Rol
@@ -807,8 +903,8 @@ class AdminController extends Controller
             ->groupBy(fn ($item) => $item->prenda?->nombre ?? 'Sin nombre')
             ->map(fn ($items, $nombre) => [
                 'prenda' => $nombre,
-                'cantidad' => $items->sum('cantidad'),
-                'total' => $items->sum('total'),
+                'cantidad' => $items->sum('cantidad_validada'),
+                'total' => $items->sum('total_validado'),
             ]);
 
         $historicos = HistorialProduccion::query()
@@ -849,8 +945,8 @@ class AdminController extends Controller
                     'id' => (int) $userId,
                     'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
-                    'cantidad' => (int) $registros->sum('cantidad'),
-                    'total' => (float) $registros->sum('total'),
+                    'cantidad' => (int) $registros->sum('cantidad_validada'),
+                    'total' => (float) $registros->sum('total_validado'),
                 ];
             })
             ->sortBy('nombre')
@@ -869,7 +965,7 @@ class AdminController extends Controller
                     'nombre' => $recolector?->name ?? 'Recolector eliminado',
                     'rol' => $recolector?->obtenerRol() ?? 'recolector',
                     'cantidad' => (int) $registros->sum('total_prendas'),
-                    'total' => (float) $registros->sum('total'),
+                    'total' => (float) $registros->sum('total_validado'),
                 ];
             })
             ->sortBy('nombre')
@@ -889,7 +985,7 @@ class AdminController extends Controller
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
                     'cedula' => $usuario?->cedula ?? 'No registrada',
                     'contacto' => $usuario?->contacto ?? 'No registrado',
-                    'cantidad' => (int) $registros->sum('cantidad'),
+                    'cantidad' => (int) $registros->sum('cantidad_validada'),
                     'total' => (float) $registros->sum('total'),
                     'registros' => $registros,
                 ];
@@ -934,8 +1030,8 @@ class AdminController extends Controller
                             ->map(function (Collection $registrosPrenda, string $nombrePrenda) {
                                 return [
                                     'nombre' => $nombrePrenda,
-                                    'cantidad' => (int) $registrosPrenda->sum('cantidad'),
-                                    'total' => (float) $registrosPrenda->sum('total'),
+                                    'cantidad' => (int) $registrosPrenda->sum('cantidad_validada'),
+                                    'total' => (float) $registrosPrenda->sum('total_validado'),
                                 ];
                             })
                             ->sortBy('nombre')
@@ -943,8 +1039,8 @@ class AdminController extends Controller
 
                         return [
                             'fecha' => $fecha,
-                            'cantidad' => (int) $registrosDia->sum('cantidad'),
-                            'total' => (float) $registrosDia->sum('total'),
+                            'cantidad' => (int) $registrosDia->sum('cantidad_validada'),
+                            'total' => (float) $registrosDia->sum('total_validado'),
                             'detalle' => $detalle,
                         ];
                     })
@@ -956,8 +1052,8 @@ class AdminController extends Controller
                     'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
                     'dias' => $dias,
-                    'cantidad' => (int) $registros->sum('cantidad'),
-                    'total' => (float) $registros->sum('total'),
+                    'cantidad' => (int) $registros->sum('cantidad_validada'),
+                    'total' => (float) $registros->sum('total_validado'),
                 ];
             })
             ->sortBy('nombre')

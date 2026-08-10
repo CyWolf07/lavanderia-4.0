@@ -46,10 +46,12 @@
                 </button>
             </form>
 
-            <p class="mt-6 text-sm text-slate-500">
-                ¿No tienes cuenta?
-                <a href="{{ route('register') }}" class="font-semibold text-sky-700 hover:text-sky-800">Registrarse</a>
-            </p>
+            @if (\App\Models\User::query()->doesntExist())
+                <p class="mt-6 text-sm text-slate-500">
+                    ¿No tienes cuenta?
+                    <a href="{{ route('register') }}" class="font-semibold text-sky-700 hover:text-sky-800">Registrarse</a>
+                </p>
+            @endif
         </div>
     </div>
 </div>

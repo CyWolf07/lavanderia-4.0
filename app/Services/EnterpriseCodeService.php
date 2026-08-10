@@ -9,8 +9,6 @@ class EnterpriseCodeService
 {
     private const SETTING_KEY = 'enterprise_code';
 
-    private const DEFAULT_CODE = 'Lavanderia2026!*';
-
     public function current(): string
     {
         return DB::transaction(function () {
@@ -23,7 +21,14 @@ class EnterpriseCodeService
                 return (string) $setting->value;
             }
 
-            return self::DEFAULT_CODE;
+            $code = $this->generate();
+
+            SystemSetting::query()->create([
+                'key' => self::SETTING_KEY,
+                'value' => $code,
+            ]);
+
+            return $code;
         });
     }
 

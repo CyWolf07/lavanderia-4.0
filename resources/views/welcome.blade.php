@@ -18,9 +18,11 @@
                     <a href="{{ route('login') }}" class="brand-button-secondary rounded-full border-white/30 bg-white/95 px-6 py-3 text-slate-900 shadow-lg shadow-slate-900/10 hover:border-white hover:bg-white">
                         Iniciar sesión
                     </a>
-                    <a href="{{ route('register') }}" class="rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/15">
-                        Crear usuario
-                    </a>
+                    @if (\App\Models\User::query()->doesntExist())
+                        <a href="{{ route('register') }}" class="rounded-full border border-white/35 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur hover:bg-white/15">
+                            Crear usuario
+                        </a>
+                    @endif
                 </div>
                 <div class="mt-10 flex flex-wrap gap-3 text-sm">
                     <span class="rounded-full border border-white/20 bg-white/10 px-4 py-2 font-semibold backdrop-blur">Interfaz clara</span>

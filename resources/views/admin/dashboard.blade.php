@@ -170,6 +170,19 @@
                     <a href="{{ route('recolector-prendas.index') }}" class="rounded-[1.35rem] border border-slate-200 bg-white px-5 py-4 text-sm font-bold text-slate-700 shadow-sm hover:-translate-y-0.5 hover:bg-slate-50 transition-transform">Prendas recolector</a>
                     <a href="{{ route('admin.mapa-clientes') }}" class="rounded-[1.35rem] border border-violet-200 bg-violet-50 px-5 py-4 text-sm font-bold text-violet-700 shadow-sm hover:-translate-y-0.5 hover:bg-violet-100 transition-transform">🗺 Mapa de clientes</a>
 
+                    <form action="{{ route('admin.produccion.interfaz') }}" method="POST" class="rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-4 shadow-sm">
+                        @csrf
+                        @method('PATCH')
+                        <label for="modo_interfaz_lavandero" class="block text-xs font-black uppercase tracking-[0.16em] text-slate-500">Interfaz lavandero</label>
+                        <select id="modo_interfaz_lavandero" name="modo" class="mt-3 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+                            <option value="basica" @selected(($modoInterfazLavandero ?? 'basica') === 'basica')>Basica manual</option>
+                            <option value="avanzada" @selected(($modoInterfazLavandero ?? 'basica') === 'avanzada')>Avanzada por ordenes</option>
+                        </select>
+                        <button class="mt-3 w-full rounded-2xl bg-slate-900 px-3 py-2 text-sm font-bold text-white hover:bg-slate-800">
+                            Guardar modo
+                        </button>
+                    </form>
+
                     <hr class="border-slate-200">
 
                     {{-- Botones que abren modales --}}
@@ -867,6 +880,40 @@
                         @endforelse
                     </div>
                 </div>
+                <div>
+                    <h3 class="mb-3 text-sm font-bold text-slate-900">Lavado manual</h3>
+                    <div class="divide-y divide-slate-100 rounded-2xl border border-slate-200">
+                        @forelse ($incongruenciasProduccionPendientes as $item)
+                            <div class="px-5 py-4">
+                                <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                    <div>
+                                        <p class="text-sm font-semibold text-slate-900">
+                                            {{ optional($item->fecha)->format('d/m/Y') }} | {{ ucfirst($item->tipo) }} | {{ $item->prenda_nombre }}
+                                        </p>
+                                        <p class="mt-1 text-sm text-slate-700">{{ $item->detalle }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            Recibidas: {{ $item->cantidad_recibida }} |
+                                            Reportadas: {{ $item->cantidad_reportada }} |
+                                            Diferencia: {{ $item->diferencia }}
+                                            @if ($item->user)
+                                                | Lavandero: {{ $item->user->name }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <form action="{{ route('admin.incongruencias-produccion.aprobar', $item) }}" method="POST">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button onclick="return confirm('Aprobar esta incongruencia?')" class="rounded-full border border-emerald-200 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-50">
+                                            Aprobar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="px-5 py-5 text-sm text-slate-500">No hay incongruencias de lavado manual pendientes.</p>
+                        @endforelse
+                    </div>
+                </div>
                 <a href="{{ route('admin.incongruencias.index') }}" class="inline-flex rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
                     Ver informe completo →
                 </a>
@@ -990,8 +1037,10 @@
                             </th>
                             <th class="min-w-36 px-4 py-4 font-semibold">Lavandero</th>
                             <th class="min-w-36 px-4 py-4 font-semibold">Prenda</th>
-                            <th class="w-24 px-4 py-4 text-center font-semibold">Cantidad</th>
-                            <th class="w-28 px-4 py-4 font-semibold">Total</th>
+                            <th class="w-24 px-4 py-4 text-center font-semibold">Reportada</th>
+                            <th class="w-24 px-4 py-4 text-center font-semibold">Validada</th>
+                            <th class="w-28 px-4 py-4 font-semibold">Pago</th>
+                            <th class="min-w-32 px-4 py-4 font-semibold">Estado</th>
                             <th class="min-w-40 px-4 py-4 font-semibold">Acciones</th>
                         </tr>
                     </thead>
@@ -1004,7 +1053,13 @@
                                 <td class="px-4 py-4 font-medium leading-tight text-slate-900">{{ $item->user->name ?? 'Sin lavandero' }}</td>
                                 <td class="px-4 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
                                 <td class="px-4 py-4 text-center text-slate-600">{{ $item->cantidad }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
+                                <td class="px-4 py-4 text-center text-slate-600">{{ $item->cantidad_validada }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total_validado, 0, ',', '.') }}</td>
+                                <td class="px-4 py-4">
+                                    <span class="rounded-full px-3 py-1 text-xs font-bold {{ in_array($item->estado_validacion, ['validado', 'aprobado'], true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                        {{ ucfirst($item->estado_validacion ?? 'pendiente') }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-4">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <a href="{{ route('admin.produccion.edit', $item) }}" class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">Editar</a>
@@ -1018,7 +1073,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
+                                <td colspan="8" class="px-6 py-8 text-center text-slate-500">No hay producción activa.</td>
                             </tr>
                         @endforelse
                     </tbody>

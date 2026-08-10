@@ -6,8 +6,13 @@ use App\Models\FacturaRecolector;
 use App\Models\Gasto;
 use App\Models\HistorialProduccion;
 use App\Models\Prenda;
+use App\Models\PrendaEquivalencia;
 use App\Models\Produccion;
+use App\Models\SystemSetting;
+use App\Models\User;
 use App\Services\DashboardCacheService;
+use App\Services\PrendasLavanderoSyncService;
+use App\Services\ProduccionValidationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,10 +23,12 @@ class ProduccionController extends Controller
     public function index()
     {
         $user = Auth::user();
-
+        app(PrendasLavanderoSyncService::class)->sync();
+        $modoInterfazLavandero = SystemSetting::getValue('produccion_interfaz_lavandero', 'basica');
         $ordenesPendientes = collect();
+        [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
 
-        if ($user->tieneRol('usuario')) {
+        if ($user->tieneRol('usuario') && $modoInterfazLavandero === 'avanzada') {
             $ordenesPendientes = FacturaRecolector::query()
                 ->with([
                     'recolector',
@@ -38,6 +45,7 @@ class ProduccionController extends Controller
 
         $producciones = Produccion::with('prenda')
             ->where('user_id', $user->id)
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->get();
@@ -46,16 +54,21 @@ class ProduccionController extends Controller
 
         $porDia = Produccion::query()
             ->where('user_id', $user->id)
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->selectRaw(
                 $user->tieneRol('usuario')
-                    ? 'fecha as dia, SUM(cantidad) as total_prendas'
-                    : 'fecha as dia, SUM(total) as total'
+                    ? 'fecha as dia, SUM(cantidad_validada) as total_prendas'
+                    : 'fecha as dia, SUM(total_validado) as total'
             )
             ->groupBy('fecha')
             ->orderByDesc('fecha')
             ->get();
 
-        $totalQuincena = Produccion::where('user_id', $user->id)->sum('total');
+        $totalQuincena = Produccion::query()
+            ->where('user_id', $user->id)
+            ->pagables()
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+            ->sum('total_validado');
 
         $historialQuincenas = HistorialProduccion::query()
             ->selectRaw('periodo, SUM(total) as total_periodo, SUM(cantidad) as total_prendas, MAX(fecha) as ultima_fecha')
@@ -71,46 +84,99 @@ class ProduccionController extends Controller
             'totalQuincena',
             'historialQuincenas',
             'user',
+            'modoInterfazLavandero',
             'ordenesPendientes'
         ));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ProduccionValidationService $validationService)
     {
-        if ($request->user()->tieneRol('usuario')) {
+        app(PrendasLavanderoSyncService::class)->sync();
+
+        $data = $request->validate([
+            'fecha' => ['nullable', 'date', 'before_or_equal:today'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.prenda_id' => ['required', 'integer', 'exists:prendas,id'],
+            'items.*.cantidad' => ['nullable', 'integer', 'min:0'],
+        ]);
+
+        $fecha = Carbon::parse($data['fecha'] ?? now())->toDateString();
+        $items = collect($data['items'])
+            ->map(fn (array $item) => [
+                'prenda_id' => (int) $item['prenda_id'],
+                'cantidad' => (int) ($item['cantidad'] ?? 0),
+            ])
+            ->filter(fn (array $item) => $item['cantidad'] > 0)
+            ->values();
+
+        if ($items->isEmpty()) {
             return redirect()
                 ->route('produccion.index')
-                ->with('error', 'Debes registrar la produccion desde las ordenes de pedido asignadas.');
+                ->with('error', 'Registra al menos una prenda con cantidad mayor a cero.');
         }
 
-        $request->validate([
-            'prenda_id' => ['required', 'exists:prendas,id'],
-            'cantidad' => ['required', 'integer', 'min:1'],
-        ]);
-
-        $prenda = Prenda::activas()->find($request->integer('prenda_id'));
-
-        if (! $prenda) {
-            return redirect()->route('produccion.index')->with('error', 'La prenda seleccionada no está disponible.');
+        if ($items->pluck('prenda_id')->duplicates()->isNotEmpty()) {
+            return redirect()
+                ->route('produccion.index')
+                ->with('error', 'No puedes registrar la misma prenda dos veces en el mismo cierre.');
         }
 
-        $cantidad = $request->integer('cantidad');
+        $prendas = Prenda::activas()
+            ->whereIn('id', $items->pluck('prenda_id'))
+            ->get()
+            ->keyBy('id');
 
-        Produccion::create([
-            'user_id' => Auth::id(),
-            'prenda_id' => $prenda->id,
-            'cantidad' => $cantidad,
-            'total' => $prenda->precio * $cantidad,
-            'fecha' => now()->toDateString(),
-        ]);
+        if ($prendas->count() !== $items->count()) {
+            return redirect()
+                ->route('produccion.index')
+                ->with('error', 'Una de las prendas seleccionadas no existe o esta inhabilitada.');
+        }
 
-        return redirect()->route('produccion.index')->with('success', 'Producción registrada correctamente.');
+        $userId = (int) Auth::id();
+
+        DB::transaction(function () use ($fecha, $items, $prendas, $userId) {
+            $idsSeleccionados = $items->pluck('prenda_id')->all();
+
+            Produccion::query()
+                ->where('user_id', $userId)
+                ->whereDate('fecha', $fecha)
+                ->whereNotIn('prenda_id', $idsSeleccionados)
+                ->where('estado_validacion', '!=', 'aprobado')
+                ->delete();
+
+            foreach ($items as $item) {
+                $prenda = $prendas->get($item['prenda_id']);
+                $total = (float) $prenda->precio * (int) $item['cantidad'];
+
+                Produccion::updateOrCreate(
+                    [
+                        'user_id' => $userId,
+                        'prenda_id' => $prenda->id,
+                        'fecha' => $fecha,
+                    ],
+                    [
+                        'cantidad' => $item['cantidad'],
+                        'total' => $total,
+                        'cantidad_validada' => 0,
+                        'total_validado' => 0,
+                        'estado_validacion' => 'pendiente',
+                        'validado_en' => null,
+                    ]
+                );
+            }
+        });
+
+        $validationService->recalcularFecha($fecha);
+        app(DashboardCacheService::class)->flushProduccion();
+
+        return redirect()->route('produccion.index')->with('success', 'Registro diario guardado y validado correctamente.');
     }
 
     public function guardarLavado(Request $request, FacturaRecolector $facturaRecolector)
     {
         abort_unless($request->user()->tieneRol('usuario'), 403);
         abort_if($facturaRecolector->estaCancelada(), 404);
+        app(PrendasLavanderoSyncService::class)->sync();
 
         $data = $request->validate([
             'detalles' => ['required', 'array', 'min:1'],
@@ -136,6 +202,7 @@ class ProduccionController extends Controller
 
             if (! $prenda) {
                 $prendasFaltantes->push($detalle->prenda_nombre ?: 'Prenda sin nombre');
+
                 continue;
             }
 
@@ -156,8 +223,12 @@ class ProduccionController extends Controller
                     'user_id' => $request->user()->id,
                     'prenda_id' => $prenda->id,
                     'cantidad' => $detalle->cantidad,
+                    'cantidad_validada' => $detalle->cantidad,
                     'total' => (float) $prenda->precio * (int) $detalle->cantidad,
+                    'total_validado' => (float) $prenda->precio * (int) $detalle->cantidad,
                     'fecha' => now()->toDateString(),
+                    'estado_validacion' => 'validado',
+                    'validado_en' => now(),
                 ]);
 
                 $detalle->update([
@@ -179,6 +250,7 @@ class ProduccionController extends Controller
 
         $periodoActual = HistorialProduccion::periodoDesdeFecha(now());
         $producciones = Produccion::with(['user', 'prenda'])
+            ->pagables()
             ->orderBy('user_id')
             ->orderBy('fecha')
             ->orderBy('id')
@@ -192,7 +264,7 @@ class ProduccionController extends Controller
 
             if ($tieneDatosPeriodo) {
                 return redirect()->route('admin.reportes.periodo', [
-                    'periodo'  => $periodoActual['periodo'],
+                    'periodo' => $periodoActual['periodo'],
                     'imprimir' => 1,
                 ])->with('success', 'Informe de quincena listo para imprimir.');
             }
@@ -200,19 +272,28 @@ class ProduccionController extends Controller
             return redirect()->route('admin.dashboard')->with('error', 'No hay registros activos para cerrar.');
         }
 
-        $fechaBase = Carbon::parse(optional($producciones->sortByDesc('fecha')->first())->fecha ?? now());
-        $periodo = HistorialProduccion::periodoDesdeFecha($fechaBase);
+        $periodosCerrados = collect();
 
-        DB::transaction(function () use ($producciones, $periodo) {
+        DB::transaction(function () use ($producciones, &$periodosCerrados) {
+            $periodosCerrados = $producciones
+                ->groupBy(fn (Produccion $produccion) => HistorialProduccion::periodoDesdeFecha(
+                    Carbon::parse($produccion->fecha ?? now())
+                )['periodo'])
+                ->keys()
+                ->values();
+
             foreach ($producciones as $produccion) {
+                $fecha = Carbon::parse($produccion->fecha ?? now());
+                $periodo = HistorialProduccion::periodoDesdeFecha($fecha);
+
                 HistorialProduccion::create([
                     'user_id' => $produccion->user_id,
                     'prenda_id' => $produccion->prenda_id,
                     'prenda_nombre' => $produccion->prenda?->nombre ?? 'Prenda eliminada',
-                    'precio_unitario' => $produccion->cantidad > 0 ? ($produccion->total / $produccion->cantidad) : 0,
-                    'cantidad' => $produccion->cantidad,
-                    'total' => $produccion->total,
-                    'fecha' => optional($produccion->fecha)->toDateString() ?? now()->toDateString(),
+                    'precio_unitario' => $produccion->cantidad_validada > 0 ? ($produccion->total_validado / $produccion->cantidad_validada) : 0,
+                    'cantidad' => $produccion->cantidad_validada,
+                    'total' => $produccion->total_validado,
+                    'fecha' => $fecha->toDateString(),
                     'periodo' => $periodo['periodo'],
                     'anio' => $periodo['anio'],
                     'mes' => $periodo['mes'],
@@ -221,14 +302,18 @@ class ProduccionController extends Controller
                 ]);
             }
 
-            Produccion::query()->delete();
+            Produccion::query()->whereIn('id', $producciones->pluck('id'))->delete();
         });
 
         // Invalidar caché del dashboard (quincena cerrada, historial cambió)
         app(DashboardCacheService::class)->flush();
 
+        $periodoDestino = $periodosCerrados->contains($periodoActual['periodo'])
+            ? $periodoActual['periodo']
+            : (string) $periodosCerrados->sortDesc()->first();
+
         return redirect()->route('admin.reportes.periodo', [
-            'periodo'  => $periodo['periodo'],
+            'periodo' => $periodoDestino,
             'imprimir' => 1,
         ])->with('success', 'Quincena cerrada, respaldada e informe listo para imprimir.');
     }
@@ -237,13 +322,13 @@ class ProduccionController extends Controller
     {
         abort_unless(auth()->user()?->tieneRol('admin', 'programador'), 403);
         $historialProduccion->load(['user', 'prenda', 'cerradoPor']);
-        $usuarios = \App\Models\User::orderBy('name')->get();
-        $prendas  = Prenda::orderBy('nombre')->get();
+        $usuarios = User::orderBy('name')->get();
+        $prendas = Prenda::orderBy('nombre')->get();
 
         return view('admin.historial-edit', [
             'registro' => $historialProduccion,
             'usuarios' => $usuarios,
-            'prendas'  => $prendas,
+            'prendas' => $prendas,
         ]);
     }
 
@@ -252,23 +337,23 @@ class ProduccionController extends Controller
         abort_unless(auth()->user()?->tieneRol('admin', 'programador'), 403);
 
         $data = $request->validate([
-            'user_id'   => ['required', 'exists:users,id'],
+            'user_id' => ['required', 'exists:users,id'],
             'prenda_id' => ['required', 'exists:prendas,id'],
-            'cantidad'  => ['required', 'integer', 'min:1'],
-            'fecha'     => ['required', 'date'],
+            'cantidad' => ['required', 'integer', 'min:1'],
+            'fecha' => ['required', 'date'],
         ]);
 
         $prenda = Prenda::findOrFail($data['prenda_id']);
-        $total  = $data['cantidad'] * $prenda->precio;
+        $total = $data['cantidad'] * $prenda->precio;
 
         $historialProduccion->update([
-            'user_id'         => $data['user_id'],
-            'prenda_id'       => $prenda->id,
-            'prenda_nombre'   => $prenda->nombre,
+            'user_id' => $data['user_id'],
+            'prenda_id' => $prenda->id,
+            'prenda_nombre' => $prenda->nombre,
             'precio_unitario' => $prenda->precio,
-            'cantidad'        => $data['cantidad'],
-            'total'           => $total,
-            'fecha'           => $data['fecha'],
+            'cantidad' => $data['cantidad'],
+            'total' => $total,
+            'fecha' => $data['fecha'],
         ]);
 
         // Invalidar caché del dashboard (historial actualizado)
@@ -321,16 +406,17 @@ class ProduccionController extends Controller
             ->map(function ($facturas) {
                 $rec = $facturas->first()->recolector;
                 $total = (float) $facturas->sum('total');
+
                 return [
                     'nombre' => $rec?->name ?? 'Sin nombre',
-                    'total'  => $total,
+                    'total' => $total,
                     'pago30' => round($total * 0.30),
                 ];
             })->values();
         $total30 = $resumen30Recolectores->sum('pago30');
-        
+
         $pagoUsuarios = $registros->sum('total');
-        
+
         // Ganancia = Total Neto - Pago Usuarios - Pago Recolectores
         $ganancia = $totalNeto - $pagoUsuarios - $total30;
 
@@ -382,12 +468,39 @@ class ProduccionController extends Controller
         ];
     }
 
+    private function rangoQuincenaActual(): array
+    {
+        $hoy = now();
+
+        if ($hoy->day <= 15) {
+            return [
+                $hoy->copy()->startOfMonth()->startOfDay(),
+                $hoy->copy()->startOfMonth()->day(15)->endOfDay(),
+            ];
+        }
+
+        return [
+            $hoy->copy()->startOfMonth()->day(16)->startOfDay(),
+            $hoy->copy()->endOfMonth()->endOfDay(),
+        ];
+    }
+
     private function resolverPrendaProduccion($detalle): ?Prenda
     {
+        if ($detalle->recolector_prenda_id) {
+            $prendaId = PrendaEquivalencia::query()
+                ->where('recolector_prenda_id', $detalle->recolector_prenda_id)
+                ->value('prenda_id');
+
+            if ($prendaId) {
+                return Prenda::query()->find($prendaId);
+            }
+        }
+
         $nombre = trim((string) $detalle->prenda_nombre);
 
         return Prenda::query()
-            ->whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
+            ->whereRaw('LOWER(TRIM(nombre)) = ?', [strtolower($nombre)])
             ->first();
     }
 }

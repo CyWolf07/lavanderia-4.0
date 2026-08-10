@@ -26,6 +26,11 @@ class Prenda extends Model
         return $this->hasMany(Produccion::class);
     }
 
+    public function equivalenciasRecolector()
+    {
+        return $this->hasMany(PrendaEquivalencia::class);
+    }
+
     public function scopeActivas($query)
     {
         return $query->where('activo', true);

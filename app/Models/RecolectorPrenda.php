@@ -31,6 +31,11 @@ class RecolectorPrenda extends Model
         return $this->hasMany(FacturaRecolectorDetalle::class);
     }
 
+    public function equivalenciaProduccion()
+    {
+        return $this->hasOne(PrendaEquivalencia::class);
+    }
+
     public function scopeActivas($query)
     {
         return $query->where('activo', true);

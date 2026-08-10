@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditEvent;
 use App\Models\Pqrs;
 use Illuminate\Http\Request;
 
@@ -21,7 +22,7 @@ class PqrsController extends Controller
     public function index()
     {
         // Obtiene todos los registros PQRS ordenados del más nuevo al más antiguo
-        $pqrsList = Pqrs::latest()->get();
+        $pqrsList = Pqrs::latest()->paginate(25);
 
         return view('pqrs.index', compact('pqrsList'));
     }
@@ -56,7 +57,7 @@ class PqrsController extends Controller
         $pqrs = Pqrs::findOrFail($id);
 
         // Necesitamos la lista completa para renderizar el layout de la vista
-        $pqrsList = Pqrs::latest()->get();
+        $pqrsList = Pqrs::latest()->paginate(25);
 
         return view('pqrs.edit', compact('pqrs', 'pqrsList'));
     }
@@ -89,6 +90,20 @@ class PqrsController extends Controller
     {
         // Busca el PQRS o lanza 404
         $pqrs = Pqrs::findOrFail($id);
+
+        AuditEvent::query()->create([
+            'actor_id' => auth()->id(),
+            'auditable_type' => Pqrs::class,
+            'auditable_id' => $pqrs->id,
+            'action' => 'pqrs.deleted',
+            'summary' => 'PQRS eliminado desde el sistema.',
+            'metadata' => [
+                'tipo' => $pqrs->tipo,
+                'correo' => $pqrs->correo,
+                'created_at' => optional($pqrs->created_at)->toDateTimeString(),
+            ],
+        ]);
+
         $pqrs->delete();
 
         return back()->with('success', 'Registro eliminado correctamente.');

@@ -19,10 +19,18 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(): View|RedirectResponse
     {
+        if (User::query()->exists()) {
+            return redirect()
+                ->route('login')
+                ->withErrors([
+                    'register' => 'El registro publico esta cerrado. Solicita al administrador crear tu usuario.',
+                ]);
+        }
+
         return view('auth.register', [
-            'puedeElegirRol' => User::count() === 0,
+            'puedeElegirRol' => true,
         ]);
     }
 
@@ -33,6 +41,14 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        if (User::query()->exists()) {
+            return redirect()
+                ->route('login')
+                ->withErrors([
+                    'register' => 'El registro publico esta cerrado. Solicita al administrador crear tu usuario.',
+                ]);
+        }
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
@@ -42,9 +58,7 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $rol = User::count() === 0
-            ? ($request->input('rol', 'admin'))
-            : 'usuario';
+        $rol = $request->input('rol', 'admin');
 
         $rolRegistro = Rol::firstOrCreate(
             ['nombre' => ucfirst($rol)],
