@@ -14,6 +14,7 @@ use App\Services\DashboardCacheService;
 use App\Services\PrendasLavanderoSyncService;
 use App\Services\ProduccionValidationService;
 use Carbon\Carbon;
+use Database\Seeders\LavanderoPrendasEquivalenciasSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -50,7 +51,12 @@ class ProduccionController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $prendas = Prenda::activas()->orderBy('nombre')->get();
+        $prendas = Prenda::activas()
+            ->where(fn ($query) => $query
+                ->whereIn('id', LavanderoPrendasEquivalenciasSeeder::PRENDAS_BASE_VISIBLES)
+                ->orWhereHas('equivalenciasRecolector'))
+            ->orderBy('nombre')
+            ->get();
 
         $porDia = Produccion::query()
             ->where('user_id', $user->id)
@@ -122,6 +128,9 @@ class ProduccionController extends Controller
         }
 
         $prendas = Prenda::activas()
+            ->where(fn ($query) => $query
+                ->whereIn('id', LavanderoPrendasEquivalenciasSeeder::PRENDAS_BASE_VISIBLES)
+                ->orWhereHas('equivalenciasRecolector'))
             ->whereIn('id', $items->pluck('prenda_id'))
             ->get()
             ->keyBy('id');

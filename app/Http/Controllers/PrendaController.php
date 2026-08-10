@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Prenda;
 use App\Services\PrendasLavanderoSyncService;
+use Database\Seeders\LavanderoPrendasEquivalenciasSeeder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -18,7 +19,9 @@ class PrendaController extends Controller
         app(PrendasLavanderoSyncService::class)->sync();
 
         $prendas = Prenda::query()
-            ->whereHas('equivalenciasRecolector')
+            ->where(fn ($query) => $query
+                ->whereIn('id', LavanderoPrendasEquivalenciasSeeder::PRENDAS_BASE_VISIBLES)
+                ->orWhereHas('equivalenciasRecolector'))
             ->orderByDesc('activo')
             ->orderBy('nombre')
             ->get();

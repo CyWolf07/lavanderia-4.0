@@ -132,8 +132,7 @@ it('shows washer garments from collector catalog while preserving washer values'
     $pantalon = Prenda::where('nombre', 'Pantalon')->where('tipo', 'Lavado')->first();
 
     expect((float) $camisa->precio)->toBe(7000.0)
-        ->and((float) $pantalon->precio)->toBe(0.0)
-        ->and(Prenda::where('nombre', 'Prenda fuera de recolector')->first()->activo)->toBeFalse();
+        ->and((float) $pantalon->precio)->toBe(0.0);
 });
 
 it('flags surplus manual production and only pays validated garments', function () {
@@ -643,6 +642,25 @@ it('groups collector garment variants into hidden washer garments when marking o
 it('seeds requested washer garment ids and payment values', function () {
     $this->seed(LavanderoPrendasEquivalenciasSeeder::class);
 
+    foreach ([
+        6 => 'TAPETE',
+        14 => 'ALFOMBRA PEQUENA',
+        16 => 'SOFA',
+        19 => 'ALFOMBRA GRANDE',
+        23 => 'MUEBLE',
+        25 => 'CORBATA',
+        27 => 'ALBAS',
+        101 => 'EDREDON',
+        103 => 'MEDIAS PAR',
+    ] as $id => $nombre) {
+        $this->assertDatabaseHas('prendas', [
+            'id' => $id,
+            'nombre' => $nombre,
+            'tipo' => 'LAVADO',
+            'activo' => true,
+        ]);
+    }
+
     $this->assertDatabaseHas('prendas', [
         'id' => 104,
         'nombre' => 'CUBRELECHO',
@@ -670,4 +688,48 @@ it('seeds requested washer garment ids and payment values', function () {
             'activo' => true,
         ]);
     }
+});
+
+it('maps all tapete collector sizes to washer tapete without mixing them with alfombras', function () {
+    $tapetes = collect([
+        'TAPETE (1m^2)',
+        'TAPETE (3m^2)',
+        'TAPETE (6m^2)',
+        'TAPETE GRUESO (6m^2)',
+    ])->map(fn (string $nombre) => RecolectorPrenda::create([
+        'nombre' => $nombre,
+        'tipo' => 'LAVADO',
+        'precio' => 20000,
+        'activo' => true,
+    ]));
+
+    $this->seed(LavanderoPrendasEquivalenciasSeeder::class);
+
+    foreach ($tapetes as $tapeteRecolector) {
+        $this->assertDatabaseHas('prenda_equivalencias', [
+            'recolector_prenda_id' => $tapeteRecolector->id,
+            'prenda_id' => 6,
+        ]);
+    }
+
+    expect(PrendaEquivalencia::whereIn('recolector_prenda_id', $tapetes->pluck('id'))->whereIn('prenda_id', [14, 19])->exists())
+        ->toBeFalse();
+});
+
+it('shows active washer garments even when they do not have collector equivalences', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $this->seed(LavanderoPrendasEquivalenciasSeeder::class);
+
+    $this->actingAs($admin)
+        ->get(route('prendas.index'))
+        ->assertOk()
+        ->assertSee('SOFA')
+        ->assertSee('MUEBLE')
+        ->assertSee('ALBAS')
+        ->assertSee('CORBATA')
+        ->assertSee('MEDIAS PAR');
 });

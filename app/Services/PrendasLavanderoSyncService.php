@@ -58,6 +58,7 @@ class PrendasLavanderoSyncService
             }
 
             Prenda::query()
+                ->whereHas('equivalenciasRecolector')
                 ->whereNotIn('id', $idsSincronizados ?: [0])
                 ->update(['activo' => false]);
         });

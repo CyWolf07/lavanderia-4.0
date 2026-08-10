@@ -12,18 +12,48 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
 {
     private const TIPO_LAVADO = 'LAVADO';
 
+    public const PRENDAS_BASE_VISIBLES = [
+        1,
+        3,
+        5,
+        6,
+        8,
+        11,
+        14,
+        15,
+        16,
+        17,
+        19,
+        21,
+        22,
+        23,
+        25,
+        27,
+        101,
+        103,
+        104,
+        105,
+    ];
+
     private array $prendasBase = [
         1 => ['nombre' => 'CHAQUETA', 'precio' => null],
         3 => ['nombre' => 'COBIJA', 'precio' => null],
         5 => ['nombre' => 'SACO', 'precio' => null],
+        6 => ['nombre' => 'TAPETE', 'precio' => null],
         8 => ['nombre' => 'VESTIDO DAMA / CABALLERO', 'precio' => null],
         11 => ['nombre' => 'SABANA', 'precio' => null],
         14 => ['nombre' => 'ALFOMBRA PEQUENA', 'precio' => null],
         15 => ['nombre' => 'PELUCHE PEQUENO', 'precio' => null],
+        16 => ['nombre' => 'SOFA', 'precio' => null],
         17 => ['nombre' => 'ZAPATOS', 'precio' => null],
         19 => ['nombre' => 'ALFOMBRA GRANDE', 'precio' => null],
         21 => ['nombre' => 'CORTINA', 'precio' => null],
         22 => ['nombre' => 'PELUCHE GRANDE', 'precio' => null],
+        23 => ['nombre' => 'MUEBLE', 'precio' => null],
+        25 => ['nombre' => 'CORBATA', 'precio' => null],
+        27 => ['nombre' => 'ALBAS', 'precio' => null],
+        101 => ['nombre' => 'EDREDON', 'precio' => null],
+        103 => ['nombre' => 'MEDIAS PAR', 'precio' => null],
         104 => ['nombre' => 'CUBRELECHO', 'precio' => 1200],
         105 => ['nombre' => 'PLUMON', 'precio' => 1200],
     ];
@@ -53,6 +83,21 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
             'SACOS DE VESTIDO',
             'SACOS VESTIDO',
         ],
+        6 => [
+            'TAPETE 1M2',
+            'TAPETE 2M2',
+            'TAPETE 3M2',
+            'TAPETE 4M2',
+            'TAPETE 5M2',
+            'TAPETE 6M2',
+            'TAPETE GRUESO 6M2',
+            'TAPETE 1 METRO CUADRADO',
+            'TAPETE 2 METROS CUADRADOS',
+            'TAPETE 3 METROS CUADRADOS',
+            'TAPETE 4 METROS CUADRADOS',
+            'TAPETE 5 METROS CUADRADOS',
+            'TAPETE 6 METROS CUADRADOS',
+        ],
         8 => [
             'VESTIDO DE CABALLERO',
             'VESTIDO CABALLERO',
@@ -64,12 +109,8 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
             'SABANA CAMA SENCILLA',
         ],
         14 => [
-            'TAPETE 1M2',
-            'TAPETE 2M2',
-            'TAPETE 3M2',
-            'TAPETE 1 METRO CUADRADO',
-            'TAPETE 2 METROS CUADRADOS',
-            'TAPETE 3 METROS CUADRADOS',
+            'ALFOMBRA PEQUENA',
+            'ALFOMBRA PQ',
         ],
         15 => [
             'PELUCHE 30 CM',
@@ -86,13 +127,8 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
             'ZAPATOS PEQUENOS',
         ],
         19 => [
-            'TAPETE 4M2',
-            'TAPETE 5M2',
-            'TAPETE 6M2',
-            'TAPETE GRUESO 6M2',
-            'TAPETE 4 METROS CUADRADOS',
-            'TAPETE 5 METROS CUADRADOS',
-            'TAPETE 6 METROS CUADRADOS',
+            'ALFOMBRA GRANDE',
+            'ALFOMBRA GR',
         ],
         21 => [
             'CORTINA GRANDE',
@@ -112,6 +148,16 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
             'PELUCHE 80CM 100CM',
             'PELUCHE 100 CM',
             'PELUCHE 100 CENTIMETROS',
+        ],
+        25 => [
+            'CORBATA',
+        ],
+        101 => [
+            'EDREDON',
+            'EDREDON ENTERIZO',
+        ],
+        103 => [
+            'MEDIAS PAR',
         ],
         104 => [
             'CUBRELECHO CAMA DOBLE DELGADA',
@@ -153,6 +199,7 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
                 }
             }
 
+            $this->inhabilitarVariantesAgrupadas();
             $this->ajustarSecuenciaPrendas();
             $this->command?->info($equivalenciasCreadas.' equivalencias de prendas lavandero sincronizadas correctamente.');
         });
@@ -216,6 +263,33 @@ class LavanderoPrendasEquivalenciasSeeder extends Seeder
         }
 
         DB::statement("SELECT setval(pg_get_serial_sequence('prendas', 'id'), COALESCE((SELECT MAX(id) FROM prendas), 1))");
+    }
+
+    private function inhabilitarVariantesAgrupadas(): void
+    {
+        $idsBase = array_map('intval', array_keys($this->equivalencias));
+        $nombresAgrupados = collect($this->equivalencias)
+            ->flatten()
+            ->map(fn (string $nombre) => $this->normalizar($nombre))
+            ->unique()
+            ->values();
+
+        $idsVariantes = DB::table('prendas')
+            ->whereNotIn('id', $idsBase)
+            ->get(['id', 'nombre'])
+            ->filter(fn ($prenda) => $nombresAgrupados->contains($this->normalizar($prenda->nombre)))
+            ->pluck('id');
+
+        if ($idsVariantes->isEmpty()) {
+            return;
+        }
+
+        DB::table('prendas')
+            ->whereIn('id', $idsVariantes->all())
+            ->update([
+                'activo' => false,
+                'updated_at' => now(),
+            ]);
     }
 
     private function normalizar(?string $valor): string
