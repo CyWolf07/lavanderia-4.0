@@ -144,7 +144,7 @@
                             <option value="">Selecciona una prenda</option>
                             @foreach ($prendas as $prenda)
                                 <option value="{{ $prenda->id }}" @selected((string) old('items.0.prenda_id') === (string) $prenda->id)>
-                                    {{ $prenda->nombre }} @if($prenda->tipo) - {{ $prenda->tipo }} @endif | $ {{ number_format($prenda->precio, 0, ',', '.') }}
+                                    {{ $prenda->nombre }} @if($prenda->tipo) - {{ $prenda->tipo }} @endif
                                 </option>
                             @endforeach
                         </select>
@@ -181,7 +181,6 @@
                         <th class="px-6 py-4 font-semibold">Prenda</th>
                         <th class="px-6 py-4 font-semibold">Reportada</th>
                         <th class="px-6 py-4 font-semibold">Validada</th>
-                        <th class="px-6 py-4 font-semibold">Pago</th>
                         <th class="px-6 py-4 font-semibold">Estado</th>
                     </tr>
                 </thead>
@@ -192,7 +191,6 @@
                             <td class="px-6 py-4 font-semibold text-slate-900">{{ $prod->prenda->nombre ?? 'Sin prenda' }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $prod->cantidad }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $prod->cantidad_validada }}</td>
-                            <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($prod->total_validado, 0, ',', '.') }}</td>
                             <td class="px-6 py-4">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold {{ in_array($prod->estado_validacion, ['validado', 'aprobado'], true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                                     {{ ucfirst($prod->estado_validacion ?? 'pendiente') }}
@@ -201,7 +199,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-8 text-center text-slate-500">No hay registros activos.</td>
+                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No hay registros activos.</td>
                         </tr>
                     @endforelse
                 </tbody>

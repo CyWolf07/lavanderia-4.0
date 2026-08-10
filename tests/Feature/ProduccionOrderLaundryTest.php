@@ -123,7 +123,8 @@ it('shows washer garments from collector catalog while preserving washer values'
         ->assertOk()
         ->assertSee('Camisa')
         ->assertSee('Pantalon')
-        ->assertSee('$ 7.000')
+        ->assertDontSee('| $ 7.000')
+        ->assertDontSee('$ 12.000')
         ->assertDontSee('Prenda fuera de recolector');
 
     $camisa = Prenda::where('nombre', 'Camisa')->where('tipo', 'Lavado')->first();
@@ -321,6 +322,7 @@ it('lets standard users mark order garments as washed and hides completed orders
         ->assertOk()
         ->assertSee('Camisa')
         ->assertSee('Registro manual del dia')
+        ->assertDontSee('<th class="px-6 py-4 font-semibold">Pago</th>', false)
         ->assertDontSee('Cliente Lavado')
         ->assertDontSee('Calle 12')
         ->assertDontSee('$ 20.000')
