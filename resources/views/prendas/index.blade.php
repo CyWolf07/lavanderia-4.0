@@ -96,8 +96,8 @@
                     <form action="{{ route('prendas.destroy', $prenda) }}" method="POST">
                         @csrf
                         @method('DELETE')
-                        <button onclick="return confirm('¿Eliminar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
-                            Eliminar
+                        <button onclick="return confirm('¿Borrar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                            Borrar
                         </button>
                     </form>
                     </div>
