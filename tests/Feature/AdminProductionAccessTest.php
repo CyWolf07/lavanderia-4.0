@@ -5,6 +5,7 @@ use App\Models\FacturaRecolector;
 use App\Models\Gasto;
 use App\Models\HistorialProduccion;
 use App\Models\Prenda;
+use App\Models\PrendaEquivalencia;
 use App\Models\Produccion;
 use App\Models\RecolectorPrenda;
 use App\Models\Rol;
@@ -403,7 +404,7 @@ it('creates collector garments as active even when an inactive value is submitte
     ]);
 });
 
-it('lets privileged users enable and disable garments from the collector catalog only', function (string $role) {
+it('lets privileged users enable disable and delete garments from washer management', function (string $role) {
     $user = User::factory()->create([
         'rol' => $role,
         'activo' => true,
@@ -423,35 +424,43 @@ it('lets privileged users enable and disable garments from the collector catalog
         'activo' => true,
     ]);
 
+    PrendaEquivalencia::create([
+        'recolector_prenda_id' => $recolectorPrenda->id,
+        'prenda_id' => $prenda->id,
+    ]);
+
     $this->actingAs($user)
         ->get(route('prendas.index'))
         ->assertOk()
-        ->assertDontSeeText('Habilitar')
-        ->assertDontSeeText('Deshabilitar');
+        ->assertSeeText('Habilitar')
+        ->assertSeeText('Deshabilitar')
+        ->assertSeeText('Borrar');
 
     $this->actingAs($user)
         ->patch(route('prendas.inhabilitar', $prenda))
-        ->assertSessionHasErrors('nombre');
-
-    expect($prenda->fresh()->activo)->toBeTrue();
-
-    $this->actingAs($user)
-        ->get(route('recolector-prendas.index'))
-        ->assertOk()
-        ->assertSeeText('Habilitar')
-        ->assertSeeText('Deshabilitar');
-
-    $this->actingAs($user)
-        ->patch(route('recolector-prendas.inhabilitar', $recolectorPrenda))
         ->assertRedirect();
 
-    expect($recolectorPrenda->fresh()->activo)->toBeFalse();
+    expect($prenda->fresh()->activo)->toBeFalse()
+        ->and($recolectorPrenda->fresh()->activo)->toBeFalse();
 
     $this->actingAs($user)
-        ->patch(route('recolector-prendas.habilitar', $recolectorPrenda))
+        ->patch(route('prendas.habilitar', $prenda))
         ->assertRedirect();
 
-    expect($recolectorPrenda->fresh()->activo)->toBeTrue();
+    expect($prenda->fresh()->activo)->toBeTrue()
+        ->and($recolectorPrenda->fresh()->activo)->toBeTrue();
+
+    $this->actingAs($user)
+        ->delete(route('prendas.destroy', $prenda))
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('prendas', [
+        'id' => $prenda->id,
+    ]);
+
+    $this->assertDatabaseMissing('recolector_prendas', [
+        'id' => $recolectorPrenda->id,
+    ]);
 })->with(['admin', 'programador']);
 
 it('does not allow collectors to enable or disable catalog garments', function () {

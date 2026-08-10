@@ -54,11 +54,41 @@
                     </button>
                 </form>
 
-                <div class="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                    <span>$ {{ number_format($prenda->precio, 0, ',', '.') }}</span>
-                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $prenda->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
-                        {{ $prenda->activo ? 'Habilitada por recolector' : 'Inhabilitada por recolector' }}
-                    </span>
+                <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                        <span>$ {{ number_format($prenda->precio, 0, ',', '.') }}</span>
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $prenda->activo ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
+                            {{ $prenda->activo ? 'Habilitada' : 'Deshabilitada' }}
+                        </span>
+                    </div>
+
+                    @if (auth()->user()?->tieneRol('admin', 'programador'))
+                        <div class="flex flex-wrap gap-2">
+                            <form action="{{ route('prendas.habilitar', $prenda) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                <button @disabled($prenda->activo) class="rounded-full border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent">
+                                    Habilitar
+                                </button>
+                            </form>
+
+                            <form action="{{ route('prendas.inhabilitar', $prenda) }}" method="POST">
+                                @csrf
+                                @method('PATCH')
+                                <button @disabled(! $prenda->activo) class="rounded-full border border-amber-200 px-4 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-transparent">
+                                    Deshabilitar
+                                </button>
+                            </form>
+
+                            <form action="{{ route('prendas.destroy', $prenda) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button onclick="return confirm('¿Borrar esta prenda?')" class="rounded-full border border-rose-200 px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                                    Borrar
+                                </button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             </div>
         @empty

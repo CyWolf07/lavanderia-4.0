@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Prenda;
 use App\Services\PrendasLavanderoSyncService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -51,30 +52,51 @@ class PrendaController extends Controller
 
     public function destroy(Prenda $prenda)
     {
-        throw ValidationException::withMessages([
-            'nombre' => 'No se eliminan prendas del lavandero directamente. Inhabilitala desde el listado del recolector.',
-        ]);
+        DB::transaction(function () use ($prenda) {
+            $prenda->load('equivalenciasRecolector.recolectorPrenda');
+
+            foreach ($prenda->equivalenciasRecolector as $equivalencia) {
+                $equivalencia->recolectorPrenda?->delete();
+            }
+
+            $prenda->delete();
+        });
+
+        return redirect()->route('prendas.index')->with('success', 'Prenda eliminada correctamente.');
     }
 
     public function toggleStatus(Prenda $prenda)
     {
-        throw ValidationException::withMessages([
-            'nombre' => 'El estado de las prendas del lavandero se hereda del listado del recolector.',
-        ]);
+        return $prenda->activo
+            ? $this->inhabilitar($prenda)
+            : $this->habilitar($prenda);
     }
 
     public function habilitar(Prenda $prenda)
     {
-        throw ValidationException::withMessages([
-            'nombre' => 'Habilita esta prenda desde el listado del recolector.',
-        ]);
+        $this->actualizarEstadoConCatalogoRecolector($prenda, true);
+
+        return back()->with('success', 'Prenda habilitada correctamente.');
     }
 
     public function inhabilitar(Prenda $prenda)
     {
-        throw ValidationException::withMessages([
-            'nombre' => 'Inhabilita esta prenda desde el listado del recolector.',
-        ]);
+        $this->actualizarEstadoConCatalogoRecolector($prenda, false);
+
+        return back()->with('success', 'Prenda deshabilitada correctamente.');
+    }
+
+    private function actualizarEstadoConCatalogoRecolector(Prenda $prenda, bool $activo): void
+    {
+        DB::transaction(function () use ($prenda, $activo) {
+            $prenda->load('equivalenciasRecolector.recolectorPrenda');
+
+            foreach ($prenda->equivalenciasRecolector as $equivalencia) {
+                $equivalencia->recolectorPrenda?->update(['activo' => $activo]);
+            }
+
+            $prenda->update(['activo' => $activo]);
+        });
     }
 
     private function permitePrecioAlto(Prenda $prenda): bool
