@@ -28,9 +28,8 @@ class FacturaRecolectorPrintController extends Controller
         $facturaRecolector->load(['cliente', 'detalles', 'recolector']);
 
         return view('facturas-recolector.imprimir', [
-            'factura'   => $facturaRecolector,
-            'formato'   => $formato,
-            'autoPrint' => $request->boolean('imprimir'),
+            'factura' => $facturaRecolector,
+            'formato' => $formato,
         ]);
     }
 }

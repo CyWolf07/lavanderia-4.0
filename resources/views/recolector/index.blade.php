@@ -122,7 +122,7 @@
                             Enviar WhatsApp al cliente
                         </a>
                         <a
-                            href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'imprimir' => 1, 'formato' => 'ticket']) }}"
+                            href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'formato' => 'ticket']) }}"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -135,7 +135,7 @@
                     <p class="mt-2 text-xs text-emerald-600">El cliente no tiene celular registrado.</p>
                     <div class="mt-3">
                         <a
-                            href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'imprimir' => 1, 'formato' => 'ticket']) }}"
+                            href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'formato' => 'ticket']) }}"
                             target="_blank"
                             rel="noopener noreferrer"
                             class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -656,7 +656,7 @@
             <div class="mt-5 flex flex-col gap-3 sm:flex-row">
                 <a
                     x-show="selectedOrderSummary.factura_id"
-                    :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket&imprimir=1`"
+                    :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket`"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"

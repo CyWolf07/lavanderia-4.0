@@ -6,6 +6,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'Laravel') }}</title>
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-lavanderia-exclusiva.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,12 +20,10 @@
             <div class="brand-card-soft flex items-center gap-3 rounded-full px-5 py-3">
                 <a href="/">
                     <div class="flex items-center gap-3">
-                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-700 via-sky-600 to-emerald-500 text-white shadow-lg shadow-sky-200/70">
-                            <x-application-logo class="h-8 w-auto fill-current" />
-                        </span>
+                        <x-application-logo class="h-12 w-auto" />
                         <div class="hidden text-left sm:block">
-                            <p class="font-display text-base text-slate-900">Lavanderia Registro</p>
-                            <p class="text-xs uppercase tracking-[0.25em] text-sky-700">Gestion operativa</p>
+                            <p class="font-display text-base text-slate-900">Lavandería Exclusiva</p>
+                            <p class="text-xs uppercase tracking-[0.25em] text-sky-700">Experiencia y calidad a su servicio</p>
                         </div>
                     </div>
                 </a>

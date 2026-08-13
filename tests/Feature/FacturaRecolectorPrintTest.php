@@ -78,6 +78,7 @@ it('allows a collector to print their own order', function () {
             'formato' => 'ticket',
         ]))
         ->assertOk()
+        ->assertSee('Vista previa de impresión')
         ->assertSee('Orden de pedido')
         ->assertSee('100001')
         ->assertSee('Cliente Impresión')

@@ -1153,7 +1153,7 @@
             <div class="mt-5 flex flex-col gap-3 sm:flex-row">
                 <a
                     x-show="selectedOrderSummary.factura_id"
-                    :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket&imprimir=1`"
+                    :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket`"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"

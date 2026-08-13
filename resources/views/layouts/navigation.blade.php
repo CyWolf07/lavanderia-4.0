@@ -6,12 +6,10 @@
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div class="flex items-center gap-8">
             <a href="{{ auth()->check() ? route('dashboard') : route('inicio') }}" class="flex items-center gap-3">
-                <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-700 via-sky-600 to-emerald-500 text-white shadow-lg shadow-sky-200/80">
-                    <x-application-logo class="block h-7 w-auto fill-current" />
-                </span>
+                <x-application-logo class="h-11 w-auto" />
                 <div class="hidden sm:block">
-                    <p class="font-display text-sm text-slate-900">Lavandería Registro</p>
-                    <p class="text-[11px] uppercase tracking-[0.25em] text-sky-700">Control de lavanderos y quincenas</p>
+                    <p class="font-display text-sm text-slate-900">Lavandería Exclusiva</p>
+                    <p class="text-[11px] uppercase tracking-[0.25em] text-sky-700">Experiencia y calidad a su servicio</p>
                 </div>
             </a>
 

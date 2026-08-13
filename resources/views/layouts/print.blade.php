@@ -4,10 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>@yield('title', 'Imprimir')</title>
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
         @stack('head')
     </head>
-    <body class="@yield('body-class', 'bg-slate-100 text-slate-900 antialiased')">
+    <body class="@yield('body-class')">
         @yield('content')
         @stack('scripts')
     </body>
