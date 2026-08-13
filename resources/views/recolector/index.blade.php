@@ -109,8 +109,8 @@
 
                         $waUrl = 'https://wa.me/' . $numWa . '?text=' . $mensaje;
                     @endphp
-                    <div class="mt-3">
-                        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">Notificar al cliente por WhatsApp</p>
+                    <div class="mt-3 flex flex-wrap gap-3">
+                        <p class="mb-0 w-full text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600">Notificar al cliente por WhatsApp</p>
                         <a
                             href="{{ $waUrl }}"
                             target="_blank"
@@ -121,9 +121,29 @@
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-4 w-4"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.524 3.66 1.438 5.168L2 22l4.979-1.418A9.953 9.953 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.946 7.946 0 0 1-4.274-1.244l-.306-.182-3.166.902.868-3.088-.2-.316A7.954 7.954 0 0 1 4 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8z"/></svg>
                             Enviar WhatsApp al cliente
                         </a>
+                        <a
+                            href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'imprimir' => 1, 'formato' => 'ticket']) }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"/></svg>
+                            Imprimir orden
+                        </a>
                     </div>
                 @else
                     <p class="mt-2 text-xs text-emerald-600">El cliente no tiene celular registrado.</p>
+                    <div class="mt-3">
+                        <a
+                            href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'imprimir' => 1, 'formato' => 'ticket']) }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"/></svg>
+                            Imprimir orden
+                        </a>
+                    </div>
                 @endif
             @endif
         </div>
@@ -633,9 +653,21 @@
                 </div>
             </div>
 
-            <button @click="orderSummaryOpen = false" class="mt-5 w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">
-                Cerrar
-            </button>
+            <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+                <a
+                    x-show="selectedOrderSummary.factura_id"
+                    :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket&imprimir=1`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"/></svg>
+                    Imprimir orden
+                </a>
+                <button @click="orderSummaryOpen = false" class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+                    Cerrar
+                </button>
+            </div>
         </div>
     </div>
 
@@ -688,6 +720,7 @@
                                 $ordenF  = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
                                 $actionF = route('recolector.facturas.estatus', $factura);
                                 $facturaJsonM = json_encode([
+                                    'factura_id'     => $factura->id,
                                     'numero_orden'   => $ordenF,
                                     'cliente_nombre' => $factura->cliente->nombre ?? 'Cliente eliminado',
                                     'celular'        => $factura->celular ?? '',
@@ -864,39 +897,13 @@
                                 </span>
                             @endif
 
-                            {{-- Botón Imprimir Orden --}}
-                            @php
-                                $facturaParaImprimir = json_encode([
-                                    'id'              => $factura->id,
-                                    'numero_orden'    => str_pad((string)($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT),
-                                    'cliente_nombre'  => $factura->cliente->nombre ?? 'Cliente eliminado',
-                                    'celular'         => $factura->celular ?? '',
-                                    'direccion'       => $factura->direccion ?? '',
-                                    'numero_cliente'  => $factura->numero_cliente ?? '',
-                                    'fecha_ingreso'   => optional($factura->fecha_ingreso)->format('d/m/Y H:i') ?? '',
-                                    'fecha_entrega'   => optional($factura->fecha_entrega)->format('d/m/Y') ?? '',
-                                    'total_prendas'   => $factura->total_prendas,
-                                    'total'           => number_format((float)$factura->total, 0, ',', '.'),
-                                    'observaciones'   => filled($factura->observaciones) ? implode(', ', $factura->observaciones) : '',
-                                    'estado_factura'  => $factura->estado_factura ?? 'pendiente',
-                                    'detalles'        => $factura->detalles->map(fn($d) => [
-                                        'prenda_nombre'  => $d->prenda_nombre,
-                                        'color_prenda'   => $d->color_prenda ?? '',
-                                        'cantidad'       => $d->cantidad,
-                                        'valor_unitario' => number_format((float)$d->valor_unitario, 0, ',', '.'),
-                                        'subtotal'       => number_format((float)$d->subtotal, 0, ',', '.'),
-                                    ])->values(),
-                                ]);
-                            @endphp
-                            <button
-                                type="button"
-                                id="print-btn-{{ $factura->id }}"
-                                @click="abrirImpresion({{ $facturaParaImprimir }})"
-                                class="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                            <a href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => $factura, 'formato' => 'ticket']) }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow transition hover:-translate-y-0.5 hover:shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"/></svg>
                                 Imprimir orden
-                            </button>
+                            </a>
                         </div>
                     </div>
                 @empty
@@ -905,193 +912,7 @@
             </div>
         </div>
     </div>
-
-    {{-- ════════ MODAL: IMPRESIÓN DE ORDEN ════════ --}}
-    <div x-cloak x-show="printModalOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 px-4">
-        <div @click.outside="printModalOpen = false" class="relative w-full max-w-2xl rounded-[1.75rem] bg-white shadow-2xl">
-            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4 no-print">
-                <p class="text-sm font-bold text-slate-700">Vista previa de impresión</p>
-                <div class="flex items-center gap-3">
-                    <button
-                        type="button"
-                        @click="ejecutarImpresion()"
-                        class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-slate-700"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                        Imprimir
-                    </button>
-                    <button @click="printModalOpen = false" class="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100">
-                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                    </button>
-                </div>
-            </div>
-
-            {{-- Contenido imprimible --}}
-            <div id="print-content" class="max-h-[80vh] overflow-y-auto px-8 py-8 text-slate-900 no-print">
-                {{-- Encabezado --}}
-                <div class="flex items-center justify-between border-b-2 border-slate-900 pb-5">
-                    <div class="flex items-center gap-4">
-                        <svg viewBox="0 0 316 316" xmlns="http://www.w3.org/2000/svg" class="h-14 w-14" fill="currentColor">
-                            <path d="M305.8 81.125C305.77 80.995 305.69 80.885 305.65 80.755C305.56 80.525 305.49 80.285 305.37 80.075C305.29 79.935 305.17 79.815 305.07 79.685C304.94 79.515 304.83 79.325 304.68 79.175C304.55 79.045 304.39 78.955 304.25 78.845C304.09 78.715 303.95 78.575 303.77 78.475L251.32 48.275C249.97 47.495 248.31 47.495 246.96 48.275L194.51 78.475C194.33 78.575 194.19 78.725 194.03 78.845C193.89 78.955 193.73 79.045 193.6 79.175C193.45 79.325 193.34 79.515 193.21 79.685C193.11 79.815 192.99 79.935 192.91 80.075C192.79 80.285 192.71 80.525 192.63 80.755C192.58 80.875 192.51 80.995 192.48 81.125C192.38 81.495 192.33 81.875 192.33 82.265V139.625L148.62 164.795V52.575C148.62 52.185 148.57 51.805 148.47 51.435C148.44 51.305 148.36 51.195 148.32 51.065C148.23 50.835 148.16 50.595 148.04 50.385C147.96 50.245 147.84 50.125 147.74 49.995C147.61 49.825 147.5 49.635 147.35 49.485C147.22 49.355 147.06 49.265 146.92 49.155C146.76 49.025 146.62 48.885 146.44 48.785L93.99 18.585C92.64 17.805 90.98 17.805 89.63 18.585L37.18 48.785C37 48.885 36.86 49.035 36.7 49.155C36.56 49.265 36.4 49.355 36.27 49.485C36.12 49.635 36.01 49.825 35.88 49.995C35.78 50.125 35.66 50.245 35.58 50.385C35.46 50.595 35.38 50.835 35.3 51.065C35.25 51.185 35.18 51.305 35.15 51.435C35.05 51.805 35 52.185 35 52.575V232.235C35 233.795 35.84 235.245 37.19 236.025L142.1 296.425C142.33 296.555 142.58 296.635 142.82 296.725C142.93 296.765 143.04 296.835 143.16 296.865C143.53 296.965 143.9 297.015 144.28 297.015C144.66 297.015 145.03 296.965 145.4 296.865C145.5 296.835 145.59 296.775 145.69 296.745C145.95 296.655 146.21 296.565 146.45 296.435L251.36 236.035C252.72 235.255 253.55 233.815 253.55 232.245V174.885L303.81 145.945C305.17 145.165 306 143.725 306 142.155V82.265C305.95 81.875 305.89 81.495 305.8 81.125ZM144.2 227.205L100.57 202.515L146.39 176.135L196.66 147.195L240.33 172.335L208.29 190.625L144.2 227.205ZM244.75 114.995V164.795L226.39 154.225L201.03 139.625V89.825L219.39 100.395L244.75 114.995ZM249.12 57.105L292.81 82.265L249.12 107.425L205.43 82.265L249.12 57.105ZM114.49 184.425L96.13 194.995V85.305L121.49 70.705L139.85 60.135V169.815L114.49 184.425ZM91.76 27.425L135.45 52.585L91.76 77.745L48.07 52.585L91.76 27.425ZM43.67 60.135L62.03 70.705L87.39 85.305V202.545V202.555V202.565C87.39 202.735 87.44 202.895 87.46 203.055C87.49 203.265 87.49 203.485 87.55 203.695V203.705C87.6 203.875 87.69 204.035 87.76 204.195C87.84 204.375 87.89 204.575 87.99 204.745C87.99 204.745 87.99 204.755 88 204.755C88.09 204.905 88.22 205.035 88.33 205.175C88.45 205.335 88.55 205.495 88.69 205.635L88.7 205.645C88.82 205.765 88.98 205.855 89.12 205.965C89.28 206.085 89.42 206.225 89.59 206.325C89.6 206.325 89.6 206.325 89.61 206.335C89.62 206.335 89.62 206.345 89.63 206.345L139.87 234.775V285.065L43.67 229.705V60.135ZM244.75 229.705L148.58 285.075V234.775L219.8 194.115L244.75 179.875V229.705ZM297.2 139.625L253.49 164.795V114.995L278.85 100.395L297.21 89.825V139.625H297.2Z"/>
-                        </svg>
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.3em] text-slate-500">Lavandería Exclusiva</p>
-                            <p class="text-xl font-black text-slate-900">Orden de Pedido</p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs text-slate-500">N° de Orden</p>
-                        <p class="text-2xl font-black text-amber-700" x-text="'#' + (printData.numero_orden || '')"></p>
-                    </div>
-                </div>
-
-                {{-- Datos generales --}}
-                <div class="mt-5 grid grid-cols-2 gap-4 rounded-2xl bg-slate-50 p-5 text-sm">
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Cliente</p>
-                        <p class="mt-1 font-semibold text-slate-900" x-text="printData.cliente_nombre"></p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Celular</p>
-                        <p class="mt-1 font-semibold text-slate-900" x-text="printData.celular || 'Sin celular'"></p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Fecha de recibido</p>
-                        <p class="mt-1 font-semibold text-slate-900" x-text="printData.fecha_ingreso || '—'"></p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Fecha de entrega</p>
-                        <p class="mt-1 font-semibold text-slate-900" x-text="printData.fecha_entrega || '—'"></p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">Dirección</p>
-                        <p class="mt-1 font-semibold text-slate-900" x-text="printData.direccion || 'Sin dirección'"></p>
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">N° Cliente</p>
-                        <p class="mt-1 font-semibold text-slate-900" x-text="'#' + (printData.numero_cliente || '—')"></p>
-                    </div>
-                </div>
-
-                {{-- Tabla de prendas --}}
-                <div class="mt-5">
-                    <p class="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Detalle de prendas</p>
-                    <table class="mt-2 w-full text-sm">
-                        <thead>
-                            <tr class="border-b-2 border-slate-200 text-left">
-                                <th class="pb-2 pr-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Prenda</th>
-                                <th class="pb-2 pr-3 text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Color</th>
-                                <th class="pb-2 pr-3 text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Cant.</th>
-                                <th class="pb-2 pr-3 text-right text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Valor Unit.</th>
-                                <th class="pb-2 text-right text-xs font-bold uppercase tracking-[0.18em] text-slate-500">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            <template x-for="(d, i) in (printData.detalles || [])" :key="i">
-                                <tr>
-                                    <td class="py-2 pr-3 font-medium text-slate-900" x-text="d.prenda_nombre"></td>
-                                    <td class="py-2 pr-3 text-slate-600" x-text="d.color_prenda || '—'"></td>
-                                    <td class="py-2 pr-3 text-center text-slate-700" x-text="d.cantidad"></td>
-                                    <td class="py-2 pr-3 text-right text-slate-700" x-text="'$\u00a0' + d.valor_unitario"></td>
-                                    <td class="py-2 text-right font-semibold text-slate-900" x-text="'$\u00a0' + d.subtotal"></td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Observaciones --}}
-                <div class="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
-                    <p class="text-xs font-bold uppercase tracking-[0.22em] text-amber-700">Observaciones del estado de la prenda</p>
-                    <p class="mt-2 text-sm text-slate-700" x-text="printData.observaciones || 'Sin observaciones adicionales registradas.'"></p>
-                    <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600">
-                        <template x-if="printData.observaciones">
-                            <span></span>
-                        </template>
-                        <template x-if="!printData.observaciones">
-                            <div class="col-span-2 space-y-1.5 text-slate-500">
-                                <p>☐ Manchado &nbsp; ☐ Roto &nbsp; ☐ Dañado &nbsp; ☐ Le falta algo</p>
-                                <p class="mt-2 text-slate-400">Observaciones adicionales: ___________________________________</p>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-
-                {{-- Total --}}
-                <div class="mt-5 flex items-center justify-between rounded-2xl bg-slate-900 px-6 py-5 text-white">
-                    <div>
-                        <p class="text-xs uppercase tracking-[0.25em] text-slate-300">Total general a pagar</p>
-                        <p class="mt-1 text-3xl font-black">$ <span x-text="printData.total || '0'"></span></p>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-xs uppercase tracking-[0.25em] text-slate-300">Total prendas</p>
-                        <p class="mt-1 text-3xl font-black" x-text="printData.total_prendas || '0'"></p>
-                    </div>
-                </div>
-
-                {{-- Pie de página --}}
-                <div class="mt-6 border-t border-slate-200 pt-4 text-center">
-                    <p class="text-xs text-slate-400">¡¡¡Muchas gracias por escoger nuestro servicio!!!</p>
-                    <p class="text-sm font-bold text-slate-700">Lavandería Exclusiva — a su servicio...</p>
-                </div>
-            </div>
-
-            {{-- Versión para impresión real (sólo visible al imprimir) --}}
-            <div id="print-real" class="print-only hidden px-8 py-8 text-slate-900">
-                <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #0f172a;padding-bottom:20px;margin-bottom:20px">
-                    <div style="display:flex;align-items:center;gap:16px">
-                        <div style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.3em;color:#64748b">Lavandería Exclusiva</div>
-                        <div style="font-size:20px;font-weight:900;color:#0f172a">Orden de Pedido</div>
-                    </div>
-                    <div style="text-align:right">
-                        <div style="font-size:11px;color:#94a3b8">N° de Orden</div>
-                        <div id="pr-numero" style="font-size:22px;font-weight:900;color:#b45309"></div>
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:20px;font-size:13px">
-                    <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px">Cliente</div><div id="pr-cliente" style="font-weight:600"></div></div>
-                    <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px">Celular</div><div id="pr-celular" style="font-weight:600"></div></div>
-                    <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px">Fecha de recibido</div><div id="pr-fechaing" style="font-weight:600"></div></div>
-                    <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px">Fecha de entrega</div><div id="pr-fechaent" style="font-weight:600"></div></div>
-                    <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px">Dirección</div><div id="pr-direccion" style="font-weight:600"></div></div>
-                    <div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin-bottom:4px">N° Cliente</div><div id="pr-nocliente" style="font-weight:600"></div></div>
-                </div>
-                <div style="margin-bottom:20px">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:8px;letter-spacing:0.22em">Detalle de prendas</div>
-                    <table id="pr-tabla" style="width:100%;border-collapse:collapse;font-size:13px">
-                        <thead><tr style="border-bottom:2px solid #e2e8f0">
-                            <th style="text-align:left;padding:6px 8px 6px 0;font-size:10px;text-transform:uppercase;color:#94a3b8">Prenda</th>
-                            <th style="text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;color:#94a3b8">Color</th>
-                            <th style="text-align:center;padding:6px 8px;font-size:10px;text-transform:uppercase;color:#94a3b8">Cant.</th>
-                            <th style="text-align:right;padding:6px 8px;font-size:10px;text-transform:uppercase;color:#94a3b8">Valor Unit.</th>
-                            <th style="text-align:right;padding:6px 0 6px 8px;font-size:10px;text-transform:uppercase;color:#94a3b8">Subtotal</th>
-                        </tr></thead>
-                        <tbody id="pr-filas"></tbody>
-                    </table>
-                </div>
-                <div id="pr-obs-section" style="background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:16px;margin-bottom:20px">
-                    <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#b45309;margin-bottom:8px;letter-spacing:0.22em">Observaciones del estado de la prenda</div>
-                    <div id="pr-obs" style="font-size:13px;color:#334155"></div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;background:#0f172a;color:#fff;border-radius:12px;padding:20px 24px">
-                    <div>
-                        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.25em;color:#94a3b8">Total general a pagar</div>
-                        <div style="font-size:28px;font-weight:900;margin-top:4px">$ <span id="pr-total"></span></div>
-                    </div>
-                    <div style="text-align:right">
-                        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.25em;color:#94a3b8">Total prendas</div>
-                        <div id="pr-totalprendas" style="font-size:28px;font-weight:900;margin-top:4px"></div>
-                    </div>
-                </div>
-                <div style="text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0">
-                    <div style="font-size:11px;color:#94a3b8">¡¡¡Muchas gracias por escoger nuestro servicio!!!</div>
-                    <div style="font-size:14px;font-weight:700;color:#334155;margin-top:4px">Lavandería Exclusiva — a su servicio...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-</div>{{-- FIN del div raíz x-data --}}
+</div>
 
 <script>
 function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldItems, puedeEditarPrecios, numeroFactura, facturas }) {
@@ -1116,8 +937,7 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         selectedOrderSummary: {},
         modalEstatus: false,
         modalOrdenes: false,
-        printModalOpen: false,
-        printData: {},
+        ordenPrintBase: @js(url('/recolector/facturas')),
         isTouchDevice: false,
         isMobileViewport: false,
 
@@ -1161,61 +981,6 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         openOrderSummary(facturaData) {
             this.selectedOrderSummary = facturaData;
             this.orderSummaryOpen = true;
-        },
-
-        // Abrir modal de impresión con datos de la factura
-        abrirImpresion(facturaData) {
-            this.printData = facturaData;
-            this.printModalOpen = true;
-        },
-
-        // Ejecutar impresión real usando el div oculto
-        ejecutarImpresion() {
-            const d = this.printData;
-            // Rellenar campos del template de impresión real
-            const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-            s('pr-numero',      '#' + (d.numero_orden || ''));
-            s('pr-cliente',     d.cliente_nombre || '');
-            s('pr-celular',     d.celular || 'Sin celular');
-            s('pr-fechaing',    d.fecha_ingreso || '—');
-            s('pr-fechaent',    d.fecha_entrega || '—');
-            s('pr-direccion',   d.direccion || 'Sin dirección');
-            s('pr-nocliente',   '#' + (d.numero_cliente || '—'));
-            s('pr-total',       d.total || '0');
-            s('pr-totalprendas',String(d.total_prendas || '0'));
-            s('pr-obs',         d.observaciones || 'Sin observaciones adicionales registradas.');
-
-            // Construir filas de tabla
-            const tbody = document.getElementById('pr-filas');
-            if (tbody) {
-                tbody.innerHTML = '';
-                (d.detalles || []).forEach(det => {
-                    tbody.insertAdjacentHTML('beforeend',
-                        `<tr style="border-bottom:1px solid #f1f5f9">
-                            <td style="padding:7px 8px 7px 0;font-weight:500">${det.prenda_nombre}</td>
-                            <td style="padding:7px 8px;color:#64748b">${det.color_prenda || '—'}</td>
-                            <td style="padding:7px 8px;text-align:center;color:#475569">${det.cantidad}</td>
-                            <td style="padding:7px 8px;text-align:right;color:#475569">$ ${det.valor_unitario}</td>
-                            <td style="padding:7px 0 7px 8px;text-align:right;font-weight:600">$ ${det.subtotal}</td>
-                        </tr>`
-                    );
-                });
-            }
-
-            // Mostrar el template real, imprimir y ocultar
-            const printEl = document.getElementById('print-real');
-            const printContent = document.getElementById('print-content');
-            if (printEl && printContent) {
-                printEl.style.display = 'block';
-                printContent.style.display = 'none';
-                setTimeout(() => {
-                    window.print();
-                    printEl.style.display = 'none';
-                    printContent.style.display = 'block';
-                }, 150);
-            } else {
-                window.print();
-            }
         },
 
         datosPrenda(prendaId) {
@@ -1330,23 +1095,4 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
     };
 }
 </script>
-
-<style>
-@media print {
-    /* Ocultar todo excepto el template de impresión */
-    body > * { display: none !important; }
-    #print-real { display: block !important; }
-    .no-print { display: none !important; }
-    nav, header, aside, footer { display: none !important; }
-    body { background: #fff !important; margin: 0; padding: 0; }
-    #print-real {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%;
-        padding: 24px 32px;
-        font-family: system-ui, sans-serif;
-        color: #0f172a;
-    }
-}
-</style>
 @endsection

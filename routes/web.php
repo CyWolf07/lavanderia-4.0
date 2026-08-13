@@ -32,6 +32,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\EnterpriseAccessController;
+use App\Http\Controllers\FacturaRecolectorPrintController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\MapaClientesController;
 use App\Http\Controllers\PqrsController;
@@ -137,6 +138,7 @@ Route::middleware(['auth', 'activo'])->group(function () {
         Route::post('/clientes', [ClienteController::class,     'storeFromRecolector'])->name('recolector.clientes.store'); // Crear cliente rápido
         Route::post('/facturas', [RecolectorController::class,  'store'])->name('recolector.facturas.store'); // Guardar factura nueva
         Route::patch('/facturas/{facturaRecolector}/estatus', [RecolectorController::class, 'updateFacturaEstado'])->name('recolector.facturas.estatus');
+        Route::get('/facturas/{facturaRecolector}/imprimir', FacturaRecolectorPrintController::class)->name('recolector.facturas.imprimir');
         Route::post('/gastos', [GastoController::class,       'storeFromRecolector'])->name('recolector.gastos.store'); // Guardar gasto de quincena
     });
 
@@ -215,6 +217,7 @@ Route::middleware(['auth', 'activo', 'rol:admin,programador', 'throttle.admin'])
     Route::get('/facturas-recolector/{facturaRecolector}/edit', [AdminController::class, 'editFacturaRecolector'])->name('admin.facturas-recolector.edit');
     Route::put('/facturas-recolector/{facturaRecolector}', [AdminController::class, 'updateFacturaRecolector'])->name('admin.facturas-recolector.update');
     Route::patch('/facturas-recolector/{facturaRecolector}/estatus', [AdminController::class, 'updateFacturaEstado'])->name('admin.facturas-recolector.estatus');
+    Route::get('/facturas-recolector/{facturaRecolector}/imprimir', FacturaRecolectorPrintController::class)->name('admin.facturas-recolector.imprimir');
 
     Route::delete('/historial/{historialProduccion}', [AdminController::class, 'destroyHistorial'])->name('admin.historial.destroy');
     Route::get('/historial/{historialProduccion}/edit', [ProduccionController::class, 'editHistorial'])->name('admin.historial.edit');
