@@ -182,6 +182,34 @@ class AdminController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        // ── JSON pre-computado para el modal de resumen de factura ───────────
+        $facturasRecolectorResumen = $ultimasFacturasRecolector->mapWithKeys(function ($factura) {
+            $estadoFactura = $factura->estado_factura ?? 'pendiente';
+            $ordenFactura  = '#' . str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
+            $detalles = [];
+            foreach ($factura->detalles as $d) {
+                $detalles[] = [
+                    'prenda_nombre' => $d->prenda_nombre,
+                    'cantidad'      => $d->cantidad,
+                    'color_prenda'  => $d->color_prenda ?? '',
+                    'subtotal'      => number_format((float) $d->subtotal, 0, ',', '.'),
+                ];
+            }
+            return [
+                $factura->id => json_encode([
+                    'factura_id'     => $factura->id,
+                    'numero_orden'   => $ordenFactura,
+                    'cliente_nombre' => optional($factura->cliente)->nombre ?? 'Sin cliente',
+                    'celular'        => $factura->celular ?? '',
+                    'total'          => number_format((float) $factura->total, 0, ',', '.'),
+                    'total_prendas'  => $factura->total_prendas,
+                    'estado'         => $estadoFactura,
+                    'recolector'     => optional($factura->recolector)->name ?? 'Sin recolector',
+                    'detalles'       => $detalles,
+                ]),
+            ];
+        });
+
         $facturaStatusResumen = FacturaRecolector::query()
             ->where($facturasEstatusQuincena)
             ->selectRaw("COALESCE(estado_factura, 'pendiente') as estado, COUNT(*) as cantidad, SUM(total) as total")
@@ -317,6 +345,7 @@ class AdminController extends Controller
             'notificacionesIncongruencias',
             'ultimasProducciones',
             'ultimasFacturasRecolector',
+            'facturasRecolectorResumen',
             'facturaStatusResumen',
             'ingresoFacturasPorDia',
             'usuarios',

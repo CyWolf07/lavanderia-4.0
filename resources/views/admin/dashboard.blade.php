@@ -21,6 +21,7 @@
         paymentAction: '',
         cancelAction: '',
         selectedOrderSummary: {},
+        ordenPrintBase: @js(url('/admin/facturas-recolector')),
         delegarClienteId: null,
         delegarClienteNombre: '',
         delegarAction: '',
@@ -551,27 +552,17 @@
                         @forelse ($ultimasFacturasRecolector as $factura)
                             @php
                                 $estadoFactura = $factura->estado_factura ?? 'pendiente';
-                                $ordenFactura = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
+                                $ordenFactura  = '#'.str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
                                 $estatusAction = route('admin.facturas-recolector.estatus', $factura);
-                                $facturaResumenJson = json_encode([
-                                    'numero_orden'   => $ordenFactura,
-                                    'cliente_nombre' => $factura->cliente->nombre ?? 'Sin cliente',
-                                    'celular'        => $factura->celular ?? '',
-                                    'total'          => number_format((float)$factura->total, 0, ',', '.'),
-                                    'total_prendas'  => $factura->total_prendas,
-                                    'estado'         => $estadoFactura,
-                                    'recolector'     => $factura->recolector->name ?? 'Sin recolector',
-                                    'detalles'       => $factura->detalles->map(fn($d) => [
-                                        'prenda_nombre' => $d->prenda_nombre,
-                                        'cantidad'      => $d->cantidad,
-                                        'color_prenda'  => $d->color_prenda ?? '',
-                                        'subtotal'      => number_format((float)$d->subtotal, 0, ',', '.'),
-                                    ])->values(),
-                                ]);
                             @endphp
                             <tr class="hover:bg-slate-50">
                                 <td class="px-6 py-4">
-                                    <button type="button" @click="openOrderSummary({{ $facturaResumenJson }})" class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 transition hover:bg-amber-200">{{ $ordenFactura }}</button>
+                                    <button
+                                        type="button"
+                                        data-resumen="{{ e($facturasRecolectorResumen[$factura->id] ?? '{}') }}"
+                                        @click="openOrderSummary(JSON.parse($event.target.dataset.resumen))"
+                                        class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 transition hover:bg-amber-200"
+                                    >{{ $ordenFactura }}</button>
                                 </td>
                                 <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->recolector->name ?? 'Sin recolector' }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $factura->cliente->nombre ?? 'Sin cliente' }}</td>
@@ -1159,7 +1150,18 @@
                     </template>
                 </div>
             </div>
-            <button @click="orderSummaryOpen = false" class="mt-5 w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white hover:bg-slate-800">Cerrar</button>
+            <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+                <a
+                    x-show="selectedOrderSummary.factura_id"
+                    :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"
+                >
+                    Imprimir orden
+                </a>
+                <button @click="orderSummaryOpen = false" class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Cerrar</button>
+            </div>
         </div>
     </div>
 
