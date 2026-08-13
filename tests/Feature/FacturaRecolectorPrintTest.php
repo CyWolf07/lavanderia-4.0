@@ -81,8 +81,9 @@ it('allows a collector to print their own order', function () {
         ->assertSee('Vista previa de impresión')
         ->assertSee('Orden de pedido')
         ->assertSee('100001')
-        ->assertSee('Cliente Impresión')
-        ->assertSee('Camisa');
+        ->assertSee('Camisa')
+        ->assertDontSee('Cliente Impresión')
+        ->assertDontSee('Recolector');
 
     $this->actingAs($recolector)
         ->get(route('recolector.facturas.imprimir', $facturaAjena))
@@ -129,6 +130,6 @@ it('allows admin to print any collector order', function () {
             'formato' => 'carta',
         ]))
         ->assertOk()
-        ->assertSee('Recolector Uno')
-        ->assertSee('200001');
+        ->assertSee('200001')
+        ->assertDontSee('Recolector Uno');
 });

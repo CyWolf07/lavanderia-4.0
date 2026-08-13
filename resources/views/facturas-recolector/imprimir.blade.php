@@ -4,7 +4,6 @@
 
 @php
     $numeroOrden = str_pad((string) ($factura->numero_orden ?? $factura->id), 6, '0', STR_PAD_LEFT);
-    $nombreCliente = $factura->cliente->nombre ?? 'Cliente';
     $barrio = $factura->cliente->barrio ?? '';
     $observaciones = filled($factura->observaciones) ? implode(', ', $factura->observaciones) : 'Sin observaciones';
     $formatos = [
@@ -22,17 +21,18 @@
     *, *::before, *::after { box-sizing: border-box; }
 
     :root {
-        --orden-font: 12px;
-        --orden-title: 20px;
-        --orden-gap: 10px;
-        --orden-padding: 14px;
+        --orden-font: 11px;
+        --orden-title: 18px;
+        --orden-gap: 6px;
+        --orden-padding: 10px;
+        --page-height: 257mm;
     }
 
     body {
         margin: 0;
         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         font-size: var(--orden-font);
-        line-height: 1.35;
+        line-height: 1.25;
         color: #0f172a;
         background: #f1f5f9;
         -webkit-print-color-adjust: exact;
@@ -40,17 +40,19 @@
     }
 
     body.formato-media-carta {
-        --orden-font: 11px;
-        --orden-title: 17px;
-        --orden-gap: 8px;
-        --orden-padding: 12px;
+        --orden-font: 10px;
+        --orden-title: 16px;
+        --orden-gap: 5px;
+        --orden-padding: 8px;
+        --page-height: 203mm;
     }
 
     body.formato-ticket {
-        --orden-font: 9px;
-        --orden-title: 13px;
-        --orden-gap: 5px;
-        --orden-padding: 8px;
+        --orden-font: 8px;
+        --orden-title: 11px;
+        --orden-gap: 3px;
+        --orden-padding: 5px;
+        --page-height: 142mm;
     }
 
     .orden-toolbar {
@@ -149,6 +151,10 @@
         padding: 0 1rem 1.5rem;
     }
 
+    .orden-print-fit {
+        transform-origin: top center;
+    }
+
     .orden-print {
         background: #fff;
         border: 1px solid #e2e8f0;
@@ -160,30 +166,25 @@
     .orden-print__logo {
         display: block;
         width: auto;
-        max-width: 140px;
+        max-width: 110px;
         height: auto;
-        max-height: 90px;
-        margin: 0 auto 0.5rem;
+        max-height: 70px;
+        margin: 0 auto 0.25rem;
         object-fit: contain;
     }
 
     body.formato-ticket .orden-print__logo {
-        max-width: 100px;
-        max-height: 65px;
+        max-width: 72px;
+        max-height: 48px;
     }
 
-    .orden-print__brand {
-        margin: 0;
-        font-size: 0.78em;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #64748b;
-        text-align: center;
+    body.formato-media-carta .orden-print__logo {
+        max-width: 95px;
+        max-height: 60px;
     }
 
     .orden-print__title {
-        margin: 0.25rem 0 0;
+        margin: 0;
         font-size: var(--orden-title);
         font-weight: 800;
         text-align: center;
@@ -191,8 +192,8 @@
     }
 
     .orden-print__orden {
-        margin: 0.25rem 0 0;
-        font-size: 1.1em;
+        margin: 0.15rem 0 0;
+        font-size: 1em;
         font-weight: 800;
         text-align: center;
         color: #b45309;
@@ -206,25 +207,30 @@
 
     .orden-print__grid {
         display: grid;
-        gap: var(--orden-gap);
+        gap: calc(var(--orden-gap) * 0.75);
     }
 
     .orden-print__grid--2 {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .orden-print__grid--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .orden-print__label {
         margin: 0;
-        font-size: 0.78em;
+        font-size: 0.72em;
         font-weight: 700;
-        letter-spacing: 0.08em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         color: #64748b;
     }
 
     .orden-print__value {
-        margin: 0.15rem 0 0;
+        margin: 0.1rem 0 0;
         color: #0f172a;
+        word-break: break-word;
     }
 
     .orden-print__value--bold {
@@ -234,36 +240,46 @@
     .orden-print__table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 0.5rem;
+        margin-top: 0.25rem;
+        table-layout: fixed;
     }
 
     .orden-print__table th,
     .orden-print__table td {
-        padding: 0.35em 0.25em;
+        padding: 0.2em 0.15em;
         border-bottom: 1px solid #e2e8f0;
         text-align: left;
         vertical-align: top;
+        word-break: break-word;
     }
 
     .orden-print__table th {
-        font-size: 0.82em;
+        font-size: 0.72em;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.04em;
         color: #475569;
     }
 
+    .orden-print__table .col-prenda { width: 34%; }
+    .orden-print__table .col-color { width: 18%; }
+    .orden-print__table .col-cant { width: 10%; }
+    .orden-print__table .col-unitario { width: 18%; }
+    .orden-print__table .col-subtotal { width: 20%; }
+
     .orden-print__footer-note {
-        margin: 1rem 0 0;
+        margin: calc(var(--orden-gap) * 0.75) 0 0;
         text-align: center;
         color: #475569;
+        font-size: 0.92em;
     }
 
     .orden-print__footer-brand {
-        margin: 0.25rem 0 0;
+        margin: 0.1rem 0 0;
         text-align: center;
         font-weight: 600;
         color: #0f172a;
+        font-size: 0.92em;
     }
 
     .orden-print__totals {
@@ -273,8 +289,8 @@
     }
 
     .orden-print__total-value {
-        margin: 0.15rem 0 0;
-        font-size: 1.4em;
+        margin: 0.1rem 0 0;
+        font-size: 1.15em;
         font-weight: 800;
     }
 
@@ -289,18 +305,19 @@
     }
 
     body.formato-ticket .orden-print__grid--2,
+    body.formato-ticket .orden-print__grid--3,
     body.formato-ticket .orden-print__totals {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     @page carta {
         size: letter portrait;
-        margin: 12mm;
+        margin: 10mm;
     }
 
     @page media-carta {
         size: 5.5in 8.5in portrait;
-        margin: 8mm;
+        margin: 6mm;
     }
 
     @page ticket {
@@ -317,6 +334,8 @@
             background: #fff !important;
             margin: 0 !important;
             padding: 0 !important;
+            width: 100%;
+            height: auto;
         }
 
         body.formato-carta { page: carta; }
@@ -329,10 +348,22 @@
             padding: 0 !important;
         }
 
+        .orden-print-fit {
+            width: 100%;
+            overflow: hidden;
+        }
+
         .orden-print {
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
+            page-break-inside: avoid;
+            break-inside: avoid-page;
+        }
+
+        .orden-print__section,
+        .orden-print__table tr {
+            page-break-inside: avoid;
             break-inside: avoid;
         }
     }
@@ -349,7 +380,7 @@ formato-{{ $formato }}
             <p class="orden-toolbar__eyebrow">Vista previa de impresión</p>
             <h1 class="orden-toolbar__title">Orden #{{ $numeroOrden }}</h1>
             <p class="orden-toolbar__hint">
-                Revisa los datos abajo antes de imprimir. Cuando todo esté correcto, pulsa <strong>Imprimir orden</strong>.
+                Revisa los datos abajo antes de imprimir. Todo debe quedar en una sola hoja según el formato elegido.
             </p>
 
             <div class="orden-toolbar__formats">
@@ -364,7 +395,7 @@ formato-{{ $formato }}
             </div>
 
             <div class="orden-toolbar__actions">
-                <button type="button" onclick="window.print()" class="orden-btn orden-btn--primary">
+                <button type="button" onclick="imprimirOrden()" class="orden-btn orden-btn--primary">
                     Imprimir orden
                 </button>
                 <a href="{{ $volverUrl }}" class="orden-btn orden-btn--secondary">
@@ -375,100 +406,154 @@ formato-{{ $formato }}
     </div>
 
     <div class="orden-print-shell">
-        <article class="orden-print">
-            <header style="text-align: center;">
-                <img
-                    src="{{ asset('images/logo-lavanderia-exclusiva.png') }}"
-                    alt="Lavandería Exclusiva"
-                    class="orden-print__logo"
-                >
-                <p class="orden-print__brand">Lavandería Exclusiva</p>
-                <h1 class="orden-print__title">Orden de pedido</h1>
-                <p class="orden-print__orden">#{{ $numeroOrden }}</p>
-            </header>
+        <div class="orden-print-fit" id="orden-print-fit">
+            <article class="orden-print" id="orden-print">
+                <header style="text-align: center;">
+                    <img
+                        src="{{ asset('images/logo-lavanderia-exclusiva.png') }}"
+                        alt="Lavandería Exclusiva"
+                        class="orden-print__logo"
+                    >
+                    <h1 class="orden-print__title">Orden de pedido</h1>
+                    <p class="orden-print__orden">#{{ $numeroOrden }}</p>
+                </header>
 
-            <section class="orden-print__section orden-print__grid orden-print__grid--2">
-                <div>
-                    <p class="orden-print__label">Cliente</p>
-                    <p class="orden-print__value orden-print__value--bold">{{ $nombreCliente }}</p>
-                </div>
-                <div>
-                    <p class="orden-print__label">N° cliente</p>
-                    <p class="orden-print__value orden-print__value--bold">#{{ $factura->numero_cliente ?? 'N/A' }}</p>
-                </div>
-                <div>
-                    <p class="orden-print__label">Celular</p>
-                    <p class="orden-print__value">{{ $factura->celular ?: 'Sin celular' }}</p>
-                </div>
-                <div>
-                    <p class="orden-print__label">Recolector</p>
-                    <p class="orden-print__value">{{ $factura->recolector->name ?? 'Sin recolector' }}</p>
-                </div>
-                <div class="hide-ticket">
-                    <p class="orden-print__label">Dirección</p>
-                    <p class="orden-print__value">{{ $factura->direccion ?: 'Sin dirección' }}</p>
-                </div>
-                @if ($barrio)
+                <section class="orden-print__section orden-print__grid orden-print__grid--2">
                     <div>
-                        <p class="orden-print__label">Barrio</p>
-                        <p class="orden-print__value">{{ $barrio }}</p>
+                        <p class="orden-print__label">N° cliente</p>
+                        <p class="orden-print__value orden-print__value--bold">#{{ $factura->numero_cliente ?? 'N/A' }}</p>
                     </div>
-                @endif
-                <div>
-                    <p class="orden-print__label">Fecha ingreso</p>
-                    <p class="orden-print__value">{{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }}</p>
-                </div>
-                <div>
-                    <p class="orden-print__label">Fecha entrega</p>
-                    <p class="orden-print__value">{{ optional($factura->fecha_entrega)->format('d/m/Y') }}</p>
-                </div>
-            </section>
+                    <div>
+                        <p class="orden-print__label">Celular</p>
+                        <p class="orden-print__value">{{ $factura->celular ?: 'Sin celular' }}</p>
+                    </div>
+                    <div class="hide-ticket">
+                        <p class="orden-print__label">Dirección</p>
+                        <p class="orden-print__value">{{ $factura->direccion ?: 'Sin dirección' }}</p>
+                    </div>
+                    @if ($barrio)
+                        <div>
+                            <p class="orden-print__label">Barrio</p>
+                            <p class="orden-print__value">{{ $barrio }}</p>
+                        </div>
+                    @endif
+                    <div>
+                        <p class="orden-print__label">Fecha ingreso</p>
+                        <p class="orden-print__value">{{ optional($factura->fecha_ingreso)->format('d/m/Y H:i') }}</p>
+                    </div>
+                    <div>
+                        <p class="orden-print__label">Fecha entrega</p>
+                        <p class="orden-print__value">{{ optional($factura->fecha_entrega)->format('d/m/Y') }}</p>
+                    </div>
+                </section>
 
-            <section class="orden-print__section">
-                <p class="orden-print__label">Detalle de prendas</p>
-                <table class="orden-print__table">
-                    <thead>
-                        <tr>
-                            <th>Prenda</th>
-                            <th>Color</th>
-                            <th>Cant.</th>
-                            <th class="col-unitario">Unit.</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($factura->detalles as $detalle)
+                <section class="orden-print__section">
+                    <p class="orden-print__label">Detalle de prendas</p>
+                    <table class="orden-print__table">
+                        <thead>
                             <tr>
-                                <td class="orden-print__value--bold">{{ $detalle->prenda_nombre }}</td>
-                                <td>{{ $detalle->color_prenda ?: '—' }}</td>
-                                <td>{{ $detalle->cantidad }}</td>
-                                <td class="col-unitario">$ {{ number_format((float) $detalle->valor_unitario, 0, ',', '.') }}</td>
-                                <td class="orden-print__value--bold">$ {{ number_format((float) $detalle->subtotal, 0, ',', '.') }}</td>
+                                <th class="col-prenda">Prenda</th>
+                                <th class="col-color">Color</th>
+                                <th class="col-cant">Cant.</th>
+                                <th class="col-unitario">Unit.</th>
+                                <th class="col-subtotal">Subtotal</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </section>
+                        </thead>
+                        <tbody>
+                            @foreach ($factura->detalles as $detalle)
+                                <tr>
+                                    <td class="orden-print__value--bold">{{ $detalle->prenda_nombre }}</td>
+                                    <td>{{ $detalle->color_prenda ?: '—' }}</td>
+                                    <td>{{ $detalle->cantidad }}</td>
+                                    <td class="col-unitario">$ {{ number_format((float) $detalle->valor_unitario, 0, ',', '.') }}</td>
+                                    <td class="orden-print__value--bold">$ {{ number_format((float) $detalle->subtotal, 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </section>
 
-            <section class="orden-print__section">
-                <p class="orden-print__label">Observaciones</p>
-                <p class="orden-print__value">{{ $observaciones }}</p>
-            </section>
+                <section class="orden-print__section">
+                    <p class="orden-print__label">Observaciones</p>
+                    <p class="orden-print__value">{{ $observaciones }}</p>
+                </section>
 
-            <footer class="orden-print__section">
-                <div class="orden-print__totals">
-                    <div>
-                        <p class="orden-print__label">Total prendas</p>
-                        <p class="orden-print__total-value">{{ $factura->total_prendas }}</p>
+                <footer class="orden-print__section">
+                    <div class="orden-print__totals">
+                        <div>
+                            <p class="orden-print__label">Total prendas</p>
+                            <p class="orden-print__total-value">{{ $factura->total_prendas }}</p>
+                        </div>
+                        <div>
+                            <p class="orden-print__label" style="text-align: right;">Valor total</p>
+                            <p class="orden-print__total-value orden-print__total-value--money">$ {{ number_format((float) $factura->total, 0, ',', '.') }}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="orden-print__label" style="text-align: right;">Valor total</p>
-                        <p class="orden-print__total-value orden-print__total-value--money">$ {{ number_format((float) $factura->total, 0, ',', '.') }}</p>
-                    </div>
-                </div>
-                <p class="orden-print__footer-note">¡Gracias por escoger nuestro servicio!</p>
-                <p class="orden-print__footer-brand">Lavandería Exclusiva — a su servicio</p>
-            </footer>
-        </article>
+                    <p class="orden-print__footer-note">¡Gracias por escoger nuestro servicio!</p>
+                    <p class="orden-print__footer-brand">Lavandería Exclusiva — a su servicio</p>
+                </footer>
+            </article>
+        </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    function obtenerAlturaPaginaMm() {
+        const valor = getComputedStyle(document.body).getPropertyValue('--page-height').trim();
+        return parseFloat(valor) || 142;
+    }
+
+    function mmAPx(mm) {
+        return (mm / 25.4) * 96;
+    }
+
+    function ajustarASolaHoja() {
+        const contenedor = document.getElementById('orden-print-fit');
+        const orden = document.getElementById('orden-print');
+
+        if (!contenedor || !orden) {
+            return;
+        }
+
+        contenedor.style.height = '';
+        contenedor.style.transform = 'none';
+        orden.style.transform = 'none';
+
+        const alturaMaxima = mmAPx(obtenerAlturaPaginaMm());
+        const alturaContenido = orden.getBoundingClientRect().height;
+
+        if (alturaContenido <= alturaMaxima) {
+            return;
+        }
+
+        const escala = Math.max(0.55, alturaMaxima / alturaContenido);
+        orden.style.transform = `scale(${escala})`;
+        orden.style.transformOrigin = 'top center';
+        contenedor.style.height = `${alturaContenido * escala}px`;
+    }
+
+    function restablecerEscala() {
+        const contenedor = document.getElementById('orden-print-fit');
+        const orden = document.getElementById('orden-print');
+
+        if (!contenedor || !orden) {
+            return;
+        }
+
+        contenedor.style.height = '';
+        contenedor.style.transform = 'none';
+        orden.style.transform = 'none';
+    }
+
+    function imprimirOrden() {
+        ajustarASolaHoja();
+        window.print();
+    }
+
+    window.addEventListener('beforeprint', ajustarASolaHoja);
+    window.addEventListener('afterprint', restablecerEscala);
+    window.addEventListener('load', ajustarASolaHoja);
+    window.addEventListener('resize', ajustarASolaHoja);
+</script>
+@endpush
