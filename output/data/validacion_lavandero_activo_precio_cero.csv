@@ -1,0 +1,47 @@
+id,nombre,tipo,precio,activo,precio_recolector,diferencia,observacion
+94,TAPETE GRUESO (6m^2),LAVADO,0.00,t,85000.00,85000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+78,PELUCHE 80cm - 100cm,LAVADO,0.00,t,75000.00,75000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+93,TAPETE (6m^2),LAVADO,0.00,t,72000.00,72000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+92,TAPETE (5m^2),LAVADO,0.00,t,65000.00,65000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+91,TAPETE (4m^2),LAVADO,0.00,t,57999.99,57999.99,Activa con precio 0; revisar si debe tener pago de lavandero
+77,PELUCHE 70cm,LAVADO,0.00,t,52000.00,52000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+76,PELUCHE 60cm,LAVADO,0.00,t,47999.99,47999.99,Activa con precio 0; revisar si debe tener pago de lavandero
+90,TAPETE (3m^2),LAVADO,0.00,t,45000.00,45000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+75,PELUCHE 50cm,LAVADO,0.00,t,42000.00,42000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+80,PLUMON - CAMA DOBLE,LAVADO,0.00,t,42000.00,42000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+60,CHAQUETA PLUMA DE GANSO,LAVADO,0.00,t,38000.00,38000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+81,PLUMON - CAMA SENCILLA,LAVADO,0.00,t,38000.00,38000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+89,TAPETE (2m^2),LAVADO,0.00,t,37000.00,37000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+74,PELUCHE 40cm,LAVADO,0.00,t,35000.00,35000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+97,ZAPATOS GRD,LAVADO,0.00,t,28000.00,28000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+55,CASCO ABIERTO,LAVADO,0.00,t,25000.00,25000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+59,CHAQUETA GRUESA LARGA,LAVADO,0.00,t,25000.00,25000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+65,CORTINA Grd,LAVADO,0.00,t,25000.00,25000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+69,CUBRELECHO - CAMA DOBLE GRUESA,LAVADO,0.00,t,25000.00,25000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+73,PELUCHE 30 cm,LAVADO,0.00,t,25000.00,25000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+82,POR KILO (4 prendas pq =1kg),ADICIONAL,0.00,t,25000.00,25000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+95,VESTIDO DE CABALLERO,LAVADO,0.00,t,24000.00,24000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+96,VESTIDO DE DAMA,LAVADO,0.00,t,24000.00,24000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+71,CUBRELECHO - CAMA SENCILLA GRUESA,LAVADO,0.00,t,22000.00,22000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+58,CHAQUETA GRUESA CORTA,LAVADO,0.00,t,20000.00,20000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+62,COBIJA - CAMA DOBLE GRUESA,LAVADO,0.00,t,20000.00,20000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+68,CUBRELECHO - CAMA DOBLE DELGADA,LAVADO,0.00,t,20000.00,20000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+83,SABANA - CAMA DOBLE,LAVADO,0.00,t,20000.00,20000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+88,TAPETE (1m^2),LAVADO,0.00,t,20000.00,20000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+98,ZAPATOS PQ,LAVADO,0.00,t,20000.00,20000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+53,BATAS,LAVADO,0.00,t,18000.00,18000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+56,CHAQUETA DELGADA CORTA,LAVADO,0.00,t,18000.00,18000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+61,COBIJA - CAMA DOBLE DELGADA,LAVADO,0.00,t,18000.00,18000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+66,CORTINA MD,LAVADO,0.00,t,18000.00,18000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+70,CUBRELECHO - CAMA SENCILLA DELGADA,LAVADO,0.00,t,18000.00,18000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+85,SACOS DE VESTIDO,LAVADO,0.00,t,18000.00,18000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+64,COBIJA - CAMA SENCILLA GRUESA,LAVADO,0.00,t,17999.99,17999.99,Activa con precio 0; revisar si debe tener pago de lavandero
+84,SABANA - CAMA SENCILLA,LAVADO,0.00,t,17999.99,17999.99,Activa con precio 0; revisar si debe tener pago de lavandero
+57,CHAQUETA DELGADA PEQUEÑA DAMA O NIÑO,LAVADO,0.00,t,15000.00,15000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+63,COBIJA - CAMA SENCILLA DELGADA,LAVADO,0.00,t,15000.00,15000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+67,CORTINA PQ,LAVADO,0.00,t,15000.00,15000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+86,"SECADO ( cobijas, cubrelechos)",ADICIONAL,0.00,t,14999.99,14999.99,Activa con precio 0; revisar si debe tener pago de lavandero
+87,"SECADO (prendas de vestir, sabanas, manteles)",ADICIONAL,0.00,t,10000.00,10000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+54,BLUSAS,LAVADO,0.00,t,9000.00,9000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+72,FALDAS,LAVADO,0.00,t,9000.00,9000.00,Activa con precio 0; revisar si debe tener pago de lavandero
+79,PLANCHADO (c/u),ADICIONAL,0.00,t,6000.00,6000.00,Activa con precio 0; revisar si debe tener pago de lavandero
