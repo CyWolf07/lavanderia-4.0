@@ -560,7 +560,7 @@
                                     <button
                                         type="button"
                                         data-resumen="{{ e($facturasRecolectorResumen[$factura->id] ?? '{}') }}"
-                                        @click="openOrderSummary(JSON.parse($event.target.dataset.resumen))"
+                                        @click="openOrderSummary(JSON.parse($event.currentTarget.dataset.resumen))"
                                         class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 transition hover:bg-amber-200"
                                     >{{ $ordenFactura }}</button>
                                 </td>
@@ -590,7 +590,19 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <button
+                                            type="button"
+                                            data-resumen="{{ e($facturasRecolectorResumen[$factura->id] ?? '{}') }}"
+                                            @click="openOrderSummary(JSON.parse($event.currentTarget.dataset.resumen))"
+                                            class="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+                                        >Detalle</button>
+                                        <a
+                                            href="{{ route('admin.facturas-recolector.imprimir', ['facturaRecolector' => $factura, 'formato' => 'ticket']) }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+                                        >Imprimir</a>
                                         @if ($estadoFactura === 'pagado')
                                             <span class="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500">Bloqueada</span>
                                         @else
@@ -1158,6 +1170,7 @@
                     rel="noopener noreferrer"
                     class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"
                 >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"/></svg>
                     Imprimir orden
                 </a>
                 <button @click="orderSummaryOpen = false" class="flex-1 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Cerrar</button>
