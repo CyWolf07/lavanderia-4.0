@@ -196,7 +196,7 @@ class AdminController extends Controller
                 ];
             }
             return [
-                $factura->id => json_encode([
+                $factura->id => [
                     'factura_id'     => $factura->id,
                     'numero_orden'   => $ordenFactura,
                     'cliente_nombre' => optional($factura->cliente)->nombre ?? 'Sin cliente',
@@ -206,7 +206,7 @@ class AdminController extends Controller
                     'estado'         => $estadoFactura,
                     'recolector'     => optional($factura->recolector)->name ?? 'Sin recolector',
                     'detalles'       => $detalles,
-                ]),
+                ],
             ];
         });
 

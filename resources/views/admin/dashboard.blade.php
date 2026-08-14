@@ -559,8 +559,7 @@
                                 <td class="px-6 py-4">
                                     <button
                                         type="button"
-                                        data-resumen="{{ e($facturasRecolectorResumen[$factura->id] ?? '{}') }}"
-                                        @click="openOrderSummary(JSON.parse($event.currentTarget.dataset.resumen))"
+                                        @click="openOrderSummary(@js($facturasRecolectorResumen[$factura->id] ?? []))"
                                         class="rounded-full bg-amber-100 px-3 py-1.5 text-sm font-bold text-amber-800 transition hover:bg-amber-200"
                                     >{{ $ordenFactura }}</button>
                                 </td>
@@ -593,8 +592,7 @@
                                     <div class="flex flex-wrap items-center gap-2">
                                         <button
                                             type="button"
-                                            data-resumen="{{ e($facturasRecolectorResumen[$factura->id] ?? '{}') }}"
-                                            @click="openOrderSummary(JSON.parse($event.currentTarget.dataset.resumen))"
+                                            @click="openOrderSummary(@js($facturasRecolectorResumen[$factura->id] ?? []))"
                                             class="rounded-full border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100"
                                         >Detalle</button>
                                         <a
