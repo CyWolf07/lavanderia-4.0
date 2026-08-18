@@ -269,7 +269,7 @@ class RecolectorController extends Controller
         }
 
         $data = $request->validate([
-            'estado_factura' => ['required', 'in:pagado,pendiente'],
+            'estado_factura' => ['required', 'in:pagado,pendiente,cancelado'],
             'metodo_pago'    => ['nullable', 'required_if:estado_factura,pagado', 'in:efectivo,qr,nequi,llave_breve'],
         ]);
 

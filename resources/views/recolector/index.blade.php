@@ -568,8 +568,9 @@
     </div>
 
     {{-- ─── MODAL PAGO ─────────────────────────────────────────────────────── --}}
-    <div x-cloak x-show="paymentOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 px-4">
-        <div @click.outside="paymentOpen = false" class="w-full max-w-md rounded-[1.5rem] bg-white p-6 shadow-2xl">
+    {{-- z-[60] para que quede encima del modal de estatus (z-50). @click.stop evita que el click se propague al backdrop del modal padre --}}
+    <div x-cloak x-show="paymentOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 px-4">
+        <div @click.stop class="w-full max-w-md rounded-[1.5rem] bg-white p-6 shadow-2xl">
             <h2 class="text-xl font-black text-slate-900">Método de Pago</h2>
             <p class="mt-1 text-sm text-slate-500">Orden <span x-text="selectedOrder"></span></p>
             <form :action="paymentAction" method="POST" class="mt-5 space-y-3">
@@ -590,11 +591,37 @@
                 </label>
                 <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                     <input type="radio" name="metodo_pago" value="llave_breve" class="h-4 w-4 text-emerald-600" required>
-                    LLave Breve
+                    Llave Breve
                 </label>
                 <div class="flex justify-end gap-3 pt-2">
                     <button type="button" @click="paymentOpen = false" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
-                    <button class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Aceptar</button>
+                    <button type="submit" class="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700">Aceptar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ─── MODAL CONFIRMACIÓN CANCELAR FACTURA ─────────────────────────────── --}}
+    {{-- z-[60] para que quede encima del modal de estatus (z-50). @click.stop evita propagación --}}
+    <div x-cloak x-show="cancelConfirmOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/40 px-4">
+        <div @click.stop class="w-full max-w-md rounded-[1.5rem] bg-white p-6 shadow-2xl">
+            <div class="flex items-center gap-3">
+                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-rose-100">
+                    <svg class="h-5 w-5 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                </div>
+                <div>
+                    <h2 class="text-lg font-black text-slate-900">Cancelar factura</h2>
+                    <p class="text-sm text-slate-500">Orden <span x-text="selectedOrder"></span></p>
+                </div>
+            </div>
+            <p class="mt-4 text-sm text-slate-600">¿Estás seguro de que deseas cancelar esta factura? Esta acción cambiará el estado a <strong class="text-rose-700">cancelado</strong> y no podrá revertirse sin autorización del administrador.</p>
+            <form :action="cancelAction" method="POST" class="mt-5">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="estado_factura" value="cancelado">
+                <div class="flex justify-end gap-3">
+                    <button type="button" @click="cancelConfirmOpen = false" class="rounded-full border border-slate-200 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50">Volver</button>
+                    <button type="submit" class="rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700">Sí, cancelar factura</button>
                 </div>
             </form>
         </div>
@@ -754,17 +781,28 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-wrap gap-2">
-                                        <button type="button" @click="openPayment('{{ $actionF }}', '{{ $ordenF }}')" @disabled($estadoF !== 'pendiente') class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500">
-                                            Pagado
-                                        </button>
-                                        <form action="{{ $actionF }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <input type="hidden" name="estado_factura" value="pendiente">
-                                            <button @disabled($estadoF !== 'pendiente') class="rounded-full border border-amber-200 px-3 py-2 text-xs font-bold text-amber-700 hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400">
-                                                Pendiente
+                                        {{-- Botón Pagado: solo habilitado si la factura está pendiente --}}
+                                        @if($estadoF === 'pendiente')
+                                            <button
+                                                type="button"
+                                                @click.stop="openPayment('{{ $actionF }}', '{{ $ordenF }}')"
+                                                class="rounded-full bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700"
+                                            >
+                                                Marcar pagado
                                             </button>
-                                        </form>
-                                        <span class="rounded-full border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-500">Cancelado admin</span>
+                                            {{-- Botón Cancelar: solo si está pendiente --}}
+                                            <button
+                                                type="button"
+                                                @click.stop="openCancelConfirm('{{ $actionF }}', '{{ $ordenF }}')"
+                                                class="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                                            >
+                                                Cancelar
+                                            </button>
+                                        @elseif($estadoF === 'pagado')
+                                            <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">✓ Pagada</span>
+                                        @elseif($estadoF === 'cancelado')
+                                            <span class="rounded-full border border-rose-100 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-500">Cancelada</span>
+                                        @endif
                                         @if(auth()->user()->esAdmin())
                                             <a href="{{ route('admin.facturas-recolector.edit', $factura) }}" class="rounded-full border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 hover:bg-sky-100">Editar</a>
                                             <form action="{{ route('admin.facturas-recolector.destroy', $factura) }}" method="POST" onsubmit="return confirm('¿Eliminar esta factura?')">
@@ -933,6 +971,8 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         paymentOpen: false,
         selectedOrder: '',
         paymentAction: '',
+        cancelConfirmOpen: false,
+        cancelAction: '',
         orderSummaryOpen: false,
         selectedOrderSummary: {},
         modalEstatus: false,
@@ -975,6 +1015,12 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
             this.paymentAction = action;
             this.selectedOrder = order;
             this.paymentOpen = true;
+        },
+
+        openCancelConfirm(action, order) {
+            this.cancelAction = action;
+            this.selectedOrder = order;
+            this.cancelConfirmOpen = true;
         },
 
         // F3: Abrir modal resumen de orden
