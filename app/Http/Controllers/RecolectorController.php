@@ -290,13 +290,15 @@ class RecolectorController extends Controller
         ];
 
         if ($nuevoEstado === 'pagado') {
-            $periodoActivo = Gasto::periodoDesdeFecha(now());
+            $ahoraPago     = now();
+            $periodoActivo = Gasto::periodoDesdeFecha($ahoraPago);
             $quincenaPago  = $periodoActivo['periodo'];
 
             $camposActualizar['quincena_pago'] = $quincenaPago;
+            $camposActualizar['fecha_pago']    = $ahoraPago;  // timestamp exacto del cobro
 
             if (empty($facturaRecolector->quincena_origen)) {
-                $fechaIngreso = $facturaRecolector->fecha_ingreso ?? now();
+                $fechaIngreso = $facturaRecolector->fecha_ingreso ?? $ahoraPago;
                 $camposActualizar['quincena_origen'] = Gasto::periodoDesdeFecha(
                     \Carbon\Carbon::parse($fechaIngreso)
                 )['periodo'];

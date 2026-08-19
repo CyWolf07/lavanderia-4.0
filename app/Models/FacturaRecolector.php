@@ -27,6 +27,7 @@ class FacturaRecolector extends Model
         'metodo_pago',
         'quincena_origen',   // quincena en que se creó la factura (inmutable)
         'quincena_pago',     // quincena activa cuando se marcó como pagado
+        'fecha_pago',        // timestamp exacto del momento del pago
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class FacturaRecolector extends Model
         return [
             'fecha_ingreso' => 'datetime',
             'fecha_entrega' => 'date',
+            'fecha_pago'    => 'datetime',
             'observaciones' => 'array',
             'total'         => 'decimal:2',
         ];

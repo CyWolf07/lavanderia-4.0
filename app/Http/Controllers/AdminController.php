@@ -129,9 +129,11 @@ class AdminController extends Controller
             ->get();
 
         // ── Resumen financiero ───────────────────────────────────────────────
+        // Solo facturas marcadas como pagadas en la quincena actual (por quincena_pago).
+        // Incluye órdenes creadas en quincenas anteriores pero cobradas ahora.
         $totalFacturasQuincena = FacturaRecolector::query()
-            ->noCanceladas()
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->where('recolector_id', '!=', null)  // todas
+            ->pagadasEnQuincena($periodoKey)
             ->sum('total');
 
         $reportePagoQuincena = $totalFacturasQuincena - $gastosQuincena;
@@ -535,11 +537,12 @@ class AdminController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Facturas para el resumen: Solo facturas pagadas en la quincena actual
+        // Facturas pagadas en la quincena actual: filtramos por quincena_pago
+        // (incluye órdenes de quincenas anteriores cobradas en esta quincena)
+        $periodoActual = Gasto::periodoDesdeFecha(now())['periodo'];
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
-            ->where('estado_factura', 'pagado')
-            ->whereBetween('updated_at', [$inicioQuincena, $finQuincena])
-            ->orderBy('updated_at')
+            ->pagadasEnQuincena($periodoActual)
+            ->orderBy('fecha_pago')
             ->orderBy('recolector_id')
             ->orderBy('id')
             ->get();
@@ -792,15 +795,17 @@ class AdminController extends Controller
         ];
 
         if ($nuevoEstado === 'pagado') {
-            // Determinar la quincena activa actual (donde se efectuú el pago)
-            $periodoActivo = Gasto::periodoDesdeFecha(now());
-            $quincenaPago = $periodoActivo['periodo'];
+            // Determinar la quincena activa actual (donde se efectúa el pago)
+            $ahoraPago     = now();
+            $periodoActivo = Gasto::periodoDesdeFecha($ahoraPago);
+            $quincenaPago  = $periodoActivo['periodo'];
 
             $camposActualizar['quincena_pago'] = $quincenaPago;
+            $camposActualizar['fecha_pago']    = $ahoraPago;  // timestamp exacto del cobro
 
             // Si la factura aún no tenía quincena_origen, la backfilleamos ahora
             if (empty($facturaRecolector->quincena_origen)) {
-                $fechaIngreso = $facturaRecolector->fecha_ingreso ?? now();
+                $fechaIngreso = $facturaRecolector->fecha_ingreso ?? $ahoraPago;
                 $camposActualizar['quincena_origen'] = Gasto::periodoDesdeFecha(
                     Carbon::parse($fechaIngreso)
                 )['periodo'];

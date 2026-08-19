@@ -224,6 +224,7 @@
                                 <tr>
                                     <th class="px-6 py-4 font-semibold">Orden</th>
                                     <th class="px-6 py-4 font-semibold">Fecha Ingreso</th>
+                                    <th class="px-6 py-4 font-semibold">Fecha Pago</th>
                                     <th class="px-6 py-4 font-semibold">Cliente</th>
                                     <th class="px-6 py-4 font-semibold">Cant. Prendas</th>
                                     <th class="px-6 py-4 font-semibold">Total</th>
@@ -239,6 +240,15 @@
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 text-slate-700">{{ optional($factura->fecha_ingreso)->format('d/m/Y') }}</td>
+                                        <td class="px-6 py-4">
+                                            @if($factura->fecha_pago)
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-bold text-emerald-800">
+                                                    ✓ {{ $factura->fecha_pago->format('d/m/Y') }}
+                                                </span>
+                                            @else
+                                                <span class="text-xs text-slate-400">—</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 font-medium text-slate-900">{{ $factura->cliente->nombre ?? 'Eliminado' }}</td>
                                         <td class="px-6 py-4 text-slate-700">{{ $factura->total_prendas }}</td>
                                         <td class="px-6 py-4 font-semibold text-sky-700">$ {{ number_format($factura->total, 0, ',', '.') }}</td>
@@ -253,7 +263,7 @@
                             </tbody>
                             <tfoot class="border-t-2 border-slate-200 bg-sky-50">
                                 <tr>
-                                    <td colspan="3" class="px-6 py-3 font-bold text-slate-900">Subtotal</td>
+                                    <td colspan="4" class="px-6 py-3 font-bold text-slate-900">Subtotal</td>
                                     <td class="px-6 py-3 font-bold text-slate-900">{{ $facturas->sum('total_prendas') }}</td>
                                     <td class="px-6 py-3 font-bold text-sky-700">$ {{ number_format($facturas->sum('total'), 0, ',', '.') }}</td>
                                     <td class="print:hidden"></td>
