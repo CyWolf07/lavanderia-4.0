@@ -31,7 +31,6 @@ class RecolectorController extends Controller
     {
         $user = Auth::user();
         $periodoActual = Gasto::periodoDesdeFecha(now());
-        [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
 
         // F1: Mostrar clientes propios y clientes aun sin asignar.
         $clientes = Cliente::activos()
@@ -55,10 +54,11 @@ class RecolectorController extends Controller
                 'total' => (float) $items->sum('total'),
             ]);
 
+        // Solo facturas marcadas como pagadas en la quincena actual (por quincena_pago).
+        // Esto incluye órdenes creadas en quincenas anteriores pero cobradas ahora.
         $totalFacturasQuincena = FacturaRecolector::query()
-            ->noCanceladas()
             ->where('recolector_id', $user->id)
-            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
+            ->pagadasEnQuincena($periodoActual['periodo'])
             ->sum('total');
 
         $gastosQuincena = Gasto::query()
@@ -367,22 +367,7 @@ class RecolectorController extends Controller
             ->all();
     }
 
-    private function rangoQuincenaActual(): array
-    {
-        $hoy = now();
 
-        if ($hoy->day <= 15) {
-            return [
-                $hoy->copy()->startOfMonth()->startOfDay(),
-                $hoy->copy()->startOfMonth()->day(15)->endOfDay(),
-            ];
-        }
-
-        return [
-            $hoy->copy()->startOfMonth()->day(16)->startOfDay(),
-            $hoy->copy()->endOfMonth()->endOfDay(),
-        ];
-    }
 
     private function enviarWhatsappSiFueSolicitado(Request $request, FacturaRecolector $factura, Cliente $cliente): ?string
     {

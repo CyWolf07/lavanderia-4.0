@@ -500,7 +500,8 @@
                 </div>
                 <div class="min-w-0 rounded-[1.75rem] bg-slate-900 p-5 text-white shadow-xl sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-slate-300">Valor acumulado</p>
-                    <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($facturas->sum('total'), 0, ',', '.') }}</p>
+                    <p class="text-xs text-slate-400 mt-1">Facturas pagadas esta quincena</p>
+                    <p class="mt-3 break-words text-3xl font-black sm:text-4xl">$ {{ number_format($totalFacturasQuincena, 0, ',', '.') }}</p>
                 </div>
                 {{-- F2: Reporte pago = 30% --}}
                 <div class="min-w-0 rounded-[1.75rem] bg-emerald-600 p-5 text-white shadow-xl sm:p-6">
@@ -628,7 +629,8 @@
     </div>
 
     {{-- ─── F3: MODAL RESUMEN DE ORDEN ─────────────────────────────────────── --}}
-    <div x-cloak x-show="orderSummaryOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4">
+    {{-- z-[70] para que quede encima de todos los modales (estatus z-50, pago/cancelar z-[60]) --}}
+    <div x-cloak x-show="orderSummaryOpen" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 px-4">
         <div @click.outside="orderSummaryOpen = false" class="w-full max-w-lg rounded-[1.75rem] bg-white p-6 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
                 <div>
