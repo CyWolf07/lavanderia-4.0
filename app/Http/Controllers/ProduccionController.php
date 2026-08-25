@@ -57,8 +57,8 @@ class ProduccionController extends Controller
             ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->selectRaw(
                 $user->tieneRol('usuario')
-                    ? 'fecha as dia, SUM(cantidad_validada) as total_prendas'
-                    : 'fecha as dia, SUM(total_validado) as total'
+                    ? 'fecha as dia, SUM(cantidad) as total_prendas'
+                    : 'fecha as dia, SUM(total) as total'
             )
             ->groupBy('fecha')
             ->orderByDesc('fecha')
@@ -66,9 +66,8 @@ class ProduccionController extends Controller
 
         $totalQuincena = Produccion::query()
             ->where('user_id', $user->id)
-            ->pagables()
             ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
-            ->sum('total_validado');
+            ->sum('total');
 
         $historialQuincenas = HistorialProduccion::query()
             ->selectRaw('periodo, SUM(total) as total_periodo, SUM(cantidad) as total_prendas, MAX(fecha) as ultima_fecha')
@@ -239,6 +238,8 @@ class ProduccionController extends Controller
             }
         });
 
+        app(DashboardCacheService::class)->flushProduccion();
+
         return redirect()
             ->route('produccion.index')
             ->with('success', 'Prendas marcadas como lavadas correctamente.');
@@ -250,7 +251,6 @@ class ProduccionController extends Controller
 
         $periodoActual = HistorialProduccion::periodoDesdeFecha(now());
         $producciones = Produccion::with(['user', 'prenda'])
-            ->pagables()
             ->orderBy('user_id')
             ->orderBy('fecha')
             ->orderBy('id')
@@ -290,9 +290,9 @@ class ProduccionController extends Controller
                     'user_id' => $produccion->user_id,
                     'prenda_id' => $produccion->prenda_id,
                     'prenda_nombre' => $produccion->prenda?->nombre ?? 'Prenda eliminada',
-                    'precio_unitario' => $produccion->cantidad_validada > 0 ? ($produccion->total_validado / $produccion->cantidad_validada) : 0,
-                    'cantidad' => $produccion->cantidad_validada,
-                    'total' => $produccion->total_validado,
+                    'precio_unitario' => $produccion->cantidad > 0 ? ($produccion->total / $produccion->cantidad) : 0,
+                    'cantidad' => $produccion->cantidad,
+                    'total' => $produccion->total,
                     'fecha' => $fecha->toDateString(),
                     'periodo' => $periodo['periodo'],
                     'anio' => $periodo['anio'],

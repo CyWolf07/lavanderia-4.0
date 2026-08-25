@@ -42,9 +42,8 @@ class AdminController extends Controller
             ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->count();
         $ingresosProduccionActiva = Produccion::query()
-            ->pagables()
             ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
-            ->sum('total_validado');
+            ->sum('total');
 
         $totalFacturasActivas = FacturaRecolector::query()
             ->noCanceladas()
@@ -236,7 +235,7 @@ class AdminController extends Controller
             ->map(fn ($producciones, $dia) => [
                 'dia' => $dia,
                 'cantidad' => (int) $producciones->sum('cantidad'),
-                'total' => (float) $producciones->sum('total_validado'),
+                'total' => (float) $producciones->sum('total'),
             ])
             ->values();
 
@@ -939,8 +938,8 @@ class AdminController extends Controller
             ->groupBy(fn ($item) => $item->prenda?->nombre ?? 'Sin nombre')
             ->map(fn ($items, $nombre) => [
                 'prenda' => $nombre,
-                'cantidad' => $items->sum('cantidad_validada'),
-                'total' => $items->sum('total_validado'),
+                'cantidad' => $items->sum('cantidad'),
+                'total' => $items->sum('total'),
             ]);
 
         $historicos = HistorialProduccion::query()
@@ -981,8 +980,8 @@ class AdminController extends Controller
                     'id' => (int) $userId,
                     'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
-                    'cantidad' => (int) $registros->sum('cantidad_validada'),
-                    'total' => (float) $registros->sum('total_validado'),
+                    'cantidad' => (int) $registros->sum('cantidad'),
+                    'total' => (float) $registros->sum('total'),
                 ];
             })
             ->sortBy('nombre')
@@ -1021,7 +1020,7 @@ class AdminController extends Controller
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
                     'cedula' => $usuario?->cedula ?? 'No registrada',
                     'contacto' => $usuario?->contacto ?? 'No registrado',
-                    'cantidad' => (int) $registros->sum('cantidad_validada'),
+                    'cantidad' => (int) $registros->sum('cantidad'),
                     'total' => (float) $registros->sum('total'),
                     'registros' => $registros,
                 ];
@@ -1066,8 +1065,8 @@ class AdminController extends Controller
                             ->map(function (Collection $registrosPrenda, string $nombrePrenda) {
                                 return [
                                     'nombre' => $nombrePrenda,
-                                    'cantidad' => (int) $registrosPrenda->sum('cantidad_validada'),
-                                    'total' => (float) $registrosPrenda->sum('total_validado'),
+                                    'cantidad' => (int) $registrosPrenda->sum('cantidad'),
+                                    'total' => (float) $registrosPrenda->sum('total'),
                                 ];
                             })
                             ->sortBy('nombre')
@@ -1075,8 +1074,8 @@ class AdminController extends Controller
 
                         return [
                             'fecha' => $fecha,
-                            'cantidad' => (int) $registrosDia->sum('cantidad_validada'),
-                            'total' => (float) $registrosDia->sum('total_validado'),
+                            'cantidad' => (int) $registrosDia->sum('cantidad'),
+                            'total' => (float) $registrosDia->sum('total'),
                             'detalle' => $detalle,
                         ];
                     })
@@ -1088,8 +1087,8 @@ class AdminController extends Controller
                     'nombre' => $usuario?->name ?? 'Usuario eliminado',
                     'rol' => $usuario?->obtenerRol() ?? 'usuario',
                     'dias' => $dias,
-                    'cantidad' => (int) $registros->sum('cantidad_validada'),
-                    'total' => (float) $registros->sum('total_validado'),
+                    'cantidad' => (int) $registros->sum('cantidad'),
+                    'total' => (float) $registros->sum('total'),
                 ];
             })
             ->sortBy('nombre')

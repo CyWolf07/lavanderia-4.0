@@ -46,7 +46,7 @@
 
     <div class="grid gap-4 md:grid-cols-3">
         <div class="rounded-[1.5rem] bg-slate-900 p-5 text-white shadow-xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Pago validado</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">Pago registrado</p>
             <p class="mt-3 text-3xl font-black">$ {{ number_format($totalQuincena, 0, ',', '.') }}</p>
         </div>
         <div class="rounded-[1.5rem] bg-sky-600 p-5 text-white shadow-xl">
@@ -54,8 +54,8 @@
             <p class="mt-3 text-4xl font-black">{{ $modoAvanzado ? $ordenesPendientes->count() : $producciones->count() }}</p>
         </div>
         <div class="rounded-[1.5rem] bg-emerald-600 p-5 text-white shadow-xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">{{ $modoAvanzado ? 'Prendas pendientes' : 'Prendas validadas' }}</p>
-            <p class="mt-3 text-4xl font-black">{{ $modoAvanzado ? $totalPrendasPendientes : $producciones->sum('cantidad_validada') }}</p>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">{{ $modoAvanzado ? 'Prendas pendientes' : 'Prendas registradas' }}</p>
+            <p class="mt-3 text-4xl font-black">{{ $modoAvanzado ? $totalPrendasPendientes : $producciones->sum('cantidad') }}</p>
         </div>
     </div>
 

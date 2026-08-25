@@ -1040,7 +1040,7 @@
                             <th class="min-w-36 px-4 py-4 font-semibold">Prenda</th>
                             <th class="w-24 px-4 py-4 text-center font-semibold">Reportada</th>
                             <th class="w-24 px-4 py-4 text-center font-semibold">Validada</th>
-                            <th class="w-28 px-4 py-4 font-semibold">Pago</th>
+                            <th class="w-28 px-4 py-4 font-semibold">Pago registrado</th>
                             <th class="min-w-32 px-4 py-4 font-semibold">Estado</th>
                             <th class="min-w-40 px-4 py-4 font-semibold">Acciones</th>
                         </tr>
@@ -1055,7 +1055,7 @@
                                 <td class="px-4 py-4 text-slate-600">{{ $item->prenda->nombre ?? 'Sin prenda' }}</td>
                                 <td class="px-4 py-4 text-center text-slate-600">{{ $item->cantidad }}</td>
                                 <td class="px-4 py-4 text-center text-slate-600">{{ $item->cantidad_validada }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total_validado, 0, ',', '.') }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 font-semibold text-emerald-700">$ {{ number_format($item->total, 0, ',', '.') }}</td>
                                 <td class="px-4 py-4">
                                     <span class="rounded-full px-3 py-1 text-xs font-bold {{ in_array($item->estado_validacion, ['validado', 'aprobado'], true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                                         {{ ucfirst($item->estado_validacion ?? 'pendiente') }}

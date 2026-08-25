@@ -250,6 +250,98 @@ it('shows active admin totals from production and collector invoices', function 
         ->assertDontSeeText('$ 120.000');
 });
 
+it('shows washer payments from reported totals in admin dashboard and printable reports', function () {
+    $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+        'name' => 'Lavandero Registro',
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Chaqueta',
+        'tipo' => 'Lavado',
+        'precio' => 9000,
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 4,
+        'cantidad_validada' => 1,
+        'total' => 36000,
+        'total_validado' => 9000,
+        'fecha' => '2026-07-20',
+        'estado_validacion' => 'incongruente',
+    ]);
+
+    $dashboard = $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk();
+
+    expect((float) $dashboard->viewData('pagoUsuarios'))->toBe(36000.0)
+        ->and((float) $dashboard->viewData('produccionUsuariosPorDia')->first()['total'])->toBe(36000.0);
+
+    $reporte = $this->actingAs($admin)
+        ->get(route('admin.reportes.impresion', ['tipo_reporte' => 'general']))
+        ->assertOk();
+
+    expect((float) $reporte->viewData('totalGeneralUsuarios'))->toBe(36000.0)
+        ->and((int) $reporte->viewData('totalPrendasUsuarios'))->toBe(4);
+});
+
+it('closes washer records using reported totals instead of validation totals', function () {
+    $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Chaqueta',
+        'tipo' => 'Lavado',
+        'precio' => 9000,
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 4,
+        'cantidad_validada' => 1,
+        'total' => 36000,
+        'total_validado' => 9000,
+        'fecha' => '2026-07-20',
+        'estado_validacion' => 'incongruente',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('produccion.cerrar'))
+        ->assertRedirect(route('admin.reportes.periodo', [
+            'periodo' => '2026/07/QUINCENA2',
+            'imprimir' => 1,
+        ]));
+
+    $historial = HistorialProduccion::firstOrFail();
+
+    expect((int) $historial->cantidad)->toBe(4)
+        ->and((float) $historial->total)->toBe(36000.0)
+        ->and((float) $historial->precio_unitario)->toBe(9000.0);
+});
+
 it('shows reports for collector-only periods with detailed expenses', function () {
     $admin = User::factory()->create([
         'rol' => 'admin',
