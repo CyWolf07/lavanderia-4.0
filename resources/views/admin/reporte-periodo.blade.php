@@ -163,6 +163,7 @@
                                     <th class="px-6 py-4 font-semibold">Cantidad</th>
                                     <th class="px-6 py-4 font-semibold">Valor unitario</th>
                                     <th class="px-6 py-4 font-semibold">Pago registro</th>
+                                    <th class="px-6 py-4 font-semibold">Cierre</th>
                                     <th class="px-6 py-4 font-semibold print:hidden">Acciones</th>
                                 </tr>
                             </thead>
@@ -174,17 +175,24 @@
                                         <td class="px-6 py-4 text-slate-700">{{ $registro->cantidad }}</td>
                                         <td class="px-6 py-4 text-slate-700">$ {{ number_format($registro->precio_unitario, 0, ',', '.') }}</td>
                                         <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($registro->total, 0, ',', '.') }}</td>
+                                        <td class="px-6 py-4">
+                                            @if ($registro->estado_cierre === 'pendiente')
+                                                <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">Pendiente</span>
+                                            @else
+                                                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">Cerrado</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 print:hidden">
                                             <div class="flex items-center gap-2">
-                                                <a href="{{ route('admin.historial.edit', $registro) }}"
+                                                <a href="{{ $registro->edit_route }}"
                                                    class="rounded-full border border-sky-200 px-3 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-50">
                                                     Editar
                                                 </a>
-                                                <form action="{{ route('admin.historial.destroy', $registro) }}" method="POST">
+                                                <form action="{{ $registro->delete_route }}" method="POST">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button
-                                                        onclick="return confirm('¿Eliminar este registro histórico? Esta acción no se puede deshacer.')"
+                                                        onclick="return confirm('{{ $registro->delete_confirm }}')"
                                                         class="rounded-full border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50">
                                                         Eliminar
                                                     </button>
@@ -200,6 +208,7 @@
                                     <td class="px-6 py-3 font-bold text-slate-900">{{ $registros->sum('cantidad') }}</td>
                                     <td class="px-6 py-3"></td>
                                     <td class="px-6 py-3 font-bold text-emerald-700">$ {{ number_format($registros->sum('total'), 0, ',', '.') }}</td>
+                                    <td></td>
                                     <td class="print:hidden"></td>
                                 </tr>
                             </tfoot>

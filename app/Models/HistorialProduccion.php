@@ -25,6 +25,7 @@ class HistorialProduccion extends Model
         'mes',
         'quincena',
         'cerrado_por',
+        'produccion_origen_id',
     ];
 
     protected function casts(): array

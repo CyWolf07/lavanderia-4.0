@@ -46,7 +46,7 @@ it('lets admins choose the washer interface mode', function () {
     expect(SystemSetting::getValue('produccion_interfaz_lavandero'))->toBe('avanzada');
 });
 
-it('does not count active production from previous quincenas in current dashboard totals', function () {
+it('shows all active washer records in admin dashboard totals', function () {
     $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
 
     $admin = User::factory()->create([
@@ -66,7 +66,7 @@ it('does not count active production from previous quincenas in current dashboar
         'activo' => true,
     ]);
 
-    Produccion::create([
+    $anterior = Produccion::create([
         'user_id' => $worker->id,
         'prenda_id' => $prenda->id,
         'cantidad' => 2,
@@ -92,8 +92,8 @@ it('does not count active production from previous quincenas in current dashboar
         ->get(route('admin.dashboard'))
         ->assertOk();
 
-    expect((float) $response->viewData('pagoUsuarios'))->toBe(21000.0)
-        ->and($response->viewData('ultimasProducciones')->pluck('id')->all())->toBe([$actual->id]);
+    expect((float) $response->viewData('pagoUsuarios'))->toBe(35000.0)
+        ->and($response->viewData('ultimasProducciones')->pluck('id')->all())->toBe([$actual->id, $anterior->id]);
 });
 
 it('closes active washer records into the quincena that matches each production date', function () {
@@ -250,6 +250,49 @@ it('shows active admin totals from production and collector invoices', function 
         ->assertDontSeeText('$ 120.000');
 });
 
+it('keeps previous washer garments when registering another garment for the same day', function () {
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $camisa = Prenda::create([
+        'nombre' => 'Camisa',
+        'tipo' => 'Lavado',
+        'precio' => 7000,
+        'activo' => true,
+    ]);
+
+    $pantalon = Prenda::create([
+        'nombre' => 'Pantalon',
+        'tipo' => 'Lavado',
+        'precio' => 8000,
+        'activo' => true,
+    ]);
+
+    $this->actingAs($worker)
+        ->post(route('produccion.store'), [
+            'fecha' => '2026-07-20',
+            'items' => [
+                ['prenda_id' => $camisa->id, 'cantidad' => 2],
+            ],
+        ])
+        ->assertRedirect(route('produccion.index'));
+
+    $this->actingAs($worker)
+        ->post(route('produccion.store'), [
+            'fecha' => '2026-07-20',
+            'items' => [
+                ['prenda_id' => $pantalon->id, 'cantidad' => 3],
+            ],
+        ])
+        ->assertRedirect(route('produccion.index'));
+
+    expect(Produccion::query()->where('user_id', $worker->id)->count())->toBe(2)
+        ->and((int) Produccion::query()->where('prenda_id', $camisa->id)->value('cantidad'))->toBe(2)
+        ->and((int) Produccion::query()->where('prenda_id', $pantalon->id)->value('cantidad'))->toBe(3);
+});
+
 it('shows washer payments from reported totals in admin dashboard and printable reports', function () {
     $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
 
@@ -295,6 +338,42 @@ it('shows washer payments from reported totals in admin dashboard and printable 
 
     expect((float) $reporte->viewData('totalGeneralUsuarios'))->toBe(36000.0)
         ->and((int) $reporte->viewData('totalPrendasUsuarios'))->toBe(4);
+});
+
+it('shows active washer records in the period report before closing', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+        'name' => 'Lavandero Pendiente',
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Camisa Pendiente',
+        'tipo' => 'Lavado',
+        'precio' => 7000,
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 5,
+        'total' => 35000,
+        'fecha' => '2026-08-20',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.reportes.periodo', '2026/08/QUINCENA2'))
+        ->assertOk()
+        ->assertSeeText('Lavandero Pendiente')
+        ->assertSeeText('Camisa Pendiente')
+        ->assertSeeText('Pendiente')
+        ->assertSeeText('$ 35.000');
 });
 
 it('closes washer records using reported totals instead of validation totals', function () {

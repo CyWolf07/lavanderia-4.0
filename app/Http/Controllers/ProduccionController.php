@@ -15,6 +15,7 @@ use App\Services\PrendasLavanderoSyncService;
 use App\Services\ProduccionValidationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -45,7 +46,6 @@ class ProduccionController extends Controller
 
         $producciones = Produccion::with('prenda')
             ->where('user_id', $user->id)
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->get();
@@ -54,7 +54,6 @@ class ProduccionController extends Controller
 
         $porDia = Produccion::query()
             ->where('user_id', $user->id)
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->selectRaw(
                 $user->tieneRol('usuario')
                     ? 'fecha as dia, SUM(cantidad) as total_prendas'
@@ -66,7 +65,6 @@ class ProduccionController extends Controller
 
         $totalQuincena = Produccion::query()
             ->where('user_id', $user->id)
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->sum('total');
 
         $historialQuincenas = HistorialProduccion::query()
@@ -134,15 +132,6 @@ class ProduccionController extends Controller
         $userId = (int) Auth::id();
 
         DB::transaction(function () use ($fecha, $items, $prendas, $userId) {
-            $idsSeleccionados = $items->pluck('prenda_id')->all();
-
-            Produccion::query()
-                ->where('user_id', $userId)
-                ->whereDate('fecha', $fecha)
-                ->whereNotIn('prenda_id', $idsSeleccionados)
-                ->where('estado_validacion', '!=', 'aprobado')
-                ->delete();
-
             foreach ($items as $item) {
                 $prenda = $prendas->get($item['prenda_id']);
                 $total = (float) $prenda->precio * (int) $item['cantidad'];
@@ -389,12 +378,22 @@ class ProduccionController extends Controller
     public function reportePeriodo(string $periodo)
     {
 
-        $registros = HistorialProduccion::with('user')
+        $registrosHistorial = HistorialProduccion::with('user')
             ->where('periodo', $periodo)
             ->orderBy('user_id')
             ->orderBy('fecha')
             ->orderBy('id')
             ->get();
+
+        [$inicioPeriodo, $finPeriodo] = $this->rangoParaPeriodo($periodo);
+        $registrosActivos = Produccion::with(['user', 'prenda'])
+            ->whereBetween('fecha', [$inicioPeriodo, $finPeriodo])
+            ->orderBy('user_id')
+            ->orderBy('fecha')
+            ->orderBy('id')
+            ->get();
+
+        $registros = $this->normalizarRegistrosLavandero($registrosHistorial, $registrosActivos);
 
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
             ->pagadasEnQuincena($periodo)
@@ -448,7 +447,7 @@ class ProduccionController extends Controller
                     'cantidad' => (int) $registrosUsuario->sum('cantidad'),
                     'total' => (float) $registrosUsuario->sum('total'),
                     'dias' => $registrosUsuario
-                        ->groupBy(fn (HistorialProduccion $registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
+                        ->groupBy(fn ($registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
                         ->map(fn ($registrosDia, string $fecha) => [
                             'fecha' => $fecha,
                             'cantidad' => (int) $registrosDia->sum('cantidad'),
@@ -483,6 +482,55 @@ class ProduccionController extends Controller
             'ganancia' => $ganancia,
             'autoPrint' => request()->boolean('imprimir'),
         ]);
+    }
+
+    private function normalizarRegistrosLavandero(Collection $historial, Collection $activos): Collection
+    {
+        $cerrados = $historial->map(function (HistorialProduccion $registro) {
+            return (object) [
+                'id' => $registro->id,
+                'user_id' => $registro->user_id,
+                'user' => $registro->user,
+                'prenda_nombre' => $registro->prenda_nombre,
+                'precio_unitario' => (float) $registro->precio_unitario,
+                'cantidad' => (int) $registro->cantidad,
+                'total' => (float) $registro->total,
+                'fecha' => $registro->fecha,
+                'estado_cierre' => 'cerrado',
+                'edit_route' => route('admin.historial.edit', $registro),
+                'delete_route' => route('admin.historial.destroy', $registro),
+                'delete_confirm' => '¿Eliminar este registro histórico? Esta acción no se puede deshacer.',
+            ];
+        });
+
+        $pendientes = $activos->map(function (Produccion $registro) {
+            $cantidad = (int) $registro->cantidad;
+            $total = (float) $registro->total;
+
+            return (object) [
+                'id' => $registro->id,
+                'user_id' => $registro->user_id,
+                'user' => $registro->user,
+                'prenda_nombre' => $registro->prenda?->nombre ?? 'Sin prenda',
+                'precio_unitario' => $cantidad > 0 ? $total / $cantidad : 0,
+                'cantidad' => $cantidad,
+                'total' => $total,
+                'fecha' => $registro->fecha,
+                'estado_cierre' => 'pendiente',
+                'edit_route' => route('admin.produccion.edit', $registro),
+                'delete_route' => route('admin.produccion.destroy', $registro),
+                'delete_confirm' => '¿Eliminar este registro activo de producción?',
+            ];
+        });
+
+        return $cerrados
+            ->concat($pendientes)
+            ->sortBy([
+                ['user_id', 'asc'],
+                ['fecha', 'asc'],
+                ['id', 'asc'],
+            ])
+            ->values();
     }
 
     private function rangoParaPeriodo(string $periodo): array

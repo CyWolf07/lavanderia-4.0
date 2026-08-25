@@ -39,10 +39,8 @@ class AdminController extends Controller
         // ── Estadísticas de cabecera ─────────────────────────────────────────
         $totalUsuarios = User::count();
         $totalProduccionesActivas = Produccion::query()
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->count();
         $ingresosProduccionActiva = Produccion::query()
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->sum('total');
 
         $totalFacturasActivas = FacturaRecolector::query()
@@ -150,7 +148,6 @@ class AdminController extends Controller
 
         // ── Registros de producción activa ───────────────────────────────────
         $ultimasProducciones = Produccion::with(['user', 'prenda'])
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->orderByDesc('fecha')
             ->orderByDesc('id')
             ->get();
@@ -230,7 +227,6 @@ class AdminController extends Controller
             ->values();
 
         $produccionUsuariosPorDia = $ultimasProducciones
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->groupBy(fn ($produccion) => optional($produccion->fecha)->format('d/m') ?? 'Sin fecha')
             ->map(fn ($producciones, $dia) => [
                 'dia' => $dia,
@@ -249,6 +245,18 @@ class AdminController extends Controller
             ->get()
             ->keyBy('periodo');
 
+        $periodosProduccionActiva = Produccion::query()
+            ->get()
+            ->groupBy(fn (Produccion $produccion) => HistorialProduccion::periodoDesdeFecha(
+                Carbon::parse($produccion->fecha ?? $produccion->created_at ?? now())
+            )['periodo'])
+            ->map(fn ($producciones, string $periodo) => (object) [
+                'periodo' => $periodo,
+                'total_general' => (float) $producciones->sum('total'),
+                'total_prendas' => (int) $producciones->sum('cantidad'),
+                'registros_activos' => $producciones->count(),
+            ]);
+
         $periodosRecolector = FacturaRecolector::query()
             ->whereNotNull('quincena_pago')
             ->where('estado_factura', 'pagado')
@@ -258,19 +266,22 @@ class AdminController extends Controller
             ->keyBy('periodo');
 
         $todosPeriodos = $periodosHistorial->keys()
+            ->merge($periodosProduccionActiva->keys())
             ->merge($periodosRecolector->keys())
             ->unique()
             ->values();
 
-        $periodosCerrados = $todosPeriodos->map(function ($periodo) use ($periodosHistorial, $periodosRecolector) {
+        $periodosCerrados = $todosPeriodos->map(function ($periodo) use ($periodosHistorial, $periodosProduccionActiva, $periodosRecolector) {
             $hist = $periodosHistorial->get($periodo);
+            $prod = $periodosProduccionActiva->get($periodo);
             $rec = $periodosRecolector->get($periodo);
 
             return (object) [
                 'periodo' => $periodo,
-                'total_general' => (float) ($hist->total_general ?? 0) + (float) ($rec->total_facturas_rec ?? 0),
-                'total_prendas' => (int) ($hist->total_prendas ?? 0),
+                'total_general' => (float) ($hist->total_general ?? 0) + (float) ($prod->total_general ?? 0) + (float) ($rec->total_facturas_rec ?? 0),
+                'total_prendas' => (int) ($hist->total_prendas ?? 0) + (int) ($prod->total_prendas ?? 0),
                 'tiene_historial' => $hist !== null,
+                'tiene_produccion_activa' => $prod !== null,
                 'tiene_facturas' => $rec !== null,
             ];
         })->sortByDesc('periodo')->values();
@@ -532,7 +543,6 @@ class AdminController extends Controller
         $tomadoHasta = now();
 
         $producciones = Produccion::with(['user', 'prenda'])
-            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->orderBy('fecha')
             ->orderBy('user_id')
             ->orderBy('id')

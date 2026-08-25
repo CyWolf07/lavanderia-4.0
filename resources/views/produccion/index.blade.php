@@ -170,7 +170,7 @@
 
     <div class="overflow-hidden rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
         <div class="border-b border-slate-200 px-6 py-5">
-            <h2 class="text-lg font-bold text-slate-900">Registros activos de la quincena</h2>
+            <h2 class="text-lg font-bold text-slate-900">Registros activos por cerrar</h2>
             <p class="mt-1 text-sm text-slate-500">El pago se calcula con la cantidad registrada por el lavandero.</p>
         </div>
         <div class="overflow-x-auto">

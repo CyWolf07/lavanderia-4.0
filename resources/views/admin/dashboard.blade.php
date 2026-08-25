@@ -632,8 +632,8 @@
         <div @click.outside="modalQuincenas = false" class="relative w-full max-w-2xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
             <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                 <div>
-                    <h2 class="text-xl font-black text-slate-900">📅 Quincenas cerradas</h2>
-                    <p class="mt-1 text-sm text-slate-500">Incluye cierres manuales de lavanderos y cierres automáticos de recolectores.</p>
+                    <h2 class="text-xl font-black text-slate-900">📅 Quincenas e informes</h2>
+                    <p class="mt-1 text-sm text-slate-500">Incluye lavanderos cerrados, lavanderos pendientes por cerrar y recolectores.</p>
                 </div>
                 <button @click="modalQuincenas = false" class="rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100">
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -647,25 +647,30 @@
                                 <p class="font-semibold text-slate-900">{{ $periodo->periodo }}</p>
                                 <div class="mt-1 flex items-center gap-2">
                                     <p class="text-sm text-slate-500">{{ $periodo->total_prendas }} prendas</p>
-                                    @if ($periodo->tiene_historial && $periodo->tiene_facturas)
+                                    @if (($periodo->tiene_historial || $periodo->tiene_produccion_activa) && $periodo->tiene_facturas)
                                         <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">Completo</span>
                                     @elseif ($periodo->tiene_historial)
                                         <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">Lavanderos</span>
+                                    @elseif ($periodo->tiene_produccion_activa)
+                                        <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700">Lavanderos pendientes</span>
                                     @elseif ($periodo->tiene_facturas)
                                         <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">Solo recolectores</span>
+                                    @endif
+                                    @if ($periodo->tiene_produccion_activa)
+                                        <span class="rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">Por cerrar</span>
                                     @endif
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
                                 <p class="text-sm font-semibold text-emerald-700">$ {{ number_format($periodo->total_general, 0, ',', '.') }}</p>
-                                @if ($periodo->tiene_historial || $periodo->tiene_facturas)
+                                @if ($periodo->tiene_historial || $periodo->tiene_produccion_activa || $periodo->tiene_facturas)
                                     <a href="{{ route('admin.reportes.periodo', $periodo->periodo) }}" class="rounded-full border border-sky-200 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-50">Ver informe</a>
                                 @endif
                             </div>
                         </div>
                     </div>
                 @empty
-                    <p class="text-sm text-slate-500">Todavía no se ha cerrado ninguna quincena.</p>
+                    <p class="text-sm text-slate-500">Todavia no hay quincenas con datos.</p>
                 @endforelse
             </div>
         </div>
