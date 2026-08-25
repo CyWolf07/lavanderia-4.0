@@ -71,6 +71,8 @@ class Produccion extends Model
 
     public function scopePagables($query)
     {
-        return $query->whereIn('estado_validacion', ['validado', 'aprobado']);
+        // 'incongruente' se incluye porque ahora siempre guarda el total reportado
+        // por el lavandero. La discrepancia se notifica al admin pero no se borra el pago.
+        return $query->whereIn('estado_validacion', ['validado', 'aprobado', 'incongruente']);
     }
 }

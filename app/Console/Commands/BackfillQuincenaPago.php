@@ -23,13 +23,48 @@ class BackfillQuincenaPago extends Command
         $dryRun           = $this->option('dry-run');
         $recalcularPagos  = $this->option('recalcular-pagos');
 
+        // ── 0. Reparar producciones con total_validado = 0 pero cantidad > 0 ─────
+        $this->info('\n=== Reparando producciones con total_validado = 0 ===');
+        $produccionesRotas = \App\Models\Produccion::with('prenda')
+            ->where(function ($q) {
+                $q->where('total_validado', 0)->orWhereNull('total_validado')
+                  ->orWhere('cantidad_validada', 0)->orWhereNull('cantidad_validada');
+            })
+            ->where('cantidad', '>', 0)
+            ->get();
+
+        $this->info("Producciones con total_validado=0 o cantidad_validada=0: {$produccionesRotas->count()}");
+
+        if ($produccionesRotas->isNotEmpty() && !$dryRun) {
+            $reparadas = 0;
+            foreach ($produccionesRotas as $produccion) {
+                $precio = (float) ($produccion->prenda?->precio ?? 0);
+                if ($precio <= 0) {
+                    continue; // no podemos calcular sin precio
+                }
+                $cantidadFinal = (int) $produccion->cantidad;
+                $produccion->update([
+                    'cantidad_validada' => $cantidadFinal,
+                    'total_validado'    => $precio * $cantidadFinal,
+                    'estado_validacion' => in_array($produccion->estado_validacion, ['aprobado', 'validado', 'incongruente'])
+                        ? $produccion->estado_validacion
+                        : 'validado',
+                    'validado_en'       => $produccion->validado_en ?? now(),
+                ]);
+                $reparadas++;
+            }
+            $this->info("  → {$reparadas} producciones reparadas.");
+        } elseif ($dryRun) {
+            $this->warn('  → [dry-run] Se repararían las producciones indicadas.');
+        }
+
         // ── 1. Facturas sin quincena_pago ──────────────────────────────────────
         $sinQuincena = FacturaRecolector::query()
             ->where('estado_factura', 'pagado')
             ->whereNull('quincena_pago')
             ->get();
 
-        $this->info("Facturas pagadas sin quincena_pago: {$sinQuincena->count()}");
+        $this->info("\nFacturas pagadas sin quincena_pago: {$sinQuincena->count()}");
 
         if ($sinQuincena->isEmpty()) {
             $this->line('  → Nada que actualizar.');

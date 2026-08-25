@@ -157,10 +157,10 @@ class ProduccionController extends Controller
                     [
                         'cantidad' => $item['cantidad'],
                         'total' => $total,
-                        'cantidad_validada' => 0,
-                        'total_validado' => 0,
-                        'estado_validacion' => 'pendiente',
-                        'validado_en' => null,
+                        'cantidad_validada' => $item['cantidad'],
+                        'total_validado' => $total,
+                        'estado_validacion' => 'validado',
+                        'validado_en' => now(),
                     ]
                 );
             }

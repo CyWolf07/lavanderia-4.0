@@ -123,11 +123,18 @@ class ProduccionValidationService
     {
         $precio = (float) ($produccion->prenda?->precio ?? 0);
 
+        // Si hay incongruencia (cantidadValidada=0 pero el lavandero sí reportó algo),
+        // se usa la cantidad reportada para no borrar su producción del sistema.
+        // La incongruencia queda registrada para revisión del admin, pero el total
+        // del lavandero no se pierde.
+        $cantidadFinal = $cantidadValidada > 0 ? $cantidadValidada : (int) $produccion->cantidad;
+        $totalFinal    = $precio * $cantidadFinal;
+
         $produccion->update([
-            'cantidad_validada' => $cantidadValidada,
-            'total_validado' => $precio * $cantidadValidada,
+            'cantidad_validada' => $cantidadFinal,
+            'total_validado'    => $totalFinal,
             'estado_validacion' => $estado,
-            'validado_en' => now(),
+            'validado_en'       => now(),
         ]);
     }
 
