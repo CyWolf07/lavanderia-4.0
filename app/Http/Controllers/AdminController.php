@@ -115,7 +115,21 @@ class AdminController extends Controller
         }
 
         $total30PorCiento = $recolectoresConFacturas->sum('pago30');
-        $pagoUsuarios = $ingresosProduccionActiva;
+        $pagoUsuariosHistorialQuincena = HistorialProduccion::query()
+            ->where('periodo', $periodoKey)
+            ->sum('total');
+
+        $pagoUsuariosActivosQuincena = Produccion::query()
+            ->where(function ($query) use ($inicioQuincena, $finQuincena) {
+                $query->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+                    ->orWhere(function ($query) use ($inicioQuincena, $finQuincena) {
+                        $query->whereNull('fecha')
+                            ->whereBetween('created_at', [$inicioQuincena, $finQuincena]);
+                    });
+            })
+            ->sum('total');
+
+        $pagoUsuarios = $pagoUsuariosHistorialQuincena + $pagoUsuariosActivosQuincena;
         $ganancia = $totalNeto - $pagoUsuarios - $total30PorCiento;
 
         // ── Historial de pagos recolectores ──────────────────────────────────

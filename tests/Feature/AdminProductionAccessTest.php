@@ -46,7 +46,7 @@ it('lets admins choose the washer interface mode', function () {
     expect(SystemSetting::getValue('produccion_interfaz_lavandero'))->toBe('avanzada');
 });
 
-it('shows all active washer records in admin dashboard totals', function () {
+it('shows all active washer records in admin dashboard list while paying the current fortnight', function () {
     $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
 
     $admin = User::factory()->create([
@@ -92,8 +92,76 @@ it('shows all active washer records in admin dashboard totals', function () {
         ->get(route('admin.dashboard'))
         ->assertOk();
 
-    expect((float) $response->viewData('pagoUsuarios'))->toBe(35000.0)
+    expect((float) $response->viewData('pagoUsuarios'))->toBe(21000.0)
         ->and($response->viewData('ultimasProducciones')->pluck('id')->all())->toBe([$actual->id, $anterior->id]);
+});
+
+it('includes closed washer history in the current dashboard washer payment', function () {
+    $this->travelTo(Carbon::parse('2026-08-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Sabanas',
+        'tipo' => 'Lavado',
+        'precio' => 6200,
+        'activo' => true,
+    ]);
+
+    HistorialProduccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'prenda_nombre' => $prenda->nombre,
+        'precio_unitario' => 6200,
+        'cantidad' => 1,
+        'total' => 6200,
+        'fecha' => '2026-08-20',
+        'periodo' => '2026/08/QUINCENA2',
+        'anio' => 2026,
+        'mes' => 8,
+        'quincena' => 2,
+        'cerrado_por' => $admin->id,
+    ]);
+
+    HistorialProduccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'prenda_nombre' => $prenda->nombre,
+        'precio_unitario' => 9000,
+        'cantidad' => 1,
+        'total' => 9000,
+        'fecha' => '2026-08-10',
+        'periodo' => '2026/08/QUINCENA1',
+        'anio' => 2026,
+        'mes' => 8,
+        'quincena' => 1,
+        'cerrado_por' => $admin->id,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 2,
+        'cantidad_validada' => 2,
+        'total' => 12400,
+        'total_validado' => 12400,
+        'fecha' => '2026-08-20',
+        'estado_validacion' => 'validado',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk();
+
+    expect((float) $response->viewData('pagoUsuarios'))->toBe(18600.0);
 });
 
 it('closes active washer records into the quincena that matches each production date', function () {
