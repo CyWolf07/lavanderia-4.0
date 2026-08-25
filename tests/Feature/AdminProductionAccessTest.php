@@ -408,6 +408,82 @@ it('shows washer payments from reported totals in admin dashboard and printable 
         ->and((int) $reporte->viewData('totalPrendasUsuarios'))->toBe(4);
 });
 
+it('includes closed washer history in the printable current fortnight summary', function () {
+    $this->travelTo(Carbon::parse('2026-08-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+        'name' => 'Lavandero Impresion',
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Cobija',
+        'tipo' => 'Lavado',
+        'precio' => 6200,
+        'activo' => true,
+    ]);
+
+    HistorialProduccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'prenda_nombre' => $prenda->nombre,
+        'precio_unitario' => 6200,
+        'cantidad' => 1,
+        'total' => 6200,
+        'fecha' => '2026-08-20',
+        'periodo' => '2026/08/QUINCENA2',
+        'anio' => 2026,
+        'mes' => 8,
+        'quincena' => 2,
+        'cerrado_por' => $admin->id,
+    ]);
+
+    HistorialProduccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'prenda_nombre' => $prenda->nombre,
+        'precio_unitario' => 9000,
+        'cantidad' => 1,
+        'total' => 9000,
+        'fecha' => '2026-08-10',
+        'periodo' => '2026/08/QUINCENA1',
+        'anio' => 2026,
+        'mes' => 8,
+        'quincena' => 1,
+        'cerrado_por' => $admin->id,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 2,
+        'cantidad_validada' => 2,
+        'total' => 12400,
+        'total_validado' => 12400,
+        'fecha' => '2026-08-20',
+        'estado_validacion' => 'validado',
+    ]);
+
+    $reporte = $this->actingAs($admin)
+        ->get(route('admin.reportes.impresion', [
+            'tipo_reporte' => 'resumen_diario',
+            'imprimir' => 1,
+        ]))
+        ->assertOk()
+        ->assertSeeText('Lavandero Impresion')
+        ->assertSeeText('$ 18.600');
+
+    expect((float) $reporte->viewData('totalGeneralUsuarios'))->toBe(18600.0)
+        ->and((int) $reporte->viewData('totalPrendasUsuarios'))->toBe(3)
+        ->and((float) $reporte->viewData('resumenDiarioUsuarios')->first()['total'])->toBe(18600.0);
+});
+
 it('shows active washer records in the period report before closing', function () {
     $admin = User::factory()->create([
         'rol' => 'admin',

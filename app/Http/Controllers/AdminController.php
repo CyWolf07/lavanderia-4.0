@@ -556,15 +556,40 @@ class AdminController extends Controller
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
         $tomadoHasta = now();
 
-        $producciones = Produccion::with(['user', 'prenda'])
+        // Facturas pagadas en la quincena actual: filtramos por quincena_pago
+        // (incluye órdenes de quincenas anteriores cobradas en esta quincena)
+        $periodoActual = Gasto::periodoDesdeFecha(now())['periodo'];
+
+        $produccionesActivas = Produccion::with(['user', 'prenda'])
+            ->where(function ($query) use ($inicioQuincena, $finQuincena) {
+                $query->whereBetween('fecha', [$inicioQuincena, $finQuincena])
+                    ->orWhere(function ($query) use ($inicioQuincena, $finQuincena) {
+                        $query->whereNull('fecha')
+                            ->whereBetween('created_at', [$inicioQuincena, $finQuincena]);
+                    });
+            })
             ->orderBy('fecha')
             ->orderBy('user_id')
             ->orderBy('id')
             ->get();
 
-        // Facturas pagadas en la quincena actual: filtramos por quincena_pago
-        // (incluye órdenes de quincenas anteriores cobradas en esta quincena)
-        $periodoActual = Gasto::periodoDesdeFecha(now())['periodo'];
+        $produccionesHistorial = HistorialProduccion::with(['user', 'prenda'])
+            ->where('periodo', $periodoActual)
+            ->orderBy('fecha')
+            ->orderBy('user_id')
+            ->orderBy('id')
+            ->get();
+
+        $producciones = $produccionesHistorial
+            ->concat($produccionesActivas)
+            ->sortBy(fn ($registro) => sprintf(
+                '%s-%010d-%010d',
+                optional($registro->fecha)->toDateString() ?? '9999-99-99',
+                (int) $registro->user_id,
+                (int) $registro->id
+            ))
+            ->values();
+
         $facturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
             ->pagadasEnQuincena($periodoActual)
             ->orderBy('fecha_pago')
@@ -1082,10 +1107,10 @@ class AdminController extends Controller
             ->map(function (Collection $registros, $userId) {
                 $usuario = $registros->first()->user;
                 $dias = $registros
-                    ->groupBy(fn (Produccion $registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
+                    ->groupBy(fn ($registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
                     ->map(function (Collection $registrosDia, string $fecha) {
                         $detalle = $registrosDia
-                            ->groupBy(fn (Produccion $registro) => $registro->prenda?->nombre ?? 'Sin prenda')
+                            ->groupBy(fn ($registro) => $registro->prenda?->nombre ?? $registro->prenda_nombre ?? 'Sin prenda')
                             ->map(function (Collection $registrosPrenda, string $nombrePrenda) {
                                 $cantidad = (int) $registrosPrenda->sum('cantidad');
                                 $total = (float) $registrosPrenda->sum('total');

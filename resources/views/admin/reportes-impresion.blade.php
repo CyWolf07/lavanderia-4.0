@@ -197,7 +197,7 @@
                                 </table>
                             </div>
                         @empty
-                            <p class="text-sm text-slate-500">No hay registros activos de lavanderos.</p>
+                            <p class="text-sm text-slate-500">No hay registros de lavanderos en esta quincena.</p>
                         @endforelse
                     </div>
                 </div>
@@ -307,7 +307,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay registros activos de lavanderos.</td>
+                                    <td colspan="4" class="px-6 py-8 text-center text-slate-500">No hay registros de lavanderos en esta quincena.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -395,7 +395,7 @@
                                 @foreach ($item['registros'] as $registro)
                                     <tr>
                                         <td class="px-6 py-4 text-slate-700">{{ optional($registro->fecha)->format('d/m/Y') }}</td>
-                                        <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda?->nombre ?? 'Sin prenda' }}</td>
+                                        <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda?->nombre ?? $registro->prenda_nombre ?? 'Sin prenda' }}</td>
                                         <td class="px-6 py-4 text-slate-600">{{ $registro->cantidad }}</td>
                                         <td class="px-6 py-4 text-slate-600">$ {{ number_format($registro->cantidad > 0 ? ($registro->total / $registro->cantidad) : 0, 0, ',', '.') }}</td>
                                         <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($registro->total, 0, ',', '.') }}</td>
