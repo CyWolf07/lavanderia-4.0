@@ -55,6 +55,7 @@ class AdminController extends Controller
             ->where(function ($q) {
                 $q->whereNull('estado_factura')->orWhere('estado_factura', 'pendiente');
             })
+            ->whereBetween('fecha_ingreso', [$inicioQuincena, $finQuincena])
             ->sum('total');
 
         $totalProducciones = $totalProduccionesActivas + $totalFacturasActivas;
@@ -532,6 +533,7 @@ class AdminController extends Controller
         $tomadoHasta = now();
 
         $producciones = Produccion::with(['user', 'prenda'])
+            ->whereBetween('fecha', [$inicioQuincena, $finQuincena])
             ->orderBy('fecha')
             ->orderBy('user_id')
             ->orderBy('id')
@@ -999,7 +1001,7 @@ class AdminController extends Controller
                     'nombre' => $recolector?->name ?? 'Recolector eliminado',
                     'rol' => $recolector?->obtenerRol() ?? 'recolector',
                     'cantidad' => (int) $registros->sum('total_prendas'),
-                    'total' => (float) $registros->sum('total_validado'),
+                    'total' => (float) $registros->sum('total'), // corrección: FacturaRecolector usa 'total', no 'total_validado'
                 ];
             })
             ->sortBy('nombre')

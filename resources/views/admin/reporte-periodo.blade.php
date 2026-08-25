@@ -39,9 +39,9 @@
             <p class="text-sm text-slate-500">{{ $totalPrendasFacturas }} prendas</p>
         </div>
         <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total ingresado</p>
-            <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalFacturasPeriodo - $totalGeneral, 0, ',', '.') }}</p>
-            <p class="text-sm text-emerald-700">Recolectores - Lavanderos</p>
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Ganancia neta</p>
+            <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($ganancia, 0, ',', '.') }}</p>
+            <p class="text-sm text-emerald-700">Neto − Lavanderos − Recolectores</p>
         </div>
     </div>
 

@@ -8,7 +8,7 @@
     $detalleActual = $grupo === 'recolectores' ? $detalleRecolectores : $detalleUsuarios;
     $totalGrupoActual = $grupo === 'recolectores' ? $totalGeneralRecolectores : $totalGeneralUsuarios;
     $totalPrendasGrupoActual = $grupo === 'recolectores' ? $totalPrendasRecolectores : $totalPrendasUsuarios;
-    $totalCierreResumen = $totalGeneralRecolectores - $totalGeneralUsuarios;
+    $totalCierreResumen = $totalGeneralRecolectores + $totalGeneralUsuarios;  // total combinado (lavanderos + recolectores)
     $totalPrendasResumen = $totalPrendasUsuarios + $totalPrendasRecolectores;
 @endphp
 <style>
@@ -104,9 +104,9 @@
                         <p class="text-sm text-slate-500">{{ $totalPrendasRecolectores }} prendas</p>
                     </div>
                     <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total ingresado</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Total combinado</p>
                         <p class="mt-2 text-2xl font-black text-emerald-800">$ {{ number_format($totalCierreResumen, 0, ',', '.') }}</p>
-                        <p class="text-sm text-emerald-700">Recolectores - Lavanderos</p>
+                        <p class="text-sm text-emerald-700">Lavanderos + Recolectores</p>
                     </div>
                 </div>
 
