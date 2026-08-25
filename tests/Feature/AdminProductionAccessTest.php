@@ -164,6 +164,69 @@ it('includes closed washer history in the current dashboard washer payment', fun
     expect((float) $response->viewData('pagoUsuarios'))->toBe(18600.0);
 });
 
+it('marks current periods with active washer records as pending instead of complete', function () {
+    $this->travelTo(Carbon::parse('2026-08-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $collector = User::factory()->create([
+        'rol' => 'recolector',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Toalla',
+        'tipo' => 'Lavado',
+        'precio' => 6200,
+        'activo' => true,
+    ]);
+
+    $cliente = Cliente::create([
+        'nombre' => 'Cliente actual',
+        'celular' => '3001234567',
+        'direccion' => 'Calle 1',
+        'barrio' => 'Centro',
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 1,
+        'total' => 6200,
+        'fecha' => '2026-08-20',
+    ]);
+
+    FacturaRecolector::create([
+        'numero_orden' => 88,
+        'recolector_id' => $collector->id,
+        'cliente_id' => $cliente->id,
+        'fecha_ingreso' => '2026-08-20 09:00:00',
+        'fecha_entrega' => '2026-08-23',
+        'total_prendas' => 13,
+        'total' => 214000,
+        'estado_factura' => 'pagado',
+        'quincena_pago' => '2026/08/QUINCENA2',
+        'fecha_pago' => '2026-08-20 12:00:00',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertSeeText('2026/08/QUINCENA2')
+        ->assertSeeText('Lavanderos pendientes')
+        ->assertSeeText('Por cerrar')
+        ->assertDontSeeText('Completo');
+});
+
 it('closes active washer records into the quincena that matches each production date', function () {
     $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
 

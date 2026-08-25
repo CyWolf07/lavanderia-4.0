@@ -647,12 +647,12 @@
                                 <p class="font-semibold text-slate-900">{{ $periodo->periodo }}</p>
                                 <div class="mt-1 flex items-center gap-2">
                                     <p class="text-sm text-slate-500">{{ $periodo->total_prendas }} prendas</p>
-                                    @if (($periodo->tiene_historial || $periodo->tiene_produccion_activa) && $periodo->tiene_facturas)
+                                    @if ($periodo->tiene_produccion_activa)
+                                        <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700">Lavanderos pendientes</span>
+                                    @elseif ($periodo->tiene_historial && $periodo->tiene_facturas)
                                         <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-bold text-indigo-700">Completo</span>
                                     @elseif ($periodo->tiene_historial)
                                         <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">Lavanderos</span>
-                                    @elseif ($periodo->tiene_produccion_activa)
-                                        <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-700">Lavanderos pendientes</span>
                                     @elseif ($periodo->tiene_facturas)
                                         <span class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">Solo recolectores</span>
                                     @endif
