@@ -273,13 +273,27 @@ class ProduccionController extends Controller
         }
 
         $periodosCerrados = collect();
+        $resumenPeriodosCerrados = collect();
 
-        DB::transaction(function () use ($producciones, &$periodosCerrados) {
+        DB::transaction(function () use ($producciones, &$periodosCerrados, &$resumenPeriodosCerrados) {
             $periodosCerrados = $producciones
                 ->groupBy(fn (Produccion $produccion) => HistorialProduccion::periodoDesdeFecha(
                     Carbon::parse($produccion->fecha ?? now())
                 )['periodo'])
                 ->keys()
+                ->values();
+
+            $resumenPeriodosCerrados = $producciones
+                ->groupBy(fn (Produccion $produccion) => HistorialProduccion::periodoDesdeFecha(
+                    Carbon::parse($produccion->fecha ?? now())
+                )['periodo'])
+                ->map(fn ($registros, string $periodo) => [
+                    'periodo' => $periodo,
+                    'registros' => $registros->count(),
+                    'prendas' => (int) $registros->sum('cantidad'),
+                    'total' => (float) $registros->sum('total'),
+                ])
+                ->sortKeysDesc()
                 ->values();
 
             foreach ($producciones as $produccion) {
@@ -315,7 +329,9 @@ class ProduccionController extends Controller
         return redirect()->route('admin.reportes.periodo', [
             'periodo' => $periodoDestino,
             'imprimir' => 1,
-        ])->with('success', 'Quincena cerrada, respaldada e informe listo para imprimir.');
+        ])
+            ->with('success', 'Quincena cerrada, respaldada e informe listo para imprimir.')
+            ->with('periodosCerradosDetalle', $resumenPeriodosCerrados->all());
     }
 
     public function editHistorial(HistorialProduccion $historialProduccion)
@@ -346,6 +362,8 @@ class ProduccionController extends Controller
         $prenda = Prenda::findOrFail($data['prenda_id']);
         $total = $data['cantidad'] * $prenda->precio;
 
+        $periodo = HistorialProduccion::periodoDesdeFecha(Carbon::parse($data['fecha']));
+
         $historialProduccion->update([
             'user_id' => $data['user_id'],
             'prenda_id' => $prenda->id,
@@ -354,13 +372,17 @@ class ProduccionController extends Controller
             'cantidad' => $data['cantidad'],
             'total' => $total,
             'fecha' => $data['fecha'],
+            'periodo' => $periodo['periodo'],
+            'anio' => $periodo['anio'],
+            'mes' => $periodo['mes'],
+            'quincena' => $periodo['quincena'],
         ]);
 
         // Invalidar caché del dashboard (historial actualizado)
         app(DashboardCacheService::class)->flushProduccion();
 
         return redirect()
-            ->route('admin.reportes.periodo', $historialProduccion->periodo)
+            ->route('admin.reportes.periodo', $periodo['periodo'])
             ->with('success', 'Registro histórico actualizado correctamente.');
     }
 
@@ -416,6 +438,29 @@ class ProduccionController extends Controller
         $total30 = $resumen30Recolectores->sum('pago30');
 
         $pagoUsuarios = $registros->sum('total');
+        $resumenPagoLavanderos = $registros
+            ->groupBy('user_id')
+            ->map(function ($registrosUsuario) {
+                $usuario = $registrosUsuario->first()->user;
+
+                return [
+                    'nombre' => $usuario?->name ?? 'Lavandero eliminado',
+                    'cantidad' => (int) $registrosUsuario->sum('cantidad'),
+                    'total' => (float) $registrosUsuario->sum('total'),
+                    'dias' => $registrosUsuario
+                        ->groupBy(fn (HistorialProduccion $registro) => optional($registro->fecha)->toDateString() ?? 'Sin fecha')
+                        ->map(fn ($registrosDia, string $fecha) => [
+                            'fecha' => $fecha,
+                            'cantidad' => (int) $registrosDia->sum('cantidad'),
+                            'total' => (float) $registrosDia->sum('total'),
+                            'registros' => $registrosDia,
+                        ])
+                        ->sortKeys()
+                        ->values(),
+                ];
+            })
+            ->sortBy('nombre')
+            ->values();
 
         // Ganancia = Total Neto - Pago Usuarios - Pago Recolectores
         $ganancia = $totalNeto - $pagoUsuarios - $total30;
@@ -423,6 +468,7 @@ class ProduccionController extends Controller
         return view('admin.reporte-periodo', [
             'periodo' => $periodo,
             'registrosPorUsuario' => $registros->groupBy('user_id'),
+            'resumenPagoLavanderos' => $resumenPagoLavanderos,
             'totalGeneral' => $pagoUsuarios,
             'totalPrendas' => $registros->sum('cantidad'),
             'facturasRecolector' => $facturasRecolector,

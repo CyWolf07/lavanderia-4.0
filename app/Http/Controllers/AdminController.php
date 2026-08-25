@@ -1063,10 +1063,14 @@ class AdminController extends Controller
                         $detalle = $registrosDia
                             ->groupBy(fn (Produccion $registro) => $registro->prenda?->nombre ?? 'Sin prenda')
                             ->map(function (Collection $registrosPrenda, string $nombrePrenda) {
+                                $cantidad = (int) $registrosPrenda->sum('cantidad');
+                                $total = (float) $registrosPrenda->sum('total');
+
                                 return [
                                     'nombre' => $nombrePrenda,
-                                    'cantidad' => (int) $registrosPrenda->sum('cantidad'),
-                                    'total' => (float) $registrosPrenda->sum('total'),
+                                    'cantidad' => $cantidad,
+                                    'precio_unitario' => $cantidad > 0 ? $total / $cantidad : 0,
+                                    'total' => $total,
                                 ];
                             })
                             ->sortBy('nombre')

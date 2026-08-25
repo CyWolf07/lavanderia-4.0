@@ -342,6 +342,153 @@ it('closes washer records using reported totals instead of validation totals', f
         ->and((float) $historial->precio_unitario)->toBe(9000.0);
 });
 
+it('shows washer payment detail in closed period reports', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+        'name' => 'Lavandero Detalle',
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Chaqueta Detalle',
+        'tipo' => 'Lavado',
+        'precio' => 9000,
+        'activo' => true,
+    ]);
+
+    HistorialProduccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'prenda_nombre' => $prenda->nombre,
+        'precio_unitario' => 9000,
+        'cantidad' => 4,
+        'total' => 36000,
+        'fecha' => '2026-07-20',
+        'periodo' => '2026/07/QUINCENA2',
+        'anio' => 2026,
+        'mes' => 7,
+        'quincena' => 2,
+        'cerrado_por' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.reportes.periodo', '2026/07/QUINCENA2'))
+        ->assertOk()
+        ->assertSeeText('Detalle de pago a lavanderos')
+        ->assertSeeText('Lavandero Detalle')
+        ->assertSeeText('Chaqueta Detalle')
+        ->assertSeeText('Valor unitario')
+        ->assertSeeText('Pago registro')
+        ->assertSeeText('$ 9.000')
+        ->assertSeeText('$ 36.000');
+});
+
+it('closes old active washer records into the quincena that matches their saved date', function () {
+    $this->travelTo(Carbon::parse('2026-07-20 10:00:00'));
+
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Camisa Antigua',
+        'tipo' => 'Lavado',
+        'precio' => 7000,
+        'activo' => true,
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 2,
+        'total' => 14000,
+        'fecha' => '2026-07-10',
+    ]);
+
+    Produccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'cantidad' => 3,
+        'total' => 21000,
+        'fecha' => '2026-07-20',
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('produccion.cerrar'))
+        ->assertRedirect(route('admin.reportes.periodo', [
+            'periodo' => '2026/07/QUINCENA2',
+            'imprimir' => 1,
+        ]))
+        ->assertSessionHas('periodosCerradosDetalle', function ($periodos) {
+            return collect($periodos)->pluck('periodo')->sort()->values()->all() === [
+                '2026/07/QUINCENA1',
+                '2026/07/QUINCENA2',
+            ];
+        });
+
+    expect((float) HistorialProduccion::where('periodo', '2026/07/QUINCENA1')->sum('total'))->toBe(14000.0)
+        ->and((float) HistorialProduccion::where('periodo', '2026/07/QUINCENA2')->sum('total'))->toBe(21000.0)
+        ->and(Produccion::count())->toBe(0);
+});
+
+it('moves edited historical washer records to the quincena from their new date', function () {
+    $admin = User::factory()->create([
+        'rol' => 'admin',
+        'activo' => true,
+    ]);
+
+    $worker = User::factory()->create([
+        'rol' => 'usuario',
+        'activo' => true,
+    ]);
+
+    $prenda = Prenda::create([
+        'nombre' => 'Pantalon Historico',
+        'tipo' => 'Lavado',
+        'precio' => 8000,
+        'activo' => true,
+    ]);
+
+    $registro = HistorialProduccion::create([
+        'user_id' => $worker->id,
+        'prenda_id' => $prenda->id,
+        'prenda_nombre' => $prenda->nombre,
+        'precio_unitario' => 8000,
+        'cantidad' => 1,
+        'total' => 8000,
+        'fecha' => '2026-07-10',
+        'periodo' => '2026/07/QUINCENA1',
+        'anio' => 2026,
+        'mes' => 7,
+        'quincena' => 1,
+        'cerrado_por' => $admin->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.historial.update', $registro), [
+            'user_id' => $worker->id,
+            'prenda_id' => $prenda->id,
+            'cantidad' => 2,
+            'fecha' => '2026-07-20',
+        ])
+        ->assertRedirect(route('admin.reportes.periodo', '2026/07/QUINCENA2'));
+
+    expect($registro->fresh()->periodo)->toBe('2026/07/QUINCENA2')
+        ->and($registro->fresh()->quincena)->toBe(2)
+        ->and((float) $registro->fresh()->total)->toBe(16000.0);
+});
+
 it('shows reports for collector-only periods with detailed expenses', function () {
     $admin = User::factory()->create([
         'rol' => 'admin',

@@ -171,7 +171,7 @@
     <div class="overflow-hidden rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
         <div class="border-b border-slate-200 px-6 py-5">
             <h2 class="text-lg font-bold text-slate-900">Registros activos de la quincena</h2>
-            <p class="mt-1 text-sm text-slate-500">El pago se calcula con la cantidad validada o aprobada.</p>
+            <p class="mt-1 text-sm text-slate-500">El pago se calcula con la cantidad registrada por el lavandero.</p>
         </div>
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -181,6 +181,8 @@
                         <th class="px-6 py-4 font-semibold">Prenda</th>
                         <th class="px-6 py-4 font-semibold">Reportada</th>
                         <th class="px-6 py-4 font-semibold">Validada</th>
+                        <th class="px-6 py-4 font-semibold">Valor unitario</th>
+                        <th class="px-6 py-4 font-semibold">Pago registrado</th>
                         <th class="px-6 py-4 font-semibold">Estado</th>
                     </tr>
                 </thead>
@@ -191,6 +193,8 @@
                             <td class="px-6 py-4 font-semibold text-slate-900">{{ $prod->prenda->nombre ?? 'Sin prenda' }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $prod->cantidad }}</td>
                             <td class="px-6 py-4 text-slate-600">{{ $prod->cantidad_validada }}</td>
+                            <td class="px-6 py-4 text-slate-600">$ {{ number_format($prod->cantidad > 0 ? ($prod->total / $prod->cantidad) : 0, 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($prod->total, 0, ',', '.') }}</td>
                             <td class="px-6 py-4">
                                 <span class="rounded-full px-3 py-1 text-xs font-semibold {{ in_array($prod->estado_validacion, ['validado', 'aprobado'], true) ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
                                     {{ ucfirst($prod->estado_validacion ?? 'pendiente') }}
@@ -199,7 +203,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500">No hay registros activos.</td>
+                            <td colspan="7" class="px-6 py-8 text-center text-slate-500">No hay registros activos.</td>
                         </tr>
                     @endforelse
                 </tbody>

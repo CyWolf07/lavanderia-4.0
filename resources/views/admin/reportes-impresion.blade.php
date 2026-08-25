@@ -176,6 +176,7 @@
                                                             <p>
                                                                 {{ $detalle['nombre'] }}:
                                                                 {{ $detalle['cantidad'] }} prendas,
+                                                                $ {{ number_format($detalle['precio_unitario'], 0, ',', '.') }} c/u,
                                                                 $ {{ number_format($detalle['total'], 0, ',', '.') }}
                                                             </p>
                                                         @endforeach
@@ -386,7 +387,8 @@
                                     <th class="px-6 py-4 font-semibold">Fecha</th>
                                     <th class="px-6 py-4 font-semibold">Prenda</th>
                                     <th class="px-6 py-4 font-semibold">Cantidad</th>
-                                    <th class="px-6 py-4 font-semibold">Total</th>
+                                    <th class="px-6 py-4 font-semibold">Valor unitario</th>
+                                    <th class="px-6 py-4 font-semibold">Pago registro</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
@@ -395,6 +397,7 @@
                                         <td class="px-6 py-4 text-slate-700">{{ optional($registro->fecha)->format('d/m/Y') }}</td>
                                         <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda?->nombre ?? 'Sin prenda' }}</td>
                                         <td class="px-6 py-4 text-slate-600">{{ $registro->cantidad }}</td>
+                                        <td class="px-6 py-4 text-slate-600">$ {{ number_format($registro->cantidad > 0 ? ($registro->total / $registro->cantidad) : 0, 0, ',', '.') }}</td>
                                         <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($registro->total, 0, ',', '.') }}</td>
                                     </tr>
                                 @endforeach

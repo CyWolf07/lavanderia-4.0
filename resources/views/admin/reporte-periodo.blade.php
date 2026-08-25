@@ -26,6 +26,24 @@
         </div>
     @endif
 
+    @if (session('periodosCerradosDetalle'))
+        <div class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-4 text-sm text-sky-800">
+            <p class="font-bold text-sky-950">Registros de lavanderos guardados por fecha</p>
+            <div class="mt-3 grid gap-2 md:grid-cols-2">
+                @foreach (session('periodosCerradosDetalle') as $periodoCerrado)
+                    <a href="{{ route('admin.reportes.periodo', $periodoCerrado['periodo']) }}" class="rounded-xl border border-sky-200 bg-white px-4 py-3 hover:bg-sky-100">
+                        <span class="block font-bold">{{ $periodoCerrado['periodo'] }}</span>
+                        <span class="text-xs">
+                            {{ $periodoCerrado['registros'] }} registro(s),
+                            {{ $periodoCerrado['prendas'] }} prenda(s),
+                            $ {{ number_format($periodoCerrado['total'], 0, ',', '.') }}
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Paneles de resumen general --}}
     <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -79,8 +97,46 @@
     @if ($registrosPorUsuario->isNotEmpty())
         <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
             <div class="border-b border-slate-200 px-6 py-5">
+                <h2 class="text-lg font-bold text-slate-900">Detalle de pago a lavanderos</h2>
+                <p class="mt-1 text-sm text-slate-500">Pago calculado con la cantidad y el valor que el lavandero registro en esta quincena.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-left text-slate-500">
+                        <tr>
+                            <th class="px-6 py-4 font-semibold">Lavandero</th>
+                            <th class="px-6 py-4 font-semibold">Dia</th>
+                            <th class="px-6 py-4 text-right font-semibold">Prendas</th>
+                            <th class="px-6 py-4 text-right font-semibold">Pago del dia</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach ($resumenPagoLavanderos as $persona)
+                            @foreach ($persona['dias'] as $dia)
+                                <tr>
+                                    <td class="px-6 py-4 font-semibold text-slate-900">{{ $persona['nombre'] }}</td>
+                                    <td class="px-6 py-4 text-slate-700">{{ $dia['fecha'] === 'Sin fecha' ? 'Sin fecha' : \Carbon\Carbon::parse($dia['fecha'])->format('d/m/Y') }}</td>
+                                    <td class="px-6 py-4 text-right text-slate-700">{{ $dia['cantidad'] }}</td>
+                                    <td class="px-6 py-4 text-right font-bold text-emerald-700">$ {{ number_format($dia['total'], 0, ',', '.') }}</td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                    <tfoot class="border-t-2 border-slate-200 bg-emerald-50">
+                        <tr>
+                            <td colspan="2" class="px-6 py-3 font-bold text-slate-900">Total pago lavanderos</td>
+                            <td class="px-6 py-3 text-right font-bold text-slate-900">{{ $totalPrendas }}</td>
+                            <td class="px-6 py-3 text-right font-black text-emerald-700">$ {{ number_format($totalGeneral, 0, ',', '.') }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="rounded-[1.75rem] bg-white shadow-xl ring-1 ring-slate-200">
+            <div class="border-b border-slate-200 px-6 py-5">
                 <h2 class="text-lg font-bold text-slate-900">📋 Registros de lavanderos</h2>
-                <p class="mt-1 text-sm text-slate-500">Producción registrada y cerrada en este período. Puedes editar registros individuales.</p>
+                <p class="mt-1 text-sm text-slate-500">Detalle de prendas registradas y cerradas en este periodo.</p>
             </div>
             @foreach ($registrosPorUsuario as $registros)
                 @php
@@ -105,7 +161,8 @@
                                     <th class="px-6 py-4 font-semibold">Fecha</th>
                                     <th class="px-6 py-4 font-semibold">Prenda</th>
                                     <th class="px-6 py-4 font-semibold">Cantidad</th>
-                                    <th class="px-6 py-4 font-semibold">Total</th>
+                                    <th class="px-6 py-4 font-semibold">Valor unitario</th>
+                                    <th class="px-6 py-4 font-semibold">Pago registro</th>
                                     <th class="px-6 py-4 font-semibold print:hidden">Acciones</th>
                                 </tr>
                             </thead>
@@ -115,6 +172,7 @@
                                         <td class="px-6 py-4 text-slate-700">{{ optional($registro->fecha)->format('d/m/Y') }}</td>
                                         <td class="px-6 py-4 font-medium text-slate-900">{{ $registro->prenda_nombre }}</td>
                                         <td class="px-6 py-4 text-slate-700">{{ $registro->cantidad }}</td>
+                                        <td class="px-6 py-4 text-slate-700">$ {{ number_format($registro->precio_unitario, 0, ',', '.') }}</td>
                                         <td class="px-6 py-4 font-semibold text-emerald-700">$ {{ number_format($registro->total, 0, ',', '.') }}</td>
                                         <td class="px-6 py-4 print:hidden">
                                             <div class="flex items-center gap-2">
@@ -140,6 +198,7 @@
                                 <tr>
                                     <td colspan="2" class="px-6 py-3 font-bold text-slate-900">Subtotal</td>
                                     <td class="px-6 py-3 font-bold text-slate-900">{{ $registros->sum('cantidad') }}</td>
+                                    <td class="px-6 py-3"></td>
                                     <td class="px-6 py-3 font-bold text-emerald-700">$ {{ number_format($registros->sum('total'), 0, ',', '.') }}</td>
                                     <td class="print:hidden"></td>
                                 </tr>
