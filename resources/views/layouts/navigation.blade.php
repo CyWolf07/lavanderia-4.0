@@ -14,7 +14,8 @@
             </a>
 
             @auth
-                <div class="hidden items-center gap-2 sm:flex">
+                <div class="hidden items-center gap-2 xl:flex">
+                    <a href="{{ route('puntual.index') }}" class="rounded-lg px-3 py-2 text-sm font-semibold {{ request()->routeIs('puntual.*') ? 'bg-emerald-100 text-emerald-900' : 'text-slate-600 hover:bg-emerald-50' }}">Puntual</a>
                     @if (auth()->user()->tieneRol('admin', 'programador', 'usuario'))
                         <a href="{{ route('produccion.index') }}" class="rounded-full px-4 py-2 text-sm font-semibold {{ request()->routeIs('produccion.*') ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200 shadow-sm shadow-sky-100/60' : 'text-slate-600 hover:bg-sky-50 hover:text-sky-800' }}">
                             Producción
@@ -44,7 +45,7 @@
         </div>
 
         @auth
-            <div class="hidden items-center gap-4 sm:flex">
+            <div class="hidden items-center gap-4 xl:flex">
                 <div class="text-right">
                     <p class="text-sm font-semibold text-slate-900">{{ auth()->user()->name }}</p>
                     <p class="text-xs uppercase tracking-[0.24em] text-sky-700">{{ auth()->user()->obtenerRol() }}</p>
@@ -57,7 +58,7 @@
                 </form>
             </div>
         @else
-            <div class="hidden items-center gap-3 sm:flex">
+            <div class="hidden items-center gap-3 xl:flex">
                 <a href="{{ route('login') }}" class="rounded-full px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-sky-50 hover:text-sky-800">Iniciar sesión</a>
                 @if ($registroPublicoDisponible)
                     <a href="{{ route('register') }}" class="brand-button-primary rounded-full px-4 py-2">Registrarse</a>
@@ -65,7 +66,7 @@
             </div>
         @endauth
 
-        <button @click="open = ! open" class="inline-flex items-center justify-center rounded-xl p-2 text-slate-500 hover:bg-sky-50 hover:text-sky-700 sm:hidden">
+        <button @click="open = ! open" aria-label="Abrir menú" :aria-expanded="open" class="inline-flex items-center justify-center rounded-xl p-2 text-slate-500 hover:bg-sky-50 hover:text-sky-700 xl:hidden">
             <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                 <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                 <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -73,9 +74,10 @@
         </button>
     </div>
 
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden border-t border-sky-100 bg-white/95 backdrop-blur sm:hidden">
+    <div :class="{'block': open, 'hidden': ! open}" class="hidden border-t border-sky-100 bg-white/95 backdrop-blur xl:hidden">
         <div class="space-y-1 px-4 py-4">
             @auth
+                <a href="{{ route('puntual.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold text-emerald-800">Puntual</a>
                 @if (auth()->user()->tieneRol('admin', 'programador', 'usuario'))
                     <a href="{{ route('produccion.index') }}" class="block rounded-xl px-3 py-2 text-sm font-medium {{ request()->routeIs('produccion.*') ? 'bg-sky-100 text-sky-900 ring-1 ring-sky-200' : 'text-slate-700 hover:bg-sky-50 hover:text-sky-800' }}">Producción</a>
                 @endif

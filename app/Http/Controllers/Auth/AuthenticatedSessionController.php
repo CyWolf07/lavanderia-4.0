@@ -45,6 +45,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        if ($request->user() && $request->session()->has('puntual_endpoint_hash')) {
+            \Illuminate\Support\Facades\DB::table('puntual_suscripciones')
+                ->where('user_id', $request->user()->id)
+                ->where('endpoint_hash', $request->session()->get('puntual_endpoint_hash'))->delete();
+        }
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

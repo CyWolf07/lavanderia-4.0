@@ -4,6 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <meta name="theme-color" content="#047857">
+        <link rel="manifest" href="/manifest.webmanifest">
+        <link rel="apple-touch-icon" href="/images/logo-lavanderia-exclusiva.png">
 
         <title>@yield('title', config('app.name', 'Laravel'))</title>
         <link rel="icon" type="image/png" href="{{ asset('images/logo-lavanderia-exclusiva.png') }}">

@@ -24,3 +24,10 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/signing/
+/android/app/src/main/generated-res/
+/.puntual-qa/

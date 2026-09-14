@@ -1,0 +1,12 @@
+{
+  "id": "/",
+  "name": "Lavandería Exclusiva",
+  "short_name": "Lavandería",
+  "lang": "es-CO",
+  "start_url": "/puntual",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#047857",
+  "icons": [{"src": "/images/logo-lavanderia-exclusiva.png", "type": "image/png", "sizes": "500x500", "purpose": "any"}]
+}

@@ -33,8 +33,8 @@ WORKDIR /var/www/html
 
 # Install PHP extensions in a separate cached layer.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libicu-dev libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql bcmath intl \
+    && apt-get install -y --no-install-recommends libicu-dev libpq-dev libcurl4-openssl-dev \
+    && docker-php-ext-install pdo pdo_pgsql bcmath intl curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Keep the MPM cleanup after docker-php-ext-install and every a2enmod call.

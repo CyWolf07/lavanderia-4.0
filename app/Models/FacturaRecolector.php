@@ -36,6 +36,7 @@ class FacturaRecolector extends Model
             'fecha_ingreso' => 'datetime',
             'fecha_entrega' => 'date',
             'fecha_pago'    => 'datetime',
+            'entregado_en' => 'datetime',
             'observaciones' => 'array',
             'total'         => 'decimal:2',
         ];

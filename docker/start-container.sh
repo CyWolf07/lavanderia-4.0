@@ -179,6 +179,7 @@ php artisan event:clear     > /dev/null 2>&1 || true
 # Las migraciones crean las tablas: users, sessions, cache, jobs, etc.
 echo "Ejecutando migraciones..."
 php artisan migrate --force
+php artisan puntual:preparar
 
 # Los seeders crean datos iniciales (roles, configuracion, admin por defecto)
 echo "Ejecutando seeders..."
@@ -211,4 +212,5 @@ echo "========================================"
 
 # ── 7. Iniciar Apache en primer plano ─────────────────────────────────────────
 # 'exec' reemplaza este proceso shell con Apache para que Docker lo gestione correctamente
+su -s /bin/sh www-data -c 'php artisan schedule:work --no-interaction' &
 exec apache2-foreground

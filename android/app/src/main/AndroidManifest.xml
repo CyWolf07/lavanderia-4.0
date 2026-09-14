@@ -1,0 +1,19 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application android:label="Lavandería Exclusiva" android:icon="@drawable/brand_logo" android:allowBackup="false" android:supportsRtl="true" android:theme="@android:style/Theme.Translucent.NoTitleBar">
+        <meta-data android:name="asset_statements" android:resource="@string/asset_statements" />
+        <activity android:name="com.google.androidbrowserhelper.trusted.LauncherActivity" android:exported="true">
+            <meta-data android:name="android.support.customtabs.trusted.DEFAULT_URL" android:value="https://lavanderia-exclusiva-dzev.onrender.com/puntual" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="lavanderia-exclusiva-dzev.onrender.com" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

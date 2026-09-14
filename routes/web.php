@@ -36,6 +36,7 @@ use App\Http\Controllers\FacturaRecolectorPrintController;
 use App\Http\Controllers\GastoController;
 use App\Http\Controllers\MapaClientesController;
 use App\Http\Controllers\PqrsController;
+use App\Http\Controllers\PuntualController;
 use App\Http\Controllers\PrendaController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ProfileController;
@@ -87,6 +88,11 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'activo'])->group(function () {
+    Route::get('/puntual', [PuntualController::class, 'index'])->name('puntual.index');
+    Route::patch('/puntual/ordenes/{factura}/entrega', [PuntualController::class, 'entregar'])->name('puntual.entregar');
+    Route::patch('/puntual/avisos/{aviso}/leer', [PuntualController::class, 'leer'])->name('puntual.leer');
+    Route::post('/puntual/suscripciones', [PuntualController::class, 'suscribir'])->middleware('throttle:20,1')->name('puntual.suscribir');
+    Route::delete('/puntual/suscripciones', [PuntualController::class, 'desuscribir'])->name('puntual.desuscribir');
 
     // ── DASHBOARD ──────────────────────────────────────────────────────────────
     // Redirige al módulo correcto según el rol del usuario autenticado

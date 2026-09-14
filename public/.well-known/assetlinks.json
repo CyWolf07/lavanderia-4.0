@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "co.lavanderia.exclusiva",
+      "sha256_cert_fingerprints": ["4E:51:81:6A:FF:E2:60:3D:C7:52:2B:3A:F9:36:F3:DF:7A:A6:EC:1F:5F:4D:D0:4C:BF:0B:4C:0C:21:96:D5:B8"]
+    }
+  }
+]

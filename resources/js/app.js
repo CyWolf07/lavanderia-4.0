@@ -1,4 +1,5 @@
 import './bootstrap';
+import './puntual';
 
 import Alpine from 'alpinejs';
 
