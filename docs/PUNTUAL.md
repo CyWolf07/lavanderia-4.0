@@ -26,6 +26,9 @@ de npm y se verificaron los requisitos de PHP/Composer. No se reemplazaron
 - Cancelar, entregar, cambiar fecha o cambiar recolector invalida el aviso antiguo.
 - Las claves y permisos push se guardan en base de datos. La clave privada VAPID
   queda cifrada con APP_KEY, que debe mantenerse estable y respaldarse.
+  Las claves estan separadas por URL y clave de instalacion para evitar mezclar
+  valores cifrados si dos entornos comparten una base de datos. Una clave ilegible
+  deshabilita los avisos del dispositivo, sin impedir abrir la plataforma.
 - Cerrar sesion elimina la suscripcion del dispositivo vinculada a esa sesion.
 
 ## Despliegue

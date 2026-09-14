@@ -7,8 +7,17 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('puntual:preparar', function (PuntualKeys $keys) {
-    $keys->preparar();
-    $this->info('Claves de avisos disponibles.');
+    try {
+        $keys->preparar();
+        if ($keys->obtener()) {
+            $this->info('Claves de avisos disponibles.');
+        } else {
+            $this->warn('Avisos pendientes: revisar las claves cifradas de esta instalacion.');
+        }
+    } catch (\Throwable $exception) {
+        report($exception);
+        $this->warn('No se pudieron preparar los avisos. La plataforma puede seguir funcionando.');
+    }
 });
 
 Artisan::command('puntual:avisar', function (PuntualService $service) {

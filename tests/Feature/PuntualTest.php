@@ -157,3 +157,22 @@ it('removes expired subscriptions and retries temporary push failures', function
     expect(DB::table('puntual_suscripciones')->count())->toBe(1);
     expect(app(PuntualService::class)->enviar())->toBe(1);
 });
+
+it('does not reuse encrypted notification keys from another installation', function () {
+    \App\Models\SystemSetting::setValue('puntual_vapid', 'unreadable-legacy-value');
+    $keys = app(\App\Services\PuntualKeys::class);
+    expect($keys->obtener())->toBeNull();
+    $setting = 'puntual_vapid_'.hash('sha256', config('app.url').'|'.config('app.key'));
+    \App\Models\SystemSetting::setValue($setting, \Illuminate\Support\Facades\Crypt::encryptString(json_encode(['publicKey' => 'one', 'privateKey' => 'secret'])));
+    expect($keys->obtener()['publicKey'])->toBe('one');
+    config(['app.url' => 'https://another-installation.example']);
+    expect($keys->obtener())->toBeNull();
+});
+
+it('keeps the page available when a stored push key cannot be decrypted', function () {
+    $setting = 'puntual_vapid_'.hash('sha256', config('app.url').'|'.config('app.key'));
+    \App\Models\SystemSetting::setValue($setting, 'unreadable-value');
+    $user = User::factory()->create(['rol' => 'recolector', 'activo' => true]);
+    $this->actingAs($user)->get(route('puntual.index'))->assertOk();
+    expect(app(\App\Services\PuntualService::class)->enviar())->toBe(0);
+});
