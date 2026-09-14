@@ -75,6 +75,6 @@
             <p class="py-12 text-center text-slate-500">No hay entregas en esta vista.</p>
         @endforelse
     </div>
-    <div class="mt-5">{{ $ordenes->links() }}</div>
+    <div class="mt-5">{{ $ordenes->links('components.pagination-arrows') }}</div>
 </div>
 @endsection
