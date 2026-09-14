@@ -21,5 +21,17 @@ self.addEventListener('notificationclick', event => {
     event.notification.close();
     const url = new URL(event.notification.data?.url || '/puntual', self.location.origin);
     if (url.origin !== self.location.origin) return;
-    event.waitUntil(self.clients.openWindow(url.href));
+    event.waitUntil((async () => {
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        const candidates = windows.filter(client => new URL(client.url).origin === url.origin);
+        candidates.sort((a, b) => Number(b.focused) - Number(a.focused)
+            || Number(b.visibilityState === 'visible') - Number(a.visibilityState === 'visible'));
+        for (const client of candidates) {
+            try {
+                const current = client.url === url.href ? client : await client.navigate(url.href);
+                if (current) { await current.focus(); return; }
+            } catch { /* A window may close while handling the notification. */ }
+        }
+        await self.clients.openWindow(url.href);
+    })());
 });

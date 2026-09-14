@@ -1,6 +1,7 @@
 let installPrompt;
 window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
+    if (document.documentElement.classList.contains('installed-app')) return;
     installPrompt = event;
     const button = document.getElementById('puntual-install');
     if (button) button.hidden = false;

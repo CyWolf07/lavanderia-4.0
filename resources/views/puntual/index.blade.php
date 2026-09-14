@@ -11,7 +11,7 @@
             <button type="button" id="puntual-push" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold">Activar avisos</button>
             <button type="button" id="puntual-install" hidden class="rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white">Instalar</button>
             @if (config('puntual.apk_url'))
-                <a href="{{ config('puntual.apk_url') }}" class="rounded-lg border border-sky-700 px-4 py-2 text-sm font-semibold text-sky-800">Descargar APK</a>
+                <a id="puntual-apk" href="{{ config('puntual.apk_url') }}" class="rounded-lg border border-sky-700 px-4 py-2 text-sm font-semibold text-sky-800">Descargar APK</a>
             @endif
         </div>
     </div>
