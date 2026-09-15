@@ -82,12 +82,22 @@ it('allows a collector to print their own order', function () {
         ->assertSee('Orden de pedido')
         ->assertSee('100001')
         ->assertSee('Camisa')
+        ->assertSee('href="' . route('recolector.index') . '#estatus-facturas"', false)
         ->assertDontSee('Cliente Impresión')
         ->assertDontSee('Recolector');
 
     $this->actingAs($recolector)
         ->get(route('recolector.facturas.imprimir', $facturaAjena))
         ->assertForbidden();
+
+    $this->actingAs($recolector)
+        ->get(route('recolector.index'))
+        ->assertOk()
+        ->assertSee('@click.self="modalEstatus = false"', false)
+        ->assertSee('@click.self="orderSummaryOpen = false"', false)
+        ->assertDontSee('@click.outside="modalEstatus = false"', false)
+        ->assertSee("window.location.hash === '#estatus-facturas'", false)
+        ->assertSee('target="_self"', false);
 });
 
 it('allows admin to print any collector order', function () {
@@ -131,5 +141,6 @@ it('allows admin to print any collector order', function () {
         ]))
         ->assertOk()
         ->assertSee('200001')
+        ->assertSee('href="' . route('admin.dashboard') . '"', false)
         ->assertDontSee('Recolector Uno');
 });

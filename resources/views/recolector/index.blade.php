@@ -123,7 +123,7 @@
                         </a>
                         <a
                             href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'formato' => 'ticket']) }}"
-                            target="_blank"
+                            target="_self"
                             rel="noopener noreferrer"
                             class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
                         >
@@ -136,7 +136,7 @@
                     <div class="mt-3">
                         <a
                             href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => session('nueva_factura_id'), 'formato' => 'ticket']) }}"
-                            target="_blank"
+                            target="_self"
                             rel="noopener noreferrer"
                             class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg"
                         >
@@ -630,8 +630,8 @@
 
     {{-- ─── F3: MODAL RESUMEN DE ORDEN ─────────────────────────────────────── --}}
     {{-- z-[70] para que quede encima de todos los modales (estatus z-50, pago/cancelar z-[60]) --}}
-    <div x-cloak x-show="orderSummaryOpen" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 px-4">
-        <div @click.outside="orderSummaryOpen = false" class="w-full max-w-lg rounded-[1.75rem] bg-white p-6 shadow-2xl">
+    <div x-cloak x-show="orderSummaryOpen" @click.self="orderSummaryOpen = false" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 px-4">
+        <div class="w-full max-w-lg rounded-[1.75rem] bg-white p-6 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.25em] text-amber-700">Resumen de Orden</p>
@@ -686,7 +686,7 @@
                 <a
                     x-show="selectedOrderSummary.factura_id"
                     :href="`${ordenPrintBase}/${selectedOrderSummary.factura_id}/imprimir?formato=ticket`"
-                    target="_blank"
+                    target="_self"
                     rel="noopener noreferrer"
                     class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700"
                 >
@@ -701,8 +701,8 @@
     </div>
 
     {{-- ════════ MODAL: ESTATUS DE FACTURAS ════════ --}}
-    <div x-cloak x-show="modalEstatus" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
-        <div @click.outside="modalEstatus = false" class="relative w-full max-w-5xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
+    <div x-cloak x-show="modalEstatus" @click.self="modalEstatus = false" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
+        <div class="relative w-full max-w-5xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
             <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                 <div>
                     <h2 class="text-xl font-black text-slate-900">📋 Estatus de facturas</h2>
@@ -825,8 +825,8 @@
     </div>
 
     {{-- ════════ MODAL: ÓRDENES RECIENTES ════════ --}}
-    <div x-cloak x-show="modalOrdenes" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
-        <div @click.outside="modalOrdenes = false" class="relative w-full max-w-4xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
+    <div x-cloak x-show="modalOrdenes" @click.self="modalOrdenes = false" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 px-4 py-8">
+        <div class="relative w-full max-w-4xl rounded-[1.75rem] bg-white shadow-2xl my-auto">
             <div class="flex items-center justify-between border-b border-slate-200 px-6 py-5">
                 <div>
                     <h2 class="text-xl font-black text-slate-900">🗂 Órdenes recientes</h2>
@@ -938,7 +938,7 @@
                             @endif
 
                             <a href="{{ route('recolector.facturas.imprimir', ['facturaRecolector' => $factura, 'formato' => 'ticket']) }}"
-                               target="_blank"
+                               target="_self"
                                rel="noopener noreferrer"
                                class="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow transition hover:-translate-y-0.5 hover:shadow-md">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2m2 4h6a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2zm8-12V5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v4h10z"/></svg>
@@ -984,6 +984,14 @@ function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldIt
         isMobileViewport: false,
 
         init() {
+            const restoreStatus = () => {
+                if (window.location.hash === '#estatus-facturas') {
+                    this.modalEstatus = true;
+                    this.orderSummaryOpen = false;
+                }
+            };
+            restoreStatus();
+            window.addEventListener('hashchange', restoreStatus);
             this.actualizarDispositivo();
             window.addEventListener('resize', () => this.actualizarDispositivo());
 

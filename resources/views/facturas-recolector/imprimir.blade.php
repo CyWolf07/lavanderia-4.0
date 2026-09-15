@@ -12,7 +12,7 @@
         'ticket'      => 'Ticket (A6)',
     ];
     $volverUrl = auth()->user()->tieneRol('recolector')
-        ? route('recolector.index')
+        ? route('recolector.index') . '#estatus-facturas'
         : route('admin.dashboard');
 @endphp
 
