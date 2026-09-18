@@ -34,6 +34,13 @@ class Cliente extends Model
 
     protected static function booted(): void
     {
+        static::deleting(function (Cliente $cliente) {
+            if ($cliente->facturasRecolector()->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'cliente' => 'El cliente tiene facturas registradas. Inhabilitalo para conservar su historial.',
+                ]);
+            }
+        });
         static::creating(function (Cliente $cliente) {
             if (blank($cliente->numero_cliente)) {
                 $cliente->numero_cliente = self::siguienteNumero();

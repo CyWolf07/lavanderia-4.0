@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\BloqueNumeroOrden;
 use App\Models\FacturaRecolector;
+use App\Models\SystemSetting;
 use Illuminate\Support\Facades\DB;
 
 class NumeroOrdenService
@@ -17,6 +18,9 @@ class NumeroOrdenService
     public function obtenerSiguiente(int $recolectorId): int
     {
         return DB::transaction(function () use ($recolectorId) {
+            // A persistent row also serializes the first allocation, when no blocks exist.
+            $control = SystemSetting::firstOrCreate(['key' => 'numero_orden_allocation'], ['value' => '1']);
+            SystemSetting::whereKey($control->id)->lockForUpdate()->firstOrFail();
             // Bloque activo: el más reciente donde aún hay números disponibles
             $bloque = BloqueNumeroOrden::where('recolector_id', $recolectorId)
                 ->whereColumn('siguiente', '<=', 'fin')
@@ -48,7 +52,7 @@ class NumeroOrdenService
 
         if (! $bloque) {
             // Calcular cuál sería el inicio del nuevo bloque
-            $maxFin = BloqueNumeroOrden::max('fin') ?? 0;
+            $maxFin = max(BloqueNumeroOrden::max('fin') ?? 0, FacturaRecolector::max('numero_orden') ?? 0);
 
             return $maxFin + 1;
         }
@@ -105,7 +109,7 @@ class NumeroOrdenService
     private function crearNuevoBloque(int $recolectorId): BloqueNumeroOrden
     {
         // El inicio del nuevo bloque es el máximo fin global + 1
-        $maxFin = BloqueNumeroOrden::max('fin') ?? 0;
+        $maxFin = max(BloqueNumeroOrden::max('fin') ?? 0, FacturaRecolector::max('numero_orden') ?? 0);
         $inicio = $maxFin + 1;
         $fin = $inicio + self::BLOQUE_TAMAÑO - 1;   // +599 → 600 números
 

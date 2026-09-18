@@ -42,6 +42,11 @@ it('saves collector order and sends WhatsApp business message when requested', f
         'activo' => true,
     ]);
 
+    \App\Models\BloqueNumeroOrden::create([
+        'recolector_id' => $recolector->id, 'mes' => now()->month, 'anio' => now()->year,
+        'inicio' => 601, 'fin' => 1200, 'siguiente' => 601,
+    ]);
+
     $this->actingAs($recolector)
         ->post(route('recolector.facturas.store'), [
             'cliente_id' => $cliente->id,
@@ -72,6 +77,7 @@ it('saves collector order and sends WhatsApp business message when requested', f
             && $request->hasHeader('Authorization', 'Bearer test-token')
             && $request['messaging_product'] === 'whatsapp'
             && $request['to'] === '573001234567'
+            && str_contains($request['text']['body'], '#601')
             && str_contains($request['text']['body'], 'tu orden de lavanderia');
     });
 });

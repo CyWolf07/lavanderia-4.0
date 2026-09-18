@@ -205,6 +205,10 @@ class ProduccionController extends Controller
 
         DB::transaction(function () use ($detalles, $request, $prendasPorDetalle) {
             foreach ($detalles as $detalle) {
+                $detalle = $detalle->newQuery()->whereKey($detalle->id)->lockForUpdate()->first();
+                if (! $detalle || $detalle->estaLavada()) {
+                    continue;
+                }
                 $prenda = $prendasPorDetalle->get($detalle->id);
 
                 $produccion = Produccion::create([
@@ -265,6 +269,13 @@ class ProduccionController extends Controller
         $resumenPeriodosCerrados = collect();
 
         DB::transaction(function () use ($producciones, &$periodosCerrados, &$resumenPeriodosCerrados) {
+            $producciones = Produccion::with(['user', 'prenda'])
+                ->whereIn('id', $producciones->pluck('id'))->orderBy('id')->lockForUpdate()->get();
+            if ($producciones->isEmpty()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'produccion' => 'Estos registros ya fueron cerrados. Actualiza el informe.',
+                ]);
+            }
             $periodosCerrados = $producciones
                 ->groupBy(fn (Produccion $produccion) => HistorialProduccion::periodoDesdeFecha(
                     Carbon::parse($produccion->fecha ?? now())
@@ -290,6 +301,7 @@ class ProduccionController extends Controller
                 $periodo = HistorialProduccion::periodoDesdeFecha($fecha);
 
                 HistorialProduccion::create([
+                    'produccion_origen_id' => $produccion->id,
                     'user_id' => $produccion->user_id,
                     'prenda_id' => $produccion->prenda_id,
                     'prenda_nombre' => $produccion->prenda?->nombre ?? 'Prenda eliminada',

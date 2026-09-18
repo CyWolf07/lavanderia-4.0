@@ -88,6 +88,15 @@ class ClienteController extends Controller
             'recolector_id' => ['nullable', 'exists:users,id'],
         ]);
 
+        if (! empty($data['recolector_id'])) {
+            $recolector = \App\Models\User::findOrFail($data['recolector_id']);
+            if (! $recolector->esRecolector() || ! $recolector->estaActivo()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'recolector_id' => 'Selecciona un recolector activo.',
+                ]);
+            }
+        }
+
         $cliente->update(['recolector_id' => $data['recolector_id'] ?? null]);
 
         return back()->with('success', 'Cliente asignado correctamente.');

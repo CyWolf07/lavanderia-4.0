@@ -26,6 +26,17 @@ class Prenda extends Model
         return $this->hasMany(Produccion::class);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Prenda $prenda) {
+            if ($prenda->producciones()->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'prenda' => 'La prenda tiene produccion registrada. Inhabilitala en lugar de eliminarla.',
+                ]);
+            }
+        });
+    }
+
     public function equivalenciasRecolector()
     {
         return $this->hasMany(PrendaEquivalencia::class);

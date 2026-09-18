@@ -21,8 +21,9 @@ class PqrsController extends Controller
      */
     public function index()
     {
-        // Obtiene todos los registros PQRS ordenados del más nuevo al más antiguo
-        $pqrsList = Pqrs::latest()->paginate(25);
+        $pqrsList = Pqrs::query()
+            ->when(! auth()->user()->tieneRol('admin', 'programador'), fn ($query) => $query->where('user_id', auth()->id()))
+            ->latest()->paginate(25);
 
         return view('pqrs.index', compact('pqrsList'));
     }
@@ -42,7 +43,7 @@ class PqrsController extends Controller
         ]);
 
         // Crea el registro con todos los campos validados
-        Pqrs::create($request->only(['tipo', 'nombre', 'correo', 'descripcion']));
+        Pqrs::create($request->only(['tipo', 'nombre', 'correo', 'descripcion']) + ['user_id' => $request->user()->id]);
 
         return redirect()->route('pqrs.index')->with('success', 'PQRS registrado exitosamente.');
     }

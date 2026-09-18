@@ -56,6 +56,22 @@ class User extends Authenticatable
     }
 
     // 🔗 RELACIÓN CON ROL
+    protected static function booted(): void
+    {
+        static::deleting(fn (User $user) => $user->ensureCanBeDeleted());
+    }
+
+    public function ensureCanBeDeleted(): void
+    {
+        if ($this->producciones()->exists() || $this->historialProducciones()->exists()
+            || $this->facturasRecolector()->exists() || $this->gastos()->exists()
+            || PagoRecolector::where('recolector_id', $this->id)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'user' => 'El usuario tiene registros financieros. Inhabilitalo para conservar su historial.',
+            ]);
+        }
+    }
+
     public function rolRelacion()
     {
         return $this->belongsTo(Rol::class, 'rol_id');

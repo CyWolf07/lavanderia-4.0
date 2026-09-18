@@ -35,19 +35,18 @@ class ThrottleAdminRequests
 
             RateLimiter::hit($limiterKey, $decayMinutes * 60);
 
-            /** @var \Illuminate\Http\Response $response */
-            $response = $next($request);
-
             $remaining = max(0, $maxAttempts - RateLimiter::attempts($limiterKey));
-
-            return $response->withHeaders([
-                'X-RateLimit-Limit'     => $maxAttempts,
-                'X-RateLimit-Remaining' => $remaining,
-            ]);
         } catch (Throwable $e) {
             // Si el throttle falla (ej. caché no disponible), proceder sin limitar
             report($e);
             return $next($request);
         }
+
+        // Never catch downstream failures here: retrying can duplicate committed writes.
+        $response = $next($request);
+        $response->headers->set('X-RateLimit-Limit', (string) $maxAttempts);
+        $response->headers->set('X-RateLimit-Remaining', (string) $remaining);
+
+        return $response;
     }
 }

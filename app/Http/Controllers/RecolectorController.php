@@ -102,7 +102,7 @@ class RecolectorController extends Controller
             'observaciones'                 => ['nullable', 'array'],
             'observaciones.*'               => ['string'],
             'items'                         => ['nullable', 'array'],
-            'items.*.prenda_id'             => ['nullable', 'integer'],
+            'items.*.prenda_id'             => ['nullable', 'integer', 'min:1'],
             'items.*.cantidad'              => ['nullable', 'integer', 'min:0'],
             'items.*.precio_unitario'       => ['nullable', 'numeric', 'min:0'],
             'items.*.color_prenda'          => ['nullable', 'string', 'max:50'],
@@ -128,6 +128,10 @@ class RecolectorController extends Controller
             ]);
         }
 
+        if ($itemsSeleccionados->contains(fn ($item) => (int) ($item['prenda_id'] ?? 0) < 1)) {
+            throw ValidationException::withMessages(['items' => 'Cada fila seleccionada debe indicar una prenda valida.']);
+        }
+
         $itemsSeleccionados = $itemsSeleccionados
             ->map(function ($item) {
                 $colores = $this->normalizarColoresPrenda($item);
@@ -141,6 +145,10 @@ class RecolectorController extends Controller
             })
             ->filter(fn (array $item) => $item['prenda_id'] > 0 && $item['cantidad'] > 0)
             ->values();
+
+        if ($itemsSeleccionados->isEmpty()) {
+            throw ValidationException::withMessages(['items' => 'Selecciona al menos una prenda valida.']);
+        }
 
         if ($itemsSeleccionados->contains(fn (array $item) => blank($item['color_prenda']))) {
             throw ValidationException::withMessages([
@@ -306,6 +314,11 @@ class RecolectorController extends Controller
         }
 
         DB::transaction(function () use ($facturaRecolector, $camposActualizar, $nuevoEstado) {
+            User::whereKey($facturaRecolector->recolector_id)->lockForUpdate()->firstOrFail();
+            $facturaRecolector = FacturaRecolector::whereKey($facturaRecolector->id)->lockForUpdate()->firstOrFail();
+            if ($facturaRecolector->estaPagada() || $facturaRecolector->estaCancelada()) {
+                throw ValidationException::withMessages(['estado_factura' => 'La factura ya cambio de estado. Recarga la pagina.']);
+            }
             $facturaRecolector->update($camposActualizar);
 
             if ($nuevoEstado === 'pagado') {
@@ -401,7 +414,7 @@ class RecolectorController extends Controller
                         'body' => sprintf(
                             'Hola %s, tu orden de lavanderia #%s fue registrada correctamente. Total prendas: %s. Fecha de entrega: %s.',
                             $cliente->nombre,
-                            $factura->id,
+                            $factura->numero_orden,
                             $factura->total_prendas,
                             optional($factura->fecha_entrega)->format('d/m/Y') ?? $factura->fecha_entrega
                         ),

@@ -48,6 +48,12 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        try {
+            $user->ensureCanBeDeleted();
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            throw $exception->errorBag('userDeletion');
+        }
+
         Auth::logout();
 
         $user->delete();

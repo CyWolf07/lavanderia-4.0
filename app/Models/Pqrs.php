@@ -11,5 +11,11 @@ class Pqrs extends Model
         'nombre',
         'correo',
         'descripcion',
+        'user_id',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

@@ -710,6 +710,8 @@ class AdminController extends Controller
     public function destroyFacturaRecolector(FacturaRecolector $facturaRecolector)
     {
         DB::transaction(function () use ($facturaRecolector) {
+            User::whereKey($facturaRecolector->recolector_id)->lockForUpdate()->firstOrFail();
+            $facturaRecolector = FacturaRecolector::whereKey($facturaRecolector->id)->lockForUpdate()->firstOrFail();
             AuditEvent::query()->create([
                 'actor_id' => auth()->id(),
                 'auditable_type' => FacturaRecolector::class,
@@ -718,14 +720,19 @@ class AdminController extends Controller
                 'summary' => 'Factura de recolector eliminada desde panel administrativo.',
                 'metadata' => [
                     'numero_orden' => $facturaRecolector->numero_orden,
-                    'estado' => $facturaRecolector->estado,
+                    'estado' => $facturaRecolector->estado_factura,
                     'total' => $facturaRecolector->total,
                     'total_prendas' => $facturaRecolector->total_prendas,
                 ],
             ]);
 
             $facturaRecolector->delete();
+            if ($facturaRecolector->estaPagada() && $facturaRecolector->quincena_pago) {
+                PagoRecolector::recalcular((int) $facturaRecolector->recolector_id, $facturaRecolector->quincena_pago);
+            }
         });
+
+        app(DashboardCacheService::class)->flushFacturas();
 
         return redirect()->route('admin.dashboard')->with('success', 'Registro del recolector eliminado correctamente.');
     }
@@ -768,7 +775,7 @@ class AdminController extends Controller
             'observaciones' => ['nullable', 'array'],
             'observaciones.*' => ['string'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.prenda_id' => ['required', 'integer', 'exists:recolector_prendas,id'],
+            'items.*.prenda_id' => ['required', 'integer', 'distinct', 'exists:recolector_prendas,id'],
             'items.*.cantidad' => ['required', 'integer', 'min:1'],
             'items.*.precio_unitario' => ['required', 'numeric', 'min:0'],
         ]);
@@ -792,21 +799,48 @@ class AdminController extends Controller
         $totalFactura = $detalles->sum('subtotal');
 
         DB::transaction(function () use ($facturaRecolector, $cliente, $data, $detalles, $totalPrendas, $totalFactura) {
+            $facturaRecolector = FacturaRecolector::whereKey($facturaRecolector->id)->lockForUpdate()->firstOrFail();
+            if ($facturaRecolector->estaPagada()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'Las facturas pagadas no se pueden editar.']);
+            }
+            $anteriores = $facturaRecolector->detalles()->lockForUpdate()->get();
+            foreach ($anteriores as $anterior) {
+                $nuevo = $detalles->firstWhere('recolector_prenda_id', $anterior->recolector_prenda_id);
+                if ($anterior->estaLavada() && (! $nuevo || (int) $nuevo['cantidad'] !== (int) $anterior->cantidad)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'items' => 'No se pueden quitar ni cambiar cantidades de prendas ya lavadas.',
+                    ]);
+                }
+            }
+            if ($anteriores->pluck('recolector_prenda_id')->duplicates()->isNotEmpty()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['items' => 'La orden contiene detalles duplicados y requiere revision.']);
+            }
             $facturaRecolector->update([
                 'cliente_id' => $cliente->id,
                 'direccion' => $cliente->direccion,
                 'numero_cliente' => $cliente->numero_cliente,
                 'celular' => $cliente->celular,
-                'fecha_entrega' => $data['fecha_entrega'] ?? null,
+                'fecha_entrega' => $data['fecha_entrega'] ?? $facturaRecolector->fecha_entrega,
                 'observaciones' => array_values($data['observaciones'] ?? []),
                 'total_prendas' => $totalPrendas,
                 'total' => $totalFactura,
             ]);
 
-            // Reemplazar detalles por completo
-            $facturaRecolector->detalles()->delete();
-            $facturaRecolector->detalles()->createMany($detalles->all());
+            // Preserve detail IDs, colors and laundry links when the garment remains.
+            $conservados = [];
+            foreach ($detalles as $detalle) {
+                $anterior = $anteriores->firstWhere('recolector_prenda_id', $detalle['recolector_prenda_id']);
+                if ($anterior) {
+                    $anterior->update($detalle);
+                    $conservados[] = $anterior->id;
+                } else {
+                    $conservados[] = $facturaRecolector->detalles()->create($detalle)->id;
+                }
+            }
+            $facturaRecolector->detalles()->whereNotIn('id', $conservados)->delete();
         });
+
+        app(DashboardCacheService::class)->flushFacturas();
 
         return redirect()->route('admin.dashboard')->with('success', 'Orden de recolector actualizada correctamente.');
     }
@@ -863,6 +897,11 @@ class AdminController extends Controller
         }
 
         DB::transaction(function () use ($facturaRecolector, $camposActualizar, $nuevoEstado) {
+            User::whereKey($facturaRecolector->recolector_id)->lockForUpdate()->firstOrFail();
+            $facturaRecolector = FacturaRecolector::whereKey($facturaRecolector->id)->lockForUpdate()->firstOrFail();
+            if ($facturaRecolector->estaPagada() || ($facturaRecolector->estaCancelada() && ! auth()->user()->esAdmin())) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['estado_factura' => 'La factura ya cambio de estado. Recarga la pagina.']);
+            }
             $facturaRecolector->update($camposActualizar);
 
             if ($nuevoEstado === 'pagado') {
