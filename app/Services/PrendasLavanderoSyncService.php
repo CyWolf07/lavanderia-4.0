@@ -15,7 +15,6 @@ class PrendasLavanderoSyncService
         DB::transaction(function () {
             $prendasLavandero = Prenda::query()->get();
             $preciosPorClave = $this->preciosLavanderoPorClave($prendasLavandero);
-            $idsSincronizados = [];
 
             $recolectorPrendas = RecolectorPrenda::query()
                 ->orderByDesc('activo')
@@ -49,18 +48,11 @@ class PrendasLavanderoSyncService
                     ]);
                 }
 
-                $idsSincronizados[] = $prenda->id;
-
                 PrendaEquivalencia::updateOrCreate(
                     ['recolector_prenda_id' => $recolectorPrenda->id],
                     ['prenda_id' => $prenda->id],
                 );
             }
-
-            Prenda::query()
-                ->whereHas('equivalenciasRecolector')
-                ->whereNotIn('id', $idsSincronizados ?: [0])
-                ->update(['activo' => false]);
         });
     }
 

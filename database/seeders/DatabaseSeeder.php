@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $inicializarCatalogoLavandero = ! Prenda::query()->exists();
         $rolAdmin = Rol::firstOrCreate(['nombre' => 'Admin'], ['descripcion' => 'Administrador del sistema']);
         $rolProgramador = Rol::firstOrCreate(['nombre' => 'Programador'], ['descripcion' => 'Control total del sistema']);
         $rolUsuario = Rol::firstOrCreate(['nombre' => 'Usuario'], ['descripcion' => 'Empleado de produccion']);
@@ -68,7 +69,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->call(RecolectorPrendasSeeder::class);
-        $this->call(LavanderoPrendasEquivalenciasSeeder::class);
+        // Fixed-ID catalog initialization must not overwrite an existing admin catalog.
+        if ($inicializarCatalogoLavandero) {
+            $this->call(LavanderoPrendasEquivalenciasSeeder::class);
+        }
     }
 
     private function crearUsuarioBaseSiFalta(string $rol, int $rolId, array $datos): void

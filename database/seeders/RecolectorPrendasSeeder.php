@@ -67,10 +67,11 @@ class RecolectorPrendasSeeder extends Seeder
             ['nombre' => 'SECADO ( cobijas, cubrelechos)', 'tipo' => 'ADICIONAL', 'precio' => 14999.99],
         ];
 
-        RecolectorPrenda::query()->update(['activo' => false]);
+        // Preserve the last configured default for repeated names without updating saved rows.
+        $prendas = collect($prendas)->keyBy(fn (array $prenda) => $prenda['nombre'].'|'.$prenda['tipo']);
 
         foreach ($prendas as $prenda) {
-            RecolectorPrenda::updateOrCreate(
+            RecolectorPrenda::firstOrCreate(
                 [
                     'nombre' => $prenda['nombre'],
                     'tipo' => $prenda['tipo'],
