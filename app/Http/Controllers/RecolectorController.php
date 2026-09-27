@@ -45,14 +45,12 @@ class RecolectorController extends Controller
             ->where('recolector_id', $user->id)
             ->orderByDesc('fecha_ingreso')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20)->withQueryString();
 
-        $facturaStatusResumen = $facturas
-            ->groupBy(fn (FacturaRecolector $factura) => $factura->estado_factura ?? 'pendiente')
-            ->map(fn ($items) => (object) [
-                'cantidad' => $items->count(),
-                'total' => (float) $items->sum('total'),
-            ]);
+        $facturaStatusResumen = FacturaRecolector::query()
+            ->where('recolector_id', $user->id)
+            ->selectRaw("COALESCE(estado_factura, 'pendiente') as estado, COUNT(*) as cantidad, SUM(total) as total")
+            ->groupBy('estado')->get()->keyBy('estado');
 
         // Solo facturas marcadas como pagadas en la quincena actual (por quincena_pago).
         // Esto incluye órdenes creadas en quincenas anteriores pero cobradas ahora.

@@ -10,63 +10,7 @@
 
 @section('content')
 <div
-    x-data="{
-        {{-- ── Modales de acciones existentes ── --}}
-        paymentOpen: false,
-        cancelOpen: false,
-        orderSummaryOpen: false,
-        delegarOpen: false,
-        selectedProducciones: [],
-        selectedOrder: '',
-        paymentAction: '',
-        cancelAction: '',
-        selectedOrderSummary: {},
-        ordenPrintBase: @js(url('/admin/facturas-recolector')),
-        delegarClienteId: null,
-        delegarClienteNombre: '',
-        delegarAction: '',
-
-        {{-- ── Modales de secciones ── --}}
-        modalUsuarios: false,
-        modalFacturas: false,
-        modalQuincenas: false,
-        modalComisiones: false,
-        modalGastos: false,
-        modalIncongruencias: false,
-        modalDelegacion: false,
-        modalPrendasMes: false,
-        modalRegistrosActivos: false,
-
-        allProduccionesSelected(ids) {
-            return ids.length > 0 && ids.every((id) => this.selectedProducciones.includes(String(id)));
-        },
-        toggleAllProducciones(ids, checked) {
-            this.selectedProducciones = checked ? ids.map(String) : [];
-        },
-        openPayment(action, order) {
-            this.paymentAction = action;
-            this.selectedOrder = order;
-            this.paymentOpen = true;
-        },
-        openCancel(action, order) {
-            this.cancelAction = action;
-            this.selectedOrder = order;
-            this.cancelOpen = true;
-        },
-        openOrderSummary(data) {
-            this.selectedOrderSummary = data;
-            this.orderSummaryOpen = true;
-        },
-        openDelegar(clienteId, clienteNombre, action) {
-            this.delegarClienteId = clienteId;
-            this.delegarClienteNombre = clienteNombre;
-            this.delegarAction = action;
-            this.delegarOpen = true;
-        },
-        copyEnterpriseCode(code) {
-            navigator.clipboard.writeText(code);
-        }
-    }"
+    x-data="adminDashboard({ ordenPrintBase: @js(url('/admin/facturas-recolector')) })"
     class="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8"
 >
 
@@ -411,9 +355,10 @@
 
                 {{-- Tabla de lavanderos existentes --}}
                 <div class="space-y-4 overflow-y-auto max-h-[70vh]">
-                    <h3 class="text-base font-bold text-slate-900">Lavanderos registrados ({{ $usuarios->count() }})</h3>
+                    <h3 class="text-base font-bold text-slate-900">Usuarios registrados ({{ $usuarios->count() }})</h3>
+                    <input type="search" x-model.debounce.150ms="buscarUsuario" aria-label="Buscar usuario" placeholder="Nombre, correo, cédula o rol" class="w-full rounded-2xl border-slate-300 py-3">
                     @forelse ($usuarios as $usuario)
-                        <div class="rounded-[1.5rem] border border-slate-200 p-4">
+                        <div x-show="coincide($el.dataset.busqueda, buscarUsuario)" data-busqueda="{{ $usuario->name }} {{ $usuario->email }} {{ $usuario->cedula }} {{ $usuario->obtenerRol() }}" class="rounded-[1.5rem] border border-slate-200 p-4">
                             <form action="{{ route('admin.usuarios.update', $usuario) }}" method="POST">
                                 @csrf
                                 @method('PUT')
@@ -538,6 +483,18 @@
                     </div>
                 @endforeach
             </div>
+            <form action="{{ route('admin.dashboard') }}#facturas" method="GET" class="flex flex-wrap gap-3 px-6 pb-4">
+                <input type="search" name="buscar_factura" value="{{ request('buscar_factura') }}" maxlength="100" aria-label="Buscar factura por orden, cliente o recolector" placeholder="Orden, cliente o recolector" class="min-w-0 flex-1 rounded-2xl border-slate-300 py-3">
+                <select name="estado_factura" aria-label="Estado de factura" class="rounded-2xl border-slate-300 py-3">
+                    <option value="">Todos los estados</option>
+                    @foreach (['pendiente' => 'Pendientes', 'pagado' => 'Pagadas', 'cancelado' => 'Canceladas'] as $valor => $texto)
+                        <option value="{{ $valor }}" @selected(request('estado_factura') === $valor)>{{ $texto }}</option>
+                    @endforeach
+                </select>
+                <button class="rounded-2xl bg-sky-700 px-5 py-3 font-bold text-white">Buscar</button>
+                <a href="{{ route('admin.dashboard') }}#facturas" class="rounded-2xl border border-slate-300 px-5 py-3">Limpiar</a>
+            </form>
+            <p class="px-6 pb-3 text-sm text-slate-500">{{ $ultimasFacturasRecolector->total() }} resultados. Los indicadores muestran el total general.</p>
             <div class="overflow-x-auto max-h-[60vh]">
                 <table class="min-w-full text-sm">
                     <thead class="sticky top-0 bg-slate-50 text-left text-slate-500">
@@ -621,12 +578,13 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-8 text-center text-slate-500">No hay facturas de recolectores en esta quincena.</td>
+                                <td colspan="7" class="px-6 py-8 text-center text-slate-500">No hay facturas que coincidan. Prueba otro nombre, número o estado.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+            <div class="p-4">{{ $ultimasFacturasRecolector->links() }}</div>
         </div>
     </div>
 
@@ -942,6 +900,7 @@
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
+            <div class="px-6 py-4"><input type="search" x-model.debounce.150ms="buscarCliente" aria-label="Buscar cliente para asignar" placeholder="Nombre, barrio, celular o recolector" class="w-full rounded-2xl border-slate-300 py-3"></div>
             <div class="overflow-x-auto max-h-[70vh]">
                 <table class="min-w-full text-sm">
                     <thead class="sticky top-0 bg-slate-50 text-left text-slate-500">
@@ -956,7 +915,7 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($clientesConRecolector as $cli)
-                            <tr class="hover:bg-slate-50">
+                            <tr x-show="coincide($el.dataset.busqueda, buscarCliente)" data-busqueda="{{ $cli->nombre }} {{ $cli->numero_cliente }} {{ $cli->barrio }} {{ $cli->celular }} {{ $cli->recolector?->name }}" class="hover:bg-slate-50">
                                 <td class="px-6 py-4"><span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800"># {{ $cli->numero_cliente }}</span></td>
                                 <td class="px-6 py-4 font-semibold text-slate-900">{{ $cli->nombre }}</td>
                                 <td class="px-6 py-4 text-slate-600">{{ $cli->barrio ?: '—' }}</td>
@@ -1211,6 +1170,10 @@
         </div>
     </div>
 
+    <div x-cloak x-show="errores.length" @click.stop role="alert" class="fixed inset-x-4 top-4 z-[70] mx-auto max-w-lg rounded-2xl border border-rose-300 bg-white p-4 shadow-xl">
+        <div class="flex justify-between gap-3"><p class="font-bold text-rose-800">Revisa estos datos para guardar</p><button type="button" @click="errores = []; enfocar(null)" aria-label="Cerrar aviso" class="px-3 text-xl">×</button></div>
+        <ul class="mt-2 max-h-40 space-y-2 overflow-y-auto"><template x-for="(error, index) in errores" :key="index"><li><button type="button" @click="enfocar(error.campo)" class="text-left text-sm text-rose-700 underline" x-text="error.mensaje"></button></li></template></ul>
+    </div>
 </div>
 
 @endsection

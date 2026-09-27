@@ -24,6 +24,7 @@
         oldItems: @js(old('items', [])),
         puedeEditarPrecios: @js($puedeEditarPrecios),
         numeroFactura: @js($siguienteNumeroFactura),
+        ordenPrintBase: @js(url('/recolector/facturas')),
         facturas: @js($facturas->map(fn ($f) => [
             'id' => $f->id,
             'numero_orden' => $f->numero_orden ?? $f->id,
@@ -42,7 +43,7 @@
         ])->values()),
     })"
     :class="isTouchDevice ? 'touch-ui' : ''"
-    class="mx-auto max-w-screen-2xl space-y-8 px-4 py-8 sm:px-6 lg:px-8"
+    class="mx-auto max-w-screen-2xl space-y-8 px-4 pt-6 pb-36 sm:px-6 lg:px-8"
 >
     <div class="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
@@ -60,20 +61,6 @@
         </div>
     </div>
 
-    <div
-        class="rounded-[1.5rem] border px-5 py-4"
-        :class="isTouchDevice ? 'border-sky-200 bg-sky-50' : 'border-slate-200 bg-white/80'"
-    >
-        <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">Modo detectado</p>
-                <p class="mt-1 text-lg font-bold text-slate-900" x-text="deviceLabel">Escritorio</p>
-            </div>
-            <p class="max-w-2xl text-sm text-slate-600" x-text="deviceMessage">
-                Controles optimizados para mouse y teclado.
-            </p>
-        </div>
-    </div>
 
     @if (session('success'))
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">
@@ -83,6 +70,12 @@
                 @php
                     $facturaFlash = $facturas->firstWhere('id', session('nueva_factura_id'));
                 @endphp
+
+                @if ($facturaFlash)
+                    <p class="mt-3 text-2xl font-black text-emerald-900">Orden #{{ str_pad((string) $facturaFlash->numero_orden, 6, '0', STR_PAD_LEFT) }}</p>
+                    <p class="mt-1 text-base">{{ $facturaFlash->cliente->nombre ?? 'Cliente' }} · $ {{ number_format((float) $facturaFlash->total, 0, ',', '.') }}</p>
+                    <a href="#ingresar-orden" class="mt-3 inline-flex rounded-full border border-emerald-300 px-5 py-3 font-bold">Nueva orden</a>
+                @endif
 
                 @if ($facturaFlash && $facturaFlash->celular)
                     @php
@@ -201,7 +194,7 @@
                 <h2 class="text-lg font-bold text-slate-900">Crear cliente rápido</h2>
                 <p class="mt-1 text-sm text-slate-500">Si el cliente no existe, puedes registrarlo aquí mismo sin salir del módulo.</p>
 
-                <form action="{{ route('recolector.clientes.store') }}" method="POST" class="mt-6 space-y-4">
+                <form novalidate @submit="guardarCliente($event)" action="{{ route('recolector.clientes.store') }}" method="POST" class="mt-6 space-y-4">
                     @csrf
 
                     {{-- F4: Número de cliente (solo lectura, autoasignado) --}}
@@ -214,12 +207,13 @@
                         </div>
                     </div>
 
-                    <input name="nombre" type="text" placeholder="Nombre del cliente *" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                    <input name="nombre" data-validation-label="Nombre del cliente" aria-label="Nombre del cliente" value="{{ old('nombre') }}" type="text" placeholder="Nombre del cliente *" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
 
                     {{-- F5: Campo Barrio obligatorio --}}
-                    <input name="barrio" type="text" placeholder="Barrio *" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
+                    <input name="barrio" data-validation-label="Barrio del cliente" aria-label="Barrio del cliente" value="{{ old('barrio') }}" type="text" placeholder="Barrio *" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required>
 
-                    <x-input-celular class="w-full" />
+                    <p class="text-sm font-semibold text-slate-700">Celular (opcional, necesario para enviar WhatsApp)</p>
+                    <x-input-celular class="w-full" :value="old('celular', '')" />
                     <input name="direccion" type="text" placeholder="Dirección" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm">
 
                     <button type="submit" class="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800">
@@ -232,16 +226,17 @@
             <div class="rounded-[1.75rem] bg-white p-6 shadow-xl ring-1 ring-slate-200">
                 <h2 class="text-lg font-bold text-slate-900">Datos de la orden de pedido</h2>
 
-                <form action="{{ route('recolector.facturas.store') }}" method="POST" class="mt-6 space-y-5">
+                <form id="orden-form" novalidate @submit="guardar($event)" action="{{ route('recolector.facturas.store') }}" method="POST" class="mt-6 space-y-5">
                     @csrf
 
                     <div>
                         <label for="cliente_id" class="mb-2 block text-sm font-semibold text-slate-700">Cliente</label>
-                        <select id="cliente_id" name="cliente_id" x-model="clienteId" @change="seleccionarCliente()" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required {{ $clientes->isEmpty() ? 'disabled' : '' }}>
+                        <input type="search" x-model.debounce.150ms="buscarCliente" placeholder="Nombre, celular o número de cliente" aria-label="Buscar cliente" class="mb-3 w-full rounded-2xl border-slate-300 py-3">
+                        <select id="cliente_id" name="cliente_id" data-validation-label="Cliente de la orden" x-model="clienteId" @change="seleccionarCliente()" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" required {{ $clientes->isEmpty() ? 'disabled' : '' }}>
                             <option value="">Selecciona un cliente</option>
-                            @foreach ($clientes as $cliente)
-                                <option value="{{ $cliente->id }}">{{ $cliente->nombre }} — Barrio: {{ $cliente->barrio ?? 'N/A' }}</option>
-                            @endforeach
+                            <template x-for="cliente in clientesFiltrados" :key="cliente.id">
+                                <option :value="String(cliente.id)" x-text="cliente.nombre + ' · ' + (cliente.celular || cliente.numero_cliente || '')"></option>
+                            </template>
                         </select>
                     </div>
 
@@ -296,6 +291,7 @@
                             <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]" :class="isTouchDevice ? 'lg:grid-cols-1' : ''">
                                 <div>
                                     <label for="prenda_selector" class="mb-2 block text-sm font-semibold text-slate-700">Lista de prendas</label>
+                                    <input type="search" x-model.debounce.150ms="buscarPrenda" @input="selectedPrendaId = ''" placeholder="Buscar prenda…" aria-label="Buscar prenda" class="mb-3 w-full rounded-2xl border-slate-300 py-3">
                                     <select id="prenda_selector" x-model="selectedPrendaId" class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm" {{ $prendas->isEmpty() ? 'disabled' : '' }}>
                                         <option value="">Selecciona una prenda</option>
                                         <template x-for="prenda in prendasDisponibles" :key="prenda.id">
@@ -338,15 +334,20 @@
                                     <div class="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-4" :class="isTouchDevice ? 'md:grid-cols-1 lg:grid-cols-1' : ''">
                                         <div>
                                             <label class="mb-2 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Cantidad</label>
+                                            <div class="flex items-center gap-2">
+                                            <button type="button" @click="cambiarCantidad(item, -1)" :disabled="item.cantidad <= 1" :aria-label="'Reducir cantidad de ' + nombrePrenda(item.prenda_id)" class="h-12 w-12 shrink-0 rounded-xl bg-sky-50 text-xl font-bold text-sky-800 disabled:opacity-40">−</button>
                                             <input
                                                 type="number"
                                                 min="1"
                                                 x-model.number="item.cantidad"
+                                                :data-validation-label="nombrePrenda(item.prenda_id) + ': cantidad'"
                                                 @input="ajustarColores(item)"
                                                 :name="'items[' + index + '][cantidad]'"
                                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
                                                 required
                                             >
+                                            <button type="button" @click="cambiarCantidad(item, 1)" :aria-label="'Aumentar cantidad de ' + nombrePrenda(item.prenda_id)" class="h-12 w-12 shrink-0 rounded-xl bg-sky-50 text-xl font-bold text-sky-800">+</button>
+                                            </div>
                                         </div>
                                         {{-- F7: Selector de colores --}}
                                         <div>
@@ -357,6 +358,7 @@
                                                         <label class="mb-1 block text-xs font-semibold text-slate-500" x-text="'Color prenda ' + (colorIndex + 1)"></label>
                                                         <select
                                                             x-model="item.colores[colorIndex]"
+                                                            :data-validation-label="nombrePrenda(item.prenda_id) + ': color de la unidad ' + (colorIndex + 1)"
                                                             :name="'items[' + index + '][colores][]'"
                                                             class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
                                                             required
@@ -383,6 +385,7 @@
                                                 min="0"
                                                 step="0.01"
                                                 x-model.number="item.precio_unitario"
+                                                :data-validation-label="nombrePrenda(item.prenda_id) + ': valor unitario'"
                                                 :name="'items[' + index + '][precio_unitario]'"
                                                 :readonly="!puedeEditarPrecios"
                                                 class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm"
@@ -477,7 +480,8 @@
                         <button
                             type="submit"
                             class="w-full rounded-2xl bg-amber-600 px-4 py-3 text-sm font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
-                            :disabled="!puedeGuardarFactura"
+                            :disabled="guardando || !online"
+                            x-text="guardando ? 'Guardando…' : 'Guardar orden de pedido'"
                             {{ $clientes->isEmpty() || $prendas->isEmpty() ? 'disabled' : '' }}
                         >
                             Guardar orden de pedido
@@ -492,7 +496,7 @@
             <div class="grid min-w-0 gap-5" :class="isTouchDevice ? 'grid-cols-1' : '[grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))]'">
                 <div class="min-w-0 rounded-[1.75rem] bg-white p-5 shadow-xl ring-1 ring-slate-200 sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-slate-400">Órdenes registradas</p>
-                    <p class="mt-3 break-words text-4xl font-black text-slate-900">{{ $facturas->count() }}</p>
+                    <p class="mt-3 break-words text-4xl font-black text-slate-900">{{ $facturas->total() }}</p>
                 </div>
                 <div class="min-w-0 rounded-[1.75rem] bg-amber-500 p-5 text-white shadow-xl sm:p-6">
                     <p class="text-sm uppercase tracking-[0.25em] text-amber-50">Prendas registradas</p>
@@ -820,6 +824,7 @@
                         @endforelse
                     </tbody>
                 </table>
+                <div class="p-4">{{ $facturas->fragment('estatus-facturas')->links() }}</div>
             </div>
         </div>
     </div>
@@ -949,206 +954,23 @@
                 @empty
                     <p class="text-sm text-slate-500">Todavía no has registrado órdenes de pedido como recolector.</p>
                 @endforelse
+                {{ $facturas->fragment('ordenes-recientes')->links() }}
             </div>
         </div>
     </div>
+    <div x-cloak x-show="!modalEstatus && !modalOrdenes && !orderSummaryOpen && !paymentOpen && !cancelConfirmOpen" class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white px-4 py-3 shadow-lg" style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom))">
+        <div class="mx-auto flex max-w-3xl items-center justify-between gap-4">
+            <div aria-live="polite"><p class="text-xs text-slate-500" x-text="totalPrendas + ' prendas'"></p><p class="text-xl font-black text-slate-900" x-text="'$ ' + formatMoney(totalFactura)"></p></div>
+            <button type="submit" form="orden-form" :disabled="guardando || !online" x-text="guardando ? 'Guardando…' : 'Guardar orden'" class="rounded-2xl bg-sky-700 px-6 py-3 font-bold text-white disabled:opacity-40">Guardar orden</button>
+        </div>
+        <p class="mt-1 text-center text-xs text-slate-600" x-text="!online ? 'Sin conexión. Mantén esta pantalla abierta y vuelve a intentar cuando regrese internet.' : (!puedeGuardarFactura ? 'Selecciona cliente, prendas y un color por cada unidad.' : 'Orden lista para guardar')"></p>
+    </div>
+    <div x-cloak x-show="erroresFormulario.length" role="alert" class="fixed inset-x-4 top-4 z-[70] mx-auto max-w-lg rounded-2xl border border-rose-300 bg-white p-4 shadow-xl">
+        <div class="flex items-start justify-between gap-3"><p class="font-bold text-rose-800">Revisa estos datos para guardar</p><button type="button" @click="mostrarErrores([])" aria-label="Cerrar aviso" class="px-3 py-1 text-xl">×</button></div>
+        <ul class="mt-2 max-h-40 space-y-2 overflow-y-auto">
+            <template x-for="(error, index) in erroresFormulario" :key="index"><li><button type="button" @click="mostrarErrores([error, ...erroresFormulario.filter(e => e !== error)])" class="text-left text-sm text-rose-700 underline" x-text="error.mensaje"></button></li></template>
+        </ul>
+    </div>
 </div>
 
-<script>
-function recolectorForm({ clientes, prendas, fechaIngreso, clienteInicial, oldItems, puedeEditarPrecios, numeroFactura, facturas }) {
-    // modalEstatus y modalOrdenes se agregan vía x-data en la plantilla blade
-    return {
-        clientes,
-        prendas,
-        facturas,
-        fechaIngreso,
-        puedeEditarPrecios,
-        numeroFactura,
-        clienteId: clienteInicial ? String(clienteInicial) : '',
-        clienteActual: {},
-        selectedPrendaId: '',
-        items: [],
-        nextItemKey: 0,
-        coloresDisponibles: ['Blanco', 'Negro', 'Azul', 'Rojo', 'Verde', 'Amarillo', 'Gris', 'Rosa', 'Cafe', 'Morado', 'Naranja', 'Beige', 'Violeta', 'Multicolor', 'Otro'],
-        paymentOpen: false,
-        selectedOrder: '',
-        paymentAction: '',
-        cancelConfirmOpen: false,
-        cancelAction: '',
-        orderSummaryOpen: false,
-        selectedOrderSummary: {},
-        modalEstatus: false,
-        modalOrdenes: false,
-        ordenPrintBase: @js(url('/recolector/facturas')),
-        isTouchDevice: false,
-        isMobileViewport: false,
-
-        init() {
-            const restoreStatus = () => {
-                if (window.location.hash === '#estatus-facturas') {
-                    this.modalEstatus = true;
-                    this.orderSummaryOpen = false;
-                }
-            };
-            restoreStatus();
-            window.addEventListener('hashchange', restoreStatus);
-            this.actualizarDispositivo();
-            window.addEventListener('resize', () => this.actualizarDispositivo());
-
-            oldItems.forEach((item) => {
-                const prendaId = Number(item.prenda_id || 0);
-                const seleccionada = ['1', 1, true, 'true', 'on'].includes(item.selected) || Number(item.cantidad || 0) > 0;
-                if (!prendaId || !seleccionada) return;
-                this.agregarPrenda(prendaId, {
-                    cantidad: Number(item.cantidad || 1),
-                    precio_unitario: item.precio_unitario !== undefined && item.precio_unitario !== null && item.precio_unitario !== ''
-                        ? Number(item.precio_unitario || 0)
-                        : undefined,
-                    colores: this.normalizarColores(item.colores || item.color_prenda || []),
-                });
-            });
-
-            this.seleccionarCliente();
-        },
-
-        actualizarDispositivo() {
-            const pointerCoarse = window.matchMedia('(pointer: coarse)').matches;
-            this.isTouchDevice = pointerCoarse || (navigator.maxTouchPoints || 0) > 0;
-            this.isMobileViewport = window.innerWidth < 1024;
-        },
-
-        seleccionarCliente() {
-            this.clienteActual = this.clientes.find((cliente) => String(cliente.id) === String(this.clienteId)) || {};
-        },
-
-        openPayment(action, order) {
-            this.paymentAction = action;
-            this.selectedOrder = order;
-            this.paymentOpen = true;
-        },
-
-        openCancelConfirm(action, order) {
-            this.cancelAction = action;
-            this.selectedOrder = order;
-            this.cancelConfirmOpen = true;
-        },
-
-        // F3: Abrir modal resumen de orden
-        openOrderSummary(facturaData) {
-            this.selectedOrderSummary = facturaData;
-            this.orderSummaryOpen = true;
-        },
-
-        datosPrenda(prendaId) {
-            return this.prendas.find((prenda) => Number(prenda.id) === Number(prendaId)) || null;
-        },
-        nombrePrenda(prendaId) {
-            return this.datosPrenda(prendaId)?.nombre || 'Prenda no disponible';
-        },
-        tipoPrenda(prendaId) {
-            return this.datosPrenda(prendaId)?.tipo || 'Sin tipo';
-        },
-
-        agregarPrenda(prendaId = this.selectedPrendaId, valores = {}) {
-            const id = Number(prendaId || 0);
-            if (!id || this.items.some((item) => Number(item.prenda_id) === id)) return;
-
-            const prenda = this.datosPrenda(id);
-            if (!prenda) return;
-            const cantidad = Math.max(1, Number(valores.cantidad || 1));
-            const colores = this.normalizarColores(valores.colores || valores.color_prenda || []);
-            while (colores.length < cantidad) colores.push('');
-
-            this.items.push({
-                key: this.nextItemKey++,
-                prenda_id: id,
-                cantidad,
-                precio_unitario: valores.precio_unitario !== undefined
-                    ? Math.max(0, Number(valores.precio_unitario || 0))
-                    : Number(prenda.precio || 0),
-                colores: colores.slice(0, cantidad),
-            });
-
-            this.selectedPrendaId = '';
-        },
-
-        eliminarPrenda(itemKey) {
-            this.items = this.items.filter((item) => item.key !== itemKey);
-        },
-
-        precioUnitario(item) {
-            if (!this.puedeEditarPrecios) {
-                return Number(this.datosPrenda(item.prenda_id)?.precio || 0);
-            }
-            return Math.max(0, Number(item.precio_unitario || 0));
-        },
-
-        subtotalItem(item) {
-            return Math.max(0, Number(item.cantidad || 0)) * this.precioUnitario(item);
-        },
-        ajustarColores(item) {
-            const cantidad = Math.max(1, Number(item.cantidad || 1));
-            item.cantidad = cantidad;
-            item.colores = Array.isArray(item.colores) ? item.colores : [];
-            while (item.colores.length < cantidad) item.colores.push('');
-            if (item.colores.length > cantidad) item.colores = item.colores.slice(0, cantidad);
-        },
-        indicesPorCantidad(item) {
-            this.ajustarColores(item);
-            return Array.from({ length: Math.max(1, Number(item.cantidad || 1)) }, (_, index) => index);
-        },
-        coloresCompletos(item) {
-            const cantidad = Math.max(1, Number(item.cantidad || 1));
-            return Array.isArray(item.colores)
-                && item.colores.length >= cantidad
-                && item.colores.slice(0, cantidad).every((color) => this.coloresDisponibles.includes(String(color || '').trim()));
-        },
-
-        get prendasDisponibles() {
-            const idsSeleccionados = this.items.map((item) => Number(item.prenda_id));
-            return this.prendas.filter((prenda) => !idsSeleccionados.includes(Number(prenda.id)));
-        },
-        get totalPrendas() {
-            return this.items.reduce((total, item) => total + Math.max(0, Number(item.cantidad || 0)), 0);
-        },
-        get totalFactura() {
-            return this.items.reduce((total, item) => total + this.subtotalItem(item), 0);
-        },
-        get resumenPrendas() {
-            return this.items.map((item) => ({
-                key: item.key,
-                nombre: this.nombrePrenda(item.prenda_id),
-                cantidad: Math.max(0, Number(item.cantidad || 0)),
-                subtotal: this.subtotalItem(item),
-                color: item.colores.filter(Boolean).join(', '),
-            }));
-        },
-        get puedeGuardarFactura() {
-            return Boolean(this.clienteId) && this.items.length > 0 && this.items.every((item) => this.coloresCompletos(item));
-        },
-        get deviceLabel() {
-            if (this.isTouchDevice && this.isMobileViewport) return 'Celular o pantalla táctil';
-            if (this.isTouchDevice) return 'Pantalla táctil';
-            if (this.isMobileViewport) return 'Pantalla pequeña';
-            return 'Escritorio';
-        },
-        get deviceMessage() {
-            if (this.isTouchDevice && this.isMobileViewport) return 'La interfaz se organiza en una sola columna y con botones más amplios para trabajar mejor desde celular.';
-            if (this.isTouchDevice) return 'Se ampliaron controles y espacios para facilitar el uso en pantallas táctiles.';
-            if (this.isMobileViewport) return 'La vista se compacta para pantallas pequeñas manteniendo todos los datos visibles.';
-            return 'Controles optimizados para mouse y teclado, sin perder respuesta en ventanas reducidas.';
-        },
-        formatMoney(value) {
-            return Number(value || 0).toLocaleString('es-CO');
-        },
-        formatInvoiceNumber(value) {
-            return String(value || 1).padStart(6, '0');
-        },
-        normalizarColores(value) {
-            const valores = Array.isArray(value) ? value : String(value || '').split(',');
-            return valores.map((color) => String(color).trim()).filter((color) => this.coloresDisponibles.includes(color));
-        },
-    };
-}
-</script>
 @endsection

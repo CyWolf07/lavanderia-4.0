@@ -29,8 +29,12 @@ use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
-    public function dashboard(EnterpriseCodeService $enterpriseCodes, DeviceAccessService $deviceAccess, DashboardCacheService $cache)
+    public function dashboard(Request $request, EnterpriseCodeService $enterpriseCodes, DeviceAccessService $deviceAccess)
     {
+        $filtros = $request->validate([
+            'buscar_factura' => ['nullable', 'string', 'max:100'],
+            'estado_factura' => ['nullable', Rule::in(['pendiente', 'pagado', 'cancelado'])],
+        ]);
         $periodoActual = Gasto::periodoDesdeFecha(now());
         [$inicioQuincena, $finQuincena] = $this->rangoQuincenaActual();
         $periodoKey = $periodoActual['periodo'];
@@ -190,10 +194,25 @@ class AdminController extends Controller
 
         $ultimasFacturasRecolector = FacturaRecolector::with(['recolector', 'cliente', 'detalles'])
             ->where($facturasEstatusQuincena)
+            ->when($filtros['estado_factura'] ?? null, function ($query, $estado) {
+                $query->where(function ($estadoQuery) use ($estado) {
+                    $estadoQuery->where('estado_factura', $estado);
+                    if ($estado === 'pendiente') $estadoQuery->orWhereNull('estado_factura');
+                });
+            })
+            ->when(trim($filtros['buscar_factura'] ?? ''), function ($query, $busqueda) {
+                $query->where(function ($buscar) use ($busqueda) {
+                    $texto = '%'.mb_strtolower($busqueda).'%';
+                    $buscar->whereHas('cliente', fn ($cliente) => $cliente->whereRaw('LOWER(nombre) LIKE ?', [$texto]))
+                        ->orWhereHas('recolector', fn ($recolector) => $recolector->whereRaw('LOWER(name) LIKE ?', [$texto]));
+                    $numero = ltrim($busqueda, '#');
+                    if (ctype_digit($numero)) $buscar->orWhere('numero_orden', (int) $numero);
+                });
+            })
             ->orderByDesc('updated_at')
             ->orderByDesc('fecha_ingreso')
             ->orderByDesc('id')
-            ->get();
+            ->paginate(20, ['*'], 'facturas_page')->withQueryString()->fragment('facturas');
 
         // ── JSON pre-computado para el modal de resumen de factura ───────────
         $facturasRecolectorResumen = $ultimasFacturasRecolector->mapWithKeys(function ($factura) {
@@ -231,7 +250,9 @@ class AdminController extends Controller
             ->keyBy('estado');
 
         // ── Gráficas ─────────────────────────────────────────────────────────
-        $ingresoFacturasPorDia = $ultimasFacturasRecolector
+        $ingresoFacturasPorDia = FacturaRecolector::query()
+            ->where($facturasEstatusQuincena)
+            ->select(['fecha_ingreso', 'total'])->get()
             ->groupBy(fn ($factura) => optional($factura->fecha_ingreso)->format('d/m') ?? 'Sin fecha')
             ->map(fn ($facturas, $dia) => [
                 'dia' => $dia,

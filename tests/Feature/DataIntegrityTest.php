@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\{AuditEvent, Cliente, FacturaRecolector, PagoRecolector, Prenda, Produccion, RecolectorPrenda, User};
+use App\Models\{AuditEvent, Cliente, FacturaRecolector, Gasto, PagoRecolector, Prenda, Produccion, RecolectorPrenda, User};
 use App\Services\NumeroOrdenService;
 
 function integrityOrder(): FacturaRecolector
@@ -75,9 +75,27 @@ it('keeps colors laundry links and delivery date when editing an invoice', funct
     $factura = integrityOrder();
     $admin = User::factory()->create(['rol' => 'admin']);
     $detalle = $factura->detalles()->first();
-    $detalle->update(['lavado_por' => $admin->id, 'lavado_en' => now()]);
+    $prendaLavandero = Prenda::create(['nombre' => 'Camisa lavada', 'precio' => 1000, 'activo' => true]);
+    $produccion = Produccion::create([
+        'user_id' => $admin->id,
+        'prenda_id' => $prendaLavandero->id,
+        'cantidad' => 1,
+        'total' => 1000,
+        'fecha' => today(),
+    ]);
+    $detalle->update([
+        'lavado_por' => $admin->id,
+        'lavado_en' => now(),
+        'produccion_id' => $produccion->id,
+    ]);
     $this->actingAs($admin)->put(route('admin.facturas-recolector.update', $factura), integrityEdit($factura))->assertSessionHasNoErrors();
-    $this->assertDatabaseHas('factura_recolector_detalles', ['id' => $detalle->id, 'color_prenda' => 'Azul', 'lavado_por' => $admin->id, 'subtotal' => 11000]);
+    $this->assertDatabaseHas('factura_recolector_detalles', [
+        'id' => $detalle->id,
+        'color_prenda' => 'Azul',
+        'lavado_por' => $admin->id,
+        'produccion_id' => $produccion->id,
+        'subtotal' => 11000,
+    ]);
     expect($detalle->fresh()->lavado_en)->not->toBeNull();
     expect($factura->fresh()->fecha_entrega->toDateString())->toBe($factura->fecha_entrega->toDateString());
 });
@@ -108,6 +126,53 @@ it('recalculates commission and records correct audit status after deleting paid
     $this->actingAs($admin)->delete(route('admin.facturas-recolector.destroy', $factura))->assertSessionHasNoErrors();
     expect((float) PagoRecolector::first()->monto_comision)->toBe(0.0);
     expect(AuditEvent::first()->metadata['estado'])->toBe('pagado');
+});
+
+it('shows edited invoice totals on the admin dashboard immediately', function () {
+    $factura = integrityOrder();
+    $admin = User::factory()->create(['rol' => 'admin']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertViewHas('ingresoRecolectoresActivo', fn ($total) => (float) $total === 10000.0);
+
+    $this->put(route('admin.facturas-recolector.update', $factura), integrityEdit($factura))
+        ->assertSessionHasNoErrors();
+
+    $this->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertViewHas('ingresoRecolectoresActivo', fn ($total) => (float) $total === 11000.0)
+        ->assertViewHas('facturasRecolectorResumen', function ($resumen) use ($factura) {
+            return $resumen->get($factura->id)['total'] === '11.000';
+        });
+});
+
+it('removes a deleted paid invoice from admin dashboard totals immediately', function () {
+    $factura = integrityOrder();
+    $periodo = Gasto::periodoDesdeFecha(now())['periodo'];
+    $factura->update([
+        'estado_factura' => 'pagado',
+        'quincena_pago' => $periodo,
+        'fecha_pago' => now(),
+    ]);
+    PagoRecolector::recalcular($factura->recolector_id, $periodo);
+    $admin = User::factory()->create(['rol' => 'admin']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertViewHas('ordenesPagadasTotal', fn ($total) => (float) $total === 10000.0)
+        ->assertViewHas('ordenesPagadasCantidad', 1);
+
+    $this->delete(route('admin.facturas-recolector.destroy', $factura))
+        ->assertSessionHasNoErrors();
+
+    $this->get(route('admin.dashboard'))
+        ->assertOk()
+        ->assertViewHas('ordenesPagadasTotal', fn ($total) => (float) $total === 0.0)
+        ->assertViewHas('ordenesPagadasCantidad', 0)
+        ->assertViewHas('facturasRecolectorResumen', fn ($resumen) => ! $resumen->has($factura->id));
 });
 
 it('allocates order numbers above historical invoices without existing blocks', function () {

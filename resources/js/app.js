@@ -2,6 +2,11 @@ import './bootstrap';
 import './puntual';
 
 import Alpine from 'alpinejs';
+import recolectorForm from './recolector';
+import adminDashboard from './admin-dashboard';
+
+Alpine.data('recolectorForm', recolectorForm);
+Alpine.data('adminDashboard', adminDashboard);
 
 window.Alpine = Alpine;
 
