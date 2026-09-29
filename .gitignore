@@ -31,3 +31,4 @@ Thumbs.db
 /android/signing/
 /android/app/src/main/generated-res/
 /.puntual-qa/
+/supabase/.temp/
